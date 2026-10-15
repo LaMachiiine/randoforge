@@ -16,6 +16,8 @@ dependencies = [
     "numpy>=2.4.6",
     "pydantic>=2.14.1",
     "pyproj>=3.7.2",
+    "rasterio>=1.4.4",
+    "shapely>=2.2.0",
 ]
 
 [project.scripts]
@@ -35,7 +37,7 @@ dev = [
 testpaths = ["tests"]
 
 [tool.ruff]
-line-length = 110
+line-length = 120
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]

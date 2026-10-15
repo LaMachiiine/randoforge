@@ -21,6 +21,7 @@ Claude ne doit *jamais* inventer une distance, un dénivelé ou un chemin. Il or
 - [[Calcul du dénivelé]]
 - [[Validation & cohérence]]
 - [[Points notables le long du tracé]]
+- [[Itinérance, bivouac et passages techniques]]
 - [[Formats de sortie]]
 
 ### Plan

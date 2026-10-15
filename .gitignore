@@ -13,3 +13,7 @@ docs/.trash/
 
 # Itinéraires générés en local
 routes/
+
+# Données locales de développement
+.dev-home/
+.cache-dev.sqlite

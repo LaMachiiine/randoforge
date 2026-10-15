@@ -13,19 +13,21 @@ tags: [plan]
 - [ ] Cache SQLite pour les appels externes → déplacé en phase 1 (inutile sans appel externe)
 - [ ] **Jeu de référence** : 10 randos réelles (GPX + D+ topo-guide) dans `tests/fixtures/`
 
-## Phase 1 — MVP « A → B fiable » (≈ 2 semaines)
-- [ ] `geocode`, `find_pois` (Nominatim + Overpass)
-- [ ] `route_between` via API BRouter publique
-- [ ] Altimétrie : chaîne IGN → Copernicus ([[ADR-003 - Altimétrie mondiale]]) + outil `fetch_elevation`
-- [ ] `validate_route` : règles G1–G3, G6, A1, N1–N4
-- [ ] `export_route` : GPX + fiche Markdown
-- [ ] `annotate_route` : points notables le long du tracé (cascades, rivières, points de vue…), en waypoints GPX et dans la fiche
+## Phase 1 — MVP « A → B fiable » ✅ (2026-10-15)
+- [x] `geocode`, `find_pois` (Nominatim + Overpass, bascule entre 3 serveurs, cache SQLite)
+- [x] `route_between` via API BRouter publique (tags OSM par segment conservés)
+- [x] Altimétrie : chaîne IGN → Copernicus ([[ADR-003 - Altimétrie mondiale]]), tracé densifié à 10 m
+- [x] `validate_route` : G2, G3, G6, A1, A4, A5, D1, D2, D7, N0, N1, N3, N5, Q1
+- [x] `export_route` : GPX (+ waypoints des points notables) + fiche Markdown
+- [x] `annotate_route` : points notables le long du tracé (cascades, rivières, points de vue…), en waypoints GPX et dans la fiche
 - [ ] Calibrer le D+ sur le jeu de référence (cible < 5 %)
 - [ ] [[Brouillon CLAUDE.md]] v1 + premiers tests en conversation
 
 **Critère de sortie** : Claude produit une boucle via 3 waypoints imposés, chiffres à < 5 % de la référence, 0 error de validation.
 
 ## Phase 2 — Boucles automatiques & personnalisation
+- [ ] `technical_passages` : passages techniques au km → [[Itinérance, bivouac et passages techniques]]
+- [ ] Règle G4 : aller-retour involontaire sur le même tronçon
 - [ ] `generate_loop_candidates` (stratégies : waypoints en étoile, round-trip GraphHopper, sentiers balisés)
 - [ ] `compare_routes` + scoring
 - [ ] Profils marcheur, `estimate_time`
@@ -33,7 +35,8 @@ tags: [plan]
 - [ ] Carte HTML + profil altimétrique
 
 ## Phase 3 — Itinérance & contexte
-- [ ] `split_into_stages`, refuges.info
+- [ ] `plan_stages` (itinérance multi-jours), refuges.info
+- [ ] `find_bivouac_spots` (cartographiés + calculés), zones réglementées
 - [ ] Zones réglementées, coucher du soleil
 - [ ] Self-host BRouter/GraphHopper + MNT local (fiabilité, pas de quota)
 

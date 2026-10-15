@@ -74,6 +74,15 @@ statut: brouillon
 | `export_route` | GPX, GeoJSON, fiche Markdown, carte HTML — voir [[Formats de sortie]] |
 | `import_gpx` | Charger un GPX existant pour l'analyser/le modifier |
 
+## Famille 6 — Itinérance (à venir)
+| Outil | Rôle |
+|---|---|
+| `technical_passages` | Passages techniques au km (niveau, pente, échelles, câbles) |
+| `find_bivouac_spots` | Emplacements de bivouac, avec avertissements réglementaires |
+| `plan_stages` | Découpage en étapes avec hébergement |
+
+Voir [[Itinérance, bivouac et passages techniques]].
+
 ## MVP minimal (phase 1)
 `geocode`, `find_pois`, `route_between`, `compute_stats`, `validate_route`, `export_route`.
 Avec ça, Claude peut déjà construire des boucles « à la main » en enchaînant des waypoints.

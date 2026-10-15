@@ -52,9 +52,7 @@ def compute_stats(
         d_plus, d_minus = round(up), round(down)
         alt_min, alt_max = round(float(e.min())), round(float(e.max()))
         if is_loop and max(up, down) > 0 and abs(up - down) / max(up, down) > 0.01:
-            warnings.append(
-                f"Boucle avec D+ ({d_plus} m) ≠ D- ({d_minus} m) de plus de 1 % : altitudes incohérentes ?"
-            )
+            warnings.append(f"Boucle avec D+ ({d_plus} m) ≠ D- ({d_minus} m) de plus de 1 % : altitudes incohérentes ?")
 
     if d_plus is not None:
         duration_min = estimate_minutes(distance_km, d_plus, d_minus, profile)

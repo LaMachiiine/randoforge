@@ -10,7 +10,9 @@ Légende priorité : 🟢 MVP · 🟡 V2 · 🔵 Plus tard
 - 🟢 **Boucle** depuis un départ avec distance/D+ cible (« 12 km ± 1, 600 m D+ »)
 - 🟢 **Via des points imposés** (sommet, lac, refuge)
 - 🟡 **Boucle « intelligente »** : générer plusieurs candidates, les scorer, proposer les 3 meilleures
-- 🟡 **Itinérance multi-jours** : découpage en étapes avec hébergement (refuges, gîtes) en fin d'étape
+- 🟡 **Itinérance multi-jours** : découpage en étapes avec hébergement (refuges, gîtes, bivouac) → [[Itinérance, bivouac et passages techniques]]
+- 🟡 **Emplacements de bivouac** : cartographiés (OSM, refuges.info) ou calculés (plat + eau + loin des routes), réglementation signalée
+- 🟢 **Passages techniques** indiqués au km (T3+, pente forte, échelles, câbles, pierriers)
 - 🟡 **Variantes** : raccourci de repli, variante par mauvais temps
 - 🔵 Accès en transports en commun (départ/arrivée sur arrêt de bus/gare)
 

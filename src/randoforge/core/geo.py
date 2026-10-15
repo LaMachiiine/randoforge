@@ -49,3 +49,39 @@ def distance_m(a: tuple[float, float], b: tuple[float, float]) -> float:
     """Distance géodésique (m) entre deux points (lat, lon)."""
     _, _, dist = GEOD.inv(a[1], a[0], b[1], b[0])
     return float(dist)
+
+
+def densify(lats: np.ndarray, lons: np.ndarray, max_step_m: float) -> tuple[np.ndarray, np.ndarray]:
+    """Ajoute des points intermédiaires pour qu'aucun segment ne dépasse `max_step_m`.
+
+    Les points d'origine sont conservés (contrairement à `resample`), ce qui préserve
+    les virages exacts du tracé.
+    """
+    seg = segment_lengths(lats, lons)
+    out_lat, out_lon = [lats[0]], [lons[0]]
+    for i, length in enumerate(seg):
+        n = max(1, int(np.ceil(length / max_step_m)))
+        t = np.arange(1, n + 1) / n
+        out_lat.extend(lats[i] + (lats[i + 1] - lats[i]) * t)
+        out_lon.extend(lons[i] + (lons[i + 1] - lons[i]) * t)
+    return np.array(out_lat), np.array(out_lon)
+
+
+class LocalProjection:
+    """Projection azimutale équidistante centrée sur la zone : coordonnées en mètres,
+    distances fidèles (< 0,1 %) dans un rayon de quelques dizaines de km. Sert aux calculs shapely.
+    """
+
+    def __init__(self, lat0: float, lon0: float):
+        from pyproj import Transformer
+
+        crs = f"+proj=aeqd +lat_0={lat0} +lon_0={lon0} +datum=WGS84 +units=m"
+        self._fwd = Transformer.from_crs("EPSG:4326", crs, always_xy=True)
+        self._inv = Transformer.from_crs(crs, "EPSG:4326", always_xy=True)
+
+    def to_xy(self, lats, lons):
+        return self._fwd.transform(lons, lats)
+
+    def to_latlon(self, xs, ys):
+        lons, lats = self._inv.transform(xs, ys)
+        return lats, lons
