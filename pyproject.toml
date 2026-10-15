@@ -1,0 +1,41 @@
+[project]
+name = "randoforge"
+version = "0.1.0"
+description = "Serveur MCP qui donne à Claude des outils fiables pour concevoir des itinéraires de randonnée"
+readme = "README.md"
+license = "MIT"
+keywords = ["mcp", "claude", "randonnee", "hiking", "gpx", "openstreetmap"]
+authors = [
+    { name = "LaMachiiiine", email = "124789261+Quoifeur2@users.noreply.github.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "gpxpy>=1.6.2",
+    "httpx>=0.28.1",
+    "mcp[cli]>=2.3.0",
+    "numpy>=2.4.6",
+    "pydantic>=2.14.1",
+    "pyproj>=3.7.2",
+]
+
+[project.scripts]
+randoforge = "randoforge.server:main"
+
+[build-system]
+requires = ["uv_build>=0.11.17,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.17.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 110
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]

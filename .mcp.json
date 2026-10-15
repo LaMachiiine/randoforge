@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "randoforge": {
+      "command": "uv",
+      "args": ["run", "randoforge"]
+    }
+  }
+}
