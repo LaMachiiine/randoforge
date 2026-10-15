@@ -41,6 +41,8 @@ Implémentation : `src/randoforge/core/technical.py`. Testé sur Lans → Mouche
 
 Implémentation : `src/randoforge/core/bivouac.py`. Testé sur la traversée des Hauts-Plateaux du Vercors : 42 emplacements (10 refuges.info, 8 OSM, 24 calculés). La pente est mesurée sur 5 points (centre ± 15 m). Limite : la distance aux routes n'est estimée que le long du tracé.
 
+**Bivouac abrité** : chaque emplacement porte `abrite` (refuge, cabane, abri, grotte, abri sous roche, « abri naturel » de refuges.info). `find_bivouac_spots(abrite_seulement=True)` et `plan_stages(overnight="abri")` ne retiennent que ceux-là. Grottes : avertissements crue, chutes de pierres, faune protégée.
+
 ### La réglementation d'abord
 Le bivouac est **réglementé différemment selon les pays et les zones** (cœurs de parcs nationaux, réserves naturelles, arrêtés municipaux, sites classés ; règles variables en Suisse, Italie, Espagne…). RandoForge **ne dira jamais « bivouac autorisé »** :
 - il détecte les zones protégées traversées (`boundary=national_park|protected_area`, réserves) et l'indique ;

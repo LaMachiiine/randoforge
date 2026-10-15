@@ -32,14 +32,19 @@ maj: 2026-10-15
 - [x] Exports : GPX complet + GPX par jour, roadbook imprimable, copie dans un vault Obsidian
 - [x] Plugin Claude Code + skill `planifier-rando` ; serveur découpé en modules d'outils
 
-## Reste à faire (dépend de données ou d'usage réel)
-- [ ] **Calibration** : lancer `scripts/calibrate.py` sur 10–20 traces réelles (GPX barométriques + D+ topo-guides), ajuster pas / lissage / seuil (cible < 5 %).
-- [ ] **Évals** : rejouer les scénarios de [[Évals]] en conversation et corriger le skill.
-- [ ] Variante « mauvais temps » calculée automatiquement (itinéraire abrité, hors crêtes).
+## Calibration & bivouac abrité ✅ (2026-10-15)
+- [x] Calibration sur 80 itinéraires officiels des parcs nationaux (Geotrek) + altitudes officielles des sommets → [[Calibration du dénivelé]]
+- [x] Règle N2 (sommets acérés sous-estimés par le MNT)
+- [x] Bivouac abrité : grottes, abris sous roche, abris naturels refuges.info, cabanes ; option `overnight="abri"`
+- [x] Tests de référence en e2e (`tests/e2e/test_reference.py`)
+- ~~Évals en conversation~~, ~~variante d'itinéraire par mauvais temps~~ : écartées (choix du projet).
+
+## Reste à faire
+- [ ] Optionnel : calibrer aussi sur tes traces de montre barométrique (`scripts/calibrate.py`).
 - [ ] Publication du dépôt en public.
 
 ## Stratégie de test
 - **Unitaires et outils (hors ligne)** : `uv run pytest` — doublures des services, vraies réponses BRouter/Overpass enregistrées.
 - **Bout en bout (réseau)** : `uv run pytest -m e2e` — serveur lancé en stdio comme par Claude Code, vrais services ; un service public indisponible saute le test au lieu de l'échouer.
+- **Référence** : `tests/e2e/test_reference.py` + `scripts/calibrate_reference.py --report` (itinéraires officiels des parcs).
 - **Démonstration** : `uv run python scripts/demo_itinerance.py` (traversée des Hauts-Plateaux du Vercors).
-- **Calibration** : `scripts/calibrate.py`.

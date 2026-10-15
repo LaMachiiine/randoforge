@@ -130,6 +130,7 @@ class AreaCrossing(BaseModel):
 
 class BivouacSpot(BaseModel):
     km: float
+    abrite: bool = Field(False, description="Toit ou paroi : refuge, cabane, abri, grotte, abri sous roche")
     lat: float
     lon: float
     source: str = Field(description="OSM, refuges.info ou calculé")

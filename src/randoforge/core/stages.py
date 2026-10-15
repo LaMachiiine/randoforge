@@ -18,6 +18,9 @@ from .models import ElevationParams, Poi, Stage, TechnicalPassage, TrackPoint, W
 from .timing import estimate_minutes, format_duration
 
 KIND_COST = {
+    "abri sous roche": 0.25,
+    "grotte": 0.3,
+    "abri naturel (grotte, abri sous roche)": 0.3,
     "refuge gardé": 0.0,
     "gîte": 0.0,
     "refuge": 0.05,

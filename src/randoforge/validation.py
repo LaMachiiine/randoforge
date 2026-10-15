@@ -41,6 +41,9 @@ WATER_GAP_H = 3.0
 STROLLER_PCT = 15.0
 CHILD_MAX_MIN = 4 * 60
 ON_PATH_MIN_PCT = 95.0
+SUMMIT_ON_ROUTE_M = 50.0
+SUMMIT_WINDOW_M = 150.0
+SUMMIT_GAP_M = 15.0
 GAP_M = 100.0
 WAYPOINT_TOL_M = 50.0
 STEEP_PCT = 35.0
@@ -216,6 +219,39 @@ def check_ways(route: Route) -> list[Check]:
                 "difficulté incertaine",
             )
         )
+    return checks
+
+
+def check_summits(route: Route) -> list[Check]:
+    """N2 : altitude officielle des sommets atteints vs MNT.
+
+    Calibration (docs/10 - Architecture/Calibration du dénivelé.md) : les MNT représentent bien les
+    sommets arrondis (Cévennes : écart médian 0 m) mais tronquent les pics acérés (Écrins : -40 m).
+    Le D+ est alors sous-estimé d'autant à chaque passage au sommet.
+    """
+    if not route.pois or any(p.ele is None for p in route.points):
+        return []
+    lats = np.array([p.lat for p in route.points])
+    lons = np.array([p.lon for p in route.points])
+    cum = np.concatenate([[0.0], np.cumsum(segment_lengths(lats, lons))])
+    eles = np.array([p.ele for p in route.points], dtype=float)
+    checks = []
+    for poi in route.pois:
+        if poi.categorie != "sommet" or poi.type != "peak" or poi.ele is None or poi.distance_m > SUMMIT_ON_ROUTE_M:
+            continue
+        near = np.abs(cum - poi.km * 1000) <= SUMMIT_WINDOW_M
+        dem_top = float(eles[near].max()) if near.any() else None
+        if dem_top is not None and poi.ele - dem_top > SUMMIT_GAP_M:
+            gap = poi.ele - dem_top
+            checks.append(
+                Check(
+                    id="N2",
+                    level="warning",
+                    km=poi.km,
+                    message=f"Sommet {poi.nom or ''} : altitude officielle {poi.ele:.0f} m, MNT {dem_top:.0f} m "
+                    f"({-gap:.0f} m). Pic acéré mal représenté : D+ réel probablement plus élevé d'environ {gap:.0f} m",
+                )
+            )
     return checks
 
 
@@ -618,6 +654,7 @@ def validate(route: Route) -> ValidationReport:
         check_geometry(route)
         + check_ways(route)
         + check_numbers(route)
+        + check_summits(route)
         + check_slopes(route)
         + check_retrace(route)
         + check_pois(route)

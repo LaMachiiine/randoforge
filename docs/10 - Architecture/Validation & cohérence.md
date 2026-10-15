@@ -47,6 +47,7 @@ maj: 2026-10-15
 |---|---|---|
 | N0 | Altitudes manquantes | error |
 | N1 | Boucle : \|D+ − D-\| < 1 % | error |
+| N2 | Sommet atteint dont l'altitude officielle dépasse le MNT de > 15 m (D+ sous-estimé) | warning |
 | N3 | D+ ≥ altitude max − altitude de départ | error |
 | N4 | Distance (±10 %) et D+ (±15 %) conformes à la demande | error |
 | N5 | D+ recalculé vs D+ du moteur de routage (± max(30 m, 15 %)) | warning |

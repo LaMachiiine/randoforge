@@ -37,13 +37,19 @@ déplace ou ajoute un point de passage et recalcule.
 à moins de 15 jours, `compute_stats` avec `walker` (famille / moyen / sportif) pour ajuster la durée.
 
 ## 5. Plusieurs jours
-`find_bivouac_spots` → `plan_stages` (`days` ou `max_hours_per_day`, `overnight` = refuge / bivouac / indifferent).
+`find_bivouac_spots` (`abrite_seulement=True` pour refuges, cabanes, abris, grottes) → `plan_stages`
+(`days` ou `max_hours_per_day`, `overnight` = refuge / abri / bivouac / indifferent).
+Grottes et abris naturels : rappeler les avertissements (crue, chutes de pierres, faune protégée).
 Les emplacements « calculés » sont des pistes à vérifier sur place : dis-le.
 
 ## 6. Valider, sécuriser, livrer
 - `validate_route` ; corrige ou explique chaque `error`.
 - `bailout_route` pour un repli depuis le passage le plus exposé ou le point le plus éloigné.
 - `export_route` (gpx, md, html, roadbook ; `vault_dir` pour Obsidian). Donne les chemins des fichiers.
+
+## Précision à annoncer
+Le D+ est à ~5 % des topo-guides officiels en médiane. Si la règle N2 signale un sommet acéré,
+annonce que le D+ réel est probablement plus élevé de l'écart indiqué.
 
 ## Format de la réponse
 1. Résumé : distance, D+/D-, durée (et par jour), difficulté, statut de validation.

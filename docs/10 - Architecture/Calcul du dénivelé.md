@@ -41,6 +41,36 @@ Profils synthétiques, pas de 10 m, seuil 5 m — D+ calculé :
 
 → 30 m élimine le bruit et ne coûte que ~3 m sur un sommet très pointu. Au-delà, on écrête les sommets sans gain. (Les ~20 m restants dans la colonne « pics » viennent des pics placés au tout premier et au tout dernier point, que le médian ne peut pas corriger aux bords.)
 
+## Calibration sur des références officielles (2026-10-15)
+
+**Peut-on calibrer le D+ de façon fiable ?** Il n'existe pas de « vrai » D+ absolu : il dépend du lissage,
+et même deux altimètres barométriques diffèrent de 3 à 5 %. Les références les plus sérieuses disponibles
+librement, utilisées ici :
+
+1. **Itinéraires publiés par les parcs nationaux** (plateforme Geotrek : Écrins 727, Cévennes 541 itinéraires) —
+   tracé + D+ des topo-guides officiels. Référence cohérente, mais elle-même calculée sur un MNT par chaque parc.
+2. **Altitudes officielles des sommets** (cartes IGN, reprises dans OSM) — vérité terrain ponctuelle pour le MNT.
+3. *(optionnel)* **Tes traces de montre barométrique** — `scripts/calibrate.py`.
+
+Résultats détaillés et reproductibles : [[Calibration du dénivelé]] (`scripts/calibrate_reference.py --report`).
+
+| Mesure (80 itinéraires pédestres) | Résultat |
+|---|---|
+| Écart médian de D+ vs topo-guides officiels | **5,0 %** (Écrins 4,2 %, Cévennes 6,0 %), biais +0,7 % |
+| Itinéraires à moins de 10 % | 71 % |
+| Distance vs distance publiée | 0,0 % d'écart médian |
+| Sommets arrondis (Cévennes) : MNT vs altitude officielle | 0,2 m de biais médian |
+| Pics acérés (Écrins) : MNT vs altitude officielle | **−43 m** : les MNT tronquent les pointes |
+
+**Décisions**
+- **Réglages par défaut conservés (30 m / 5 m).** Le réglage globalement « meilleur » (60 m / 3 m) améliore les
+  Écrins (2,2 %) mais dégrade les Cévennes (10,1 %) : les deux parcs ne calculent pas leur D+ de la même façon.
+  Se caler sur l'un reviendrait à épouser sa méthode, pas à gagner en précision.
+- **Règle N2** : quand le tracé atteint un sommet dont l'altitude officielle dépasse le MNT de plus de 15 m,
+  l'utilisateur est averti que le D+ réel est probablement supérieur d'autant.
+- Tests de non-régression : `tests/e2e/test_reference.py` (écart médian ≤ 8 % par parc, distance ≤ 1 %,
+  sommets arrondis ≤ 5 m).
+
 ## Pièges connus
 - **Ponts et tunnels** : le MNT donne l'altitude du terrain (fond de vallée / sommet de montagne). → Interpoler linéairement l'altitude entre les extrémités pour les ways OSM `bridge=yes` / `tunnel=yes`.
 - **Falaises / sentiers en corniche** : un MNT 30 m peut « tomber » de la falaise. → Préférer RGE ALTI 1–5 m en France.

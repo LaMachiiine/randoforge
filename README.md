@@ -13,7 +13,7 @@ Exemples de demandes : *« une boucle de 12 km depuis Autrans qui passe par une 
 | Recherche | `geocode`, `find_pois` (cascades, points de vue, lacs, sommets, patrimoine, eau, refuges, transports), `find_hiking_routes` (GR, PR) |
 | Construction | `route_between` (points imposés, boucle), `generate_loop_candidates` (boucles automatiques), `import_gpx`, `bailout_route` (repli) |
 | Analyse | `set_constraints`, `compute_stats` (profils famille/moyen/sportif), `annotate_route` (points notables au km, gués, Wikidata), `technical_passages`, `route_areas` (parcs, réserves, militaire), `data_quality` (confiance, % sur chemin), `weather_forecast`, `compare_routes`, `compare_with_reference`, `validate_route` (~35 règles) |
-| Itinérance | `find_bivouac_spots` (refuges, cabanes, emplacements calculés), `plan_stages` (découpage en jours) |
+| Itinérance | `find_bivouac_spots` (refuges, cabanes, abris, grottes, emplacements calculés ; option « abrité seulement »), `plan_stages` (découpage en jours, nuits à l'abri possibles) |
 | Sortie | `export_route` (GPX complet + un GPX par jour, fiche Obsidian, carte HTML, roadbook imprimable), `mark_done`, `get_route`, `list_routes` |
 
 Détail : [catalogue des outils](docs/10%20-%20Architecture/Serveur%20MCP%20-%20Outils.md) · [règles de validation](docs/10%20-%20Architecture/Validation%20%26%20coh%C3%A9rence.md).
@@ -70,6 +70,8 @@ Les réponses sont mises en cache (`cache.sqlite`) pour ménager ces services gr
 
 Le D+ brut d'un modèle de terrain est gonflé par le bruit (+15 à +50 % mesurés). RandoForge densifie le tracé tous les 10 m, recalcule les altitudes sur le MNT, applique un filtre médian de 30 m, puis ne compte une montée qu'au-delà de 5 m (hystérésis par extremums). La durée suit la méthode DIN 33466. Détails : [Calcul du dénivelé](docs/10%20-%20Architecture/Calcul%20du%20d%C3%A9nivel%C3%A9.md).
 
+**Précision mesurée** sur 80 itinéraires officiels des parcs nationaux des Écrins et des Cévennes : écart médian de **5 %** sur le D+ avec le topo-guide, distance identique ([rapport](docs/10%20-%20Architecture/Calibration%20du%20d%C3%A9nivel%C3%A9.md)). Limite connue : les modèles de terrain tronquent les pics acérés (−43 m en médiane dans les Écrins) ; la règle N2 le signale.
+
 ## Tests
 
 ```bash
@@ -82,13 +84,13 @@ Tests unitaires et d'outils hors ligne (doublures, vraies réponses enregistrée
 uv run pytest -m e2e
 ```
 
-Tests de bout en bout sur les vrais services : le serveur est lancé en stdio comme par Claude Code (boucle à la journée, itinérance de plusieurs jours, altimétrie hors de France, réimport d'un GPX). Quelques minutes ; un service public indisponible fait sauter le test au lieu de l'échouer.
+Tests de bout en bout sur les vrais services : le serveur est lancé en stdio comme par Claude Code (boucle à la journée, itinérance de plusieurs jours, altimétrie hors de France, réimport d'un GPX), et la précision est vérifiée sur les itinéraires officiels des parcs nationaux. Environ 8 minutes ; un service public indisponible fait sauter le test au lieu de l'échouer.
 
 ```bash
 uv run python scripts/demo_itinerance.py
 ```
 
-Démonstration complète commentée. `scripts/calibrate.py` compare le D+ calculé à vos propres traces.
+Démonstration complète commentée. `scripts/calibrate_reference.py --report` refait la calibration sur les références officielles ; `scripts/calibrate.py` compare le D+ à vos propres traces.
 
 ## Documentation
 

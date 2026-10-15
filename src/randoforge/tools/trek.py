@@ -22,6 +22,7 @@ REMINDERS = [
 OVERNIGHT_KINDS = {
     "refuge": {"refuge gardé", "gîte", "refuge", "cabane", "camping"},
     "bivouac": None,  # tout emplacement
+    "abri": "abrite",  # seulement les emplacements avec toit ou paroi
     "indifferent": None,
 }
 
@@ -61,30 +62,36 @@ def compute_bivouacs(app: App, route: Route) -> list[str]:
 
 def register(mcp: MCPServer, app: App) -> None:
     @mcp.tool()
-    def find_bivouac_spots(route_id: str) -> BivouacResult:
+    def find_bivouac_spots(route_id: str, abrite_seulement: bool = False) -> BivouacResult:
         """Emplacements pour dormir le long du tracé : refuges, cabanes et gîtes (refuges.info, OSM),
         aires de bivouac, et emplacements *calculés* (terrain plat < 8 %, eau à moins de 500 m si
         possible, loin des routes, hors pierriers et zones où le bivouac est interdit).
 
         Chaque emplacement indique sa source, le détour, la distance à l'eau et les avertissements
         réglementaires. Les emplacements calculés sont des pistes à vérifier sur place.
+        `abrite_seulement` : uniquement refuges, cabanes, abris, grottes et abris sous roche
+        (bivouac à l'abri de la pluie et du vent).
         """
         route = app.load(route_id)
         failures = compute_bivouacs(app, route)
         app.save(route)
         rappels = REMINDERS + [f"Source indisponible : {f}" for f in failures]
-        return BivouacResult(route_id=route_id, emplacements=route.bivouacs, rappels=rappels)
+        spots = [b for b in route.bivouacs if b.abrite] if abrite_seulement else route.bivouacs
+        if abrite_seulement and not spots:
+            rappels.append("Aucun abri cartographié le long du tracé : prévoir une tente.")
+        return BivouacResult(route_id=route_id, emplacements=spots, rappels=rappels)
 
     @mcp.tool()
     def plan_stages(
         route_id: str,
         days: Annotated[int | None, Field(ge=1, le=15)] = None,
         max_hours_per_day: Annotated[float | None, Field(gt=1, le=12)] = None,
-        overnight: Literal["indifferent", "refuge", "bivouac"] = "indifferent",
+        overnight: Literal["indifferent", "refuge", "bivouac", "abri"] = "indifferent",
         walker: Walker | None = None,
     ) -> StagesResult:
         """Découpe un itinéraire en étapes de plusieurs jours, avec un hébergement (refuge, cabane,
-        gîte) ou un bivouac en fin de chaque étape. Donner `days` et/ou `max_hours_per_day`
+        gîte) ou un bivouac en fin de chaque étape ; `overnight="abri"` : uniquement des nuits à l'abri
+        (refuge, cabane, abri, grotte, abri sous roche). Donner `days` et/ou `max_hours_per_day`
         (par défaut : la durée max enregistrée par set_constraints).
 
         Les durées sont équilibrées, un passage technique en fin d'étape est évité. Le GPX exporté
@@ -102,7 +109,8 @@ def register(mcp: MCPServer, app: App) -> None:
         cuts = [
             stages_lib.Cut(m=b.km * 1000, label=b.nom or b.type, kind=b.type)
             for b in route.bivouacs
-            if (kinds is None or b.type in kinds) and not any("interdit" in w for w in b.avertissements)
+            if (kinds is None or (b.abrite if kinds == "abrite" else b.type in kinds))
+            and not any("interdit" in w for w in b.avertissements)
         ]
         profile = WALKERS[walker] if walker else route.stats.profile
         try:

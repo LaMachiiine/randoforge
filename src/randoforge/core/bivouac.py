@@ -24,7 +24,27 @@ WATER_MAX_M = 500.0
 ROAD_MIN_M = 300.0
 MAX_DETOUR_M = 500.0
 ROADS = {"primary", "secondary", "tertiary", "unclassified", "residential", "trunk", "service"}
-REFUGES_TYPES = {"cabane non gardée": "cabane", "refuge gardé": "refuge gardé", "gîte d'étape": "gîte"}
+REFUGES_TYPES = {
+    "cabane non gardée": "cabane",
+    "refuge gardé": "refuge gardé",
+    "gîte d'étape": "gîte",
+    "abri naturel": "abri naturel (grotte, abri sous roche)",
+}
+# Types qui offrent un toit ou une paroi (bivouac abrité)
+SHELTERED = {
+    "cabane",
+    "refuge gardé",
+    "gîte",
+    "refuge",
+    "abri",
+    "abri sous roche",
+    "grotte",
+    "abri naturel (grotte, abri sous roche)",
+}
+CAVE_WARNINGS = [
+    "Abri naturel / grotte : vérifier sur place le risque de crue et de chute de pierres",
+    "Ne pas déranger la faune (chauves-souris protégées) ; certaines grottes sont fermées ou réglementées",
+]
 WATER_CATEGORIES = {"eau", "lac", "cascade"}
 
 
@@ -34,7 +54,8 @@ def build_query(points: list[TrackPoint]) -> str:
         "[out:json][timeout:90];("
         f'nwr({around})["tourism"="camp_site"];'
         f'nwr({around})["tourism"~"^(wilderness_hut|alpine_hut)$"];'
-        f'nwr({around})["amenity"="shelter"]["shelter_type"~"^(basic_hut|weather_shelter|lean_to)$"];'
+        f'nwr({around})["amenity"="shelter"]["shelter_type"~"^(basic_hut|weather_shelter|lean_to|rock_shelter)$"];'
+        f'node({around})["natural"="cave_entrance"];'
         ");out center tags;"
     )
 
@@ -135,7 +156,11 @@ def find_spots(
         if c.get("lat") is None:
             continue
         m, d = place(c["lat"], c["lon"])
-        kind = tags.get("tourism") or tags.get("shelter_type") or "abri"
+        kind = (
+            tags.get("tourism")
+            or tags.get("shelter_type")
+            or ("cave" if tags.get("natural") == "cave_entrance" else "abri")
+        )
         label = {
             "camp_site": "aire de bivouac / camping",
             "wilderness_hut": "cabane",
@@ -143,13 +168,18 @@ def find_spots(
             "basic_hut": "abri",
             "weather_shelter": "abri",
             "lean_to": "abri",
+            "rock_shelter": "abri sous roche",
+            "cave": "grotte",
         }.get(kind, kind)
         if kind == "camp_site" and tags.get("backcountry") != "yes" and tags.get("camp_site") != "basic":
             label = "camping"
         warnings, forbidden = _legal_warnings(areas, m / 1000)
+        if label in {"grotte", "abri sous roche"}:
+            warnings += CAVE_WARNINGS
         spots.append(
             BivouacSpot(
                 km=round(m / 1000, 2),
+                abrite=label in SHELTERED,
                 lat=c["lat"],
                 lon=c["lon"],
                 source="OSM",
@@ -171,9 +201,12 @@ def find_spots(
         if d > MAX_DETOUR_M:
             continue
         warnings, forbidden = _legal_warnings(areas, m / 1000)
+        if label.startswith("abri naturel"):
+            warnings += CAVE_WARNINGS
         spots.append(
             BivouacSpot(
                 km=round(m / 1000, 2),
+                abrite=label in SHELTERED,
                 lat=r["lat"],
                 lon=r["lon"],
                 source="refuges.info",

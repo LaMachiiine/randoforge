@@ -120,7 +120,7 @@ def bivouacs(route: Route, limit: int = 12) -> Section | None:
         rows.append(
             [
                 f"{b.km:.1f}",
-                f"{b.type}{' — ' + b.nom if b.nom else ''}",
+                f"{b.type}{' — ' + b.nom if b.nom else ''}{' (abrité)' if b.abrite else ''}",
                 b.source,
                 ", ".join(x for x in detail if x),
                 "; ".join(b.avertissements),

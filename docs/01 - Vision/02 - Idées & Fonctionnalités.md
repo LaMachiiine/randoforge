@@ -17,7 +17,8 @@ Légende : ✅ fait · 🟨 partiel (limite précisée) · ⏳ dépend de donné
 | Emplacements de bivouac (cartographiés + calculés) | ✅ | `find_bivouac_spots` (OSM, refuges.info, terrain plat + eau + loin des routes) |
 | Passages techniques au km | ✅ | `technical_passages` |
 | Variante de repli | ✅ | `bailout_route` (vers départ, arrivée ou lieu choisi) |
-| Variante par mauvais temps | 🟨 | `weather_forecast` + `bailout_route` ; pas de recalcul automatique d'un itinéraire « abrité » |
+| Bivouac abrité (refuge, cabane, abri, grotte, abri sous roche) | ✅ | `find_bivouac_spots(abrite_seulement)`, `plan_stages(overnight="abri")` |
+| ~~Variante d'itinéraire par mauvais temps~~ | — | écartée (choix du projet : météo + repli suffisent) |
 | Accès en transports en commun | ✅ | `find_pois` catégorie `transport` (arrêts de bus, gares) |
 | GPX de l'itinérance complète **et** un GPX par jour | ✅ | `export_route` : `route.gpx` + `jour-N.gpx` |
 
@@ -40,7 +41,8 @@ Légende : ✅ fait · 🟨 partiel (limite précisée) · ⏳ dépend de donné
 | Validation automatique | ✅ | `validate_route`, ~35 règles → [[Validation & cohérence]] |
 | Pentes, profil altimétrique | ✅ | règle D2, carte HTML et roadbook |
 | Score de confiance des données | ✅ | `data_quality` (altimétrie, difficulté renseignée, fraîcheur OSM, présence sur chemin) |
-| Calibration sur des randos réelles | ⏳ | `scripts/calibrate.py` prêt ; il faut tes GPX de référence |
+| Calibration du D+ | ✅ | 80 itinéraires officiels des parcs (Écrins, Cévennes) : écart médian 5 % → [[Calibration du dénivelé]] ; tes traces : `scripts/calibrate.py` |
+| Altitude des sommets acérés sous-estimée par le MNT | ✅ | mesurée (−43 m dans les Écrins) et signalée par la règle N2 |
 | Comparaison à une trace réelle | ✅ | `compare_with_reference` |
 
 ## Contexte & sécurité
@@ -66,8 +68,8 @@ Légende : ✅ fait · 🟨 partiel (limite précisée) · ⏳ dépend de donné
 |---|---|---|
 | Skill Claude Code packagé | ✅ | plugin `.claude-plugin/` + skill `skills/planifier-rando` |
 | Auto-hébergement (routage, Overpass, MNT) | ✅ | `RANDOFORGE_BROUTER_URL`, `RANDOFORGE_OVERPASS_URLS`, `RANDOFORGE_DEM_DIR` |
-| Tests de bout en bout | ✅ | `uv run pytest -m e2e` (serveur réel en stdio, vrais services) |
-| Évals de Claude sur des demandes types | 🟨 | scénarios écrits dans [[Évals]] ; à rejouer en conversation |
+| Tests de bout en bout | ✅ | `uv run pytest -m e2e` : 7 tests (scénarios en stdio + précision sur références officielles) |
+| ~~Évals de Claude en conversation~~ | — | écartées (choix du projet) ; remplacées par les tests de bout en bout et de référence |
 
 ## Requête Dataview d'exemple
 ```dataview
