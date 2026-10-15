@@ -20,6 +20,7 @@ Claude ne doit *jamais* inventer une distance, un dénivelé ou un chemin. Il or
 - [[Serveur MCP - Outils]]
 - [[Calcul du dénivelé]]
 - [[Validation & cohérence]]
+- [[Points notables le long du tracé]]
 - [[Formats de sortie]]
 
 ### Plan

@@ -19,6 +19,7 @@ tags: [plan]
 - [ ] Altimétrie : chaîne IGN → Copernicus ([[ADR-003 - Altimétrie mondiale]]) + outil `fetch_elevation`
 - [ ] `validate_route` : règles G1–G3, G6, A1, N1–N4
 - [ ] `export_route` : GPX + fiche Markdown
+- [ ] `annotate_route` : points notables le long du tracé (cascades, rivières, points de vue…), en waypoints GPX et dans la fiche
 - [ ] Calibrer le D+ sur le jeu de référence (cible < 5 %)
 - [ ] [[Brouillon CLAUDE.md]] v1 + premiers tests en conversation
 

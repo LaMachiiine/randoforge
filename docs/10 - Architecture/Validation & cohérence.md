@@ -33,6 +33,7 @@ tags: [architecture, validation]
 | D4 | Arrivée estimée avant coucher du soleil (avec départ donné) | warning |
 | D5 | Altitude > 2 500 m hors saison estivale → risque neige | warning |
 | D6 | Aucun point d'eau sur > X h de marche (si demandé) | warning |
+| D7 | Franchissement de cours d'eau sans pont (gué) | warning |
 
 ## Règles de cohérence des chiffres
 | ID | Règle | Niveau |

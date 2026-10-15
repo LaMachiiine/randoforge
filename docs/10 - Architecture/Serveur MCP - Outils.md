@@ -42,6 +42,7 @@ statut: brouillon
 | `find_pois` | bbox ou centre+rayon, types | POI (sommets avec altitude, lacs, refuges, eau, parkings) |
 | `find_hiking_routes` | zone | sentiers balisés existants (GR/PR) |
 | `area_info` | zone | parcs/réserves, réglementations (chiens, bivouac) |
+| `annotate_route` | route_id, catégories, détour max | points notables au km près (cascades, rivières, points de vue…) → [[Points notables le long du tracé]] |
 
 ## Famille 2 — Construction de tracé
 | Outil | Rôle |

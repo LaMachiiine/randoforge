@@ -18,6 +18,7 @@ Légende priorité : 🟢 MVP · 🟡 V2 · 🔵 Plus tard
 - 🟢 Profil marcheur : vitesse à plat, vitesse en montée (m/h), niveau technique max (`sac_scale`)
 - 🟢 Préférences : éviter routes goudronnées, privilégier sentiers balisés (GR, PR)
 - 🟡 Points d'intérêt souhaités : points de vue, cascades, lacs, eau potable
+- 🟢 **Points notables le long du tracé** (rivières, cascades, lacs, points de vue, patrimoine) avec position au km → [[Points notables le long du tracé]]
 - 🟡 Contraintes : enfants, chien (zones interdites en parc national !), poussette
 - 🔵 Mémoire des randos déjà faites → éviter les doublons, progression
 
