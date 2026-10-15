@@ -25,14 +25,16 @@ tags: [plan]
 
 **Critère de sortie** : Claude produit une boucle via 3 waypoints imposés, chiffres à < 5 % de la référence, 0 error de validation.
 
-## Phase 2 — Boucles automatiques & personnalisation
-- [ ] `technical_passages` : passages techniques au km → [[Itinérance, bivouac et passages techniques]]
-- [ ] Règle G4 : aller-retour involontaire sur le même tronçon
-- [ ] `generate_loop_candidates` (stratégies : waypoints en étoile, round-trip GraphHopper, sentiers balisés)
-- [ ] `compare_routes` + scoring
-- [ ] Profils marcheur, `estimate_time`
-- [ ] Règles de validation complètes (accès, difficulté, sécurité)
-- [ ] Carte HTML + profil altimétrique
+## Phase 2 — Boucles automatiques & personnalisation ✅ (2026-10-15)
+- [x] `technical_passages` : passages techniques au km → [[Itinérance, bivouac et passages techniques]]
+- [x] Règle G4 : aller-retour involontaire sur le même tronçon
+- [x] `generate_loop_candidates` (triangles dans 3 à 12 directions, taille corrigée après un essai)
+- [ ] Autres stratégies de boucle : sentiers balisés (GR/PR), via un point imposé
+- [x] `compare_routes` + scoring (distance, D+, aller-retour, goudron)
+- [x] Profils marcheur prédéfinis (famille, moyen, sportif) dans `compute_stats`
+- [x] Règles de validation : + G4, D8 (glacier), D9 (via ferrata)
+- [ ] Règles restantes : D3 (durée max), D4 (coucher du soleil), D6 (eau), N4 (tolérance de la demande)
+- [x] Carte HTML (fond OpenTopoMap) + profil altimétrique
 
 ## Phase 3 — Itinérance & contexte
 - [ ] `plan_stages` (itinérance multi-jours), refuges.info

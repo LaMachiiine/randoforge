@@ -8,7 +8,9 @@ Trois fonctions liées : pour découper une rando sur **plusieurs jours**, il fa
 
 ---
 
-## 1. Passages techniques — `technical_passages` (phase 2, gain rapide)
+## 1. Passages techniques — `technical_passages` ✅ (implémenté le 2026-10-15)
+
+Implémentation : `src/randoforge/core/technical.py`. Testé sur Lans → Moucherotte : sentier peu visible et pentes fortes détectés, symétriques à l'aller et au retour. La requête Overpass le long du tracé (polyligne simplifiée) peut prendre 30–50 s sur les serveurs publics la première fois (cache ensuite).
 
 > Signaler précisément les endroits délicats : km, longueur, niveau, et **pourquoi**.
 

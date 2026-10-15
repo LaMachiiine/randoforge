@@ -31,10 +31,10 @@ class WalkerProfile(BaseModel):
 
 class RouteStats(BaseModel):
     distance_km: float
-    d_plus_m: float | None
-    d_minus_m: float | None
-    alt_min_m: float | None
-    alt_max_m: float | None
+    d_plus_m: int | None
+    d_minus_m: int | None
+    alt_min_m: int | None
+    alt_max_m: int | None
     duration_min: int | None
     duration_label: str | None
     is_loop: bool
@@ -82,6 +82,16 @@ class Poi(BaseModel):
     osm_id: str
 
 
+class TechnicalPassage(BaseModel):
+    km: float
+    longueur_m: float
+    niveau: str | None = Field(description="Niveau max sur l'échelle T1–T6 si renseigné dans OSM")
+    types: list[str]
+    details: list[str]
+    sources: list[str]
+    a_verifier: bool = Field(False, description="Indice possiblement erroné (ex. artefact du MNT)")
+
+
 class RouteRequest(BaseModel):
     """Contraintes demandées, vérifiées par la validation."""
 
@@ -118,6 +128,7 @@ class Route(BaseModel):
     stats: RouteStats | None = None
     warnings: list[str] = Field(default_factory=list)
     pois: list[Poi] | None = None
+    technical: list[TechnicalPassage] | None = None
     validation: ValidationReport | None = None
 
 

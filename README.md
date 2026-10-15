@@ -4,7 +4,7 @@ Serveur [MCP](https://modelcontextprotocol.io) qui donne à **Claude / Claude Co
 
 > **Principe : Claude raisonne, les outils calculent.** Claude n'invente jamais une distance, un dénivelé ou un chemin ; il orchestre des outils déterministes et explique le résultat.
 
-🚧 **Statut : phase 1** — tracés sur vrais chemins, altimétrie précise, points notables, validation. Prochaines étapes : passages techniques, boucles automatiques, itinérance et bivouac (voir la [roadmap](docs/20%20-%20Plan/Roadmap.md)).
+🚧 **Statut : phase 2** — tracés sur vrais chemins, altimétrie précise, points notables, passages techniques, boucles automatiques, validation, carte HTML. Prochaines étapes : itinérance sur plusieurs jours et bivouac (voir la [roadmap](docs/20%20-%20Plan/Roadmap.md)).
 
 ## Outils disponibles
 
@@ -13,12 +13,15 @@ Serveur [MCP](https://modelcontextprotocol.io) qui donne à **Claude / Claude Co
 | `geocode` | Coordonnées d'un lieu (village, sommet, parking…) |
 | `find_pois` | Points notables autour d'un lieu pour planifier : cascades, points de vue, lacs, sommets… |
 | `route_between` | Tracé sur de vrais chemins (BRouter) via des points imposés, boucle possible |
+| `generate_loop_candidates` | Boucles automatiques depuis un départ pour une distance et un D+ cibles |
+| `compare_routes` | Tableau comparatif de plusieurs itinéraires |
 | `import_gpx` | Importe une trace GPX existante |
-| `compute_stats` | Distance, D+/D-, altitudes, durée selon un profil marcheur |
+| `compute_stats` | Distance, D+/D-, altitudes, durée selon un profil marcheur (famille, moyen, sportif) |
 | `annotate_route` | Points notables le long du tracé au km près, rivières traversées et gués |
+| `technical_passages` | Passages techniques au km : T3+, pentes fortes, échelles, câbles, pierriers, glaciers |
 | `validate_route` | Vérifications : points non atteints, accès interdits, difficulté, pentes, gués, cohérence des chiffres |
 | `get_route` / `list_routes` | Consulte les itinéraires enregistrés |
-| `export_route` | GPX (avec waypoints) et fiche Markdown (compatible Obsidian) |
+| `export_route` | GPX (avec waypoints), fiche Markdown (Obsidian) et carte HTML avec profil altimétrique |
 
 Exemple de demande à Claude : *« Fais-moi une boucle de 15 km depuis Lans-en-Vercors qui passe par une cascade, niveau T2 maximum. »*
 

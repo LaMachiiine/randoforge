@@ -9,9 +9,10 @@ from __future__ import annotations
 
 import numpy as np
 
-from .core.geo import distance_m, resample, segment_lengths
-from .core.models import SAC_SCALE, Check, Route, ValidationReport
+from .core.geo import distance_m, segment_lengths
+from .core.models import SAC_SCALE, Check, Route, ValidationReport, WaySegment
 from .core.stats import LOOP_TOLERANCE_M
+from .core.terrain import retraced_sections, steep_sections
 
 GAP_M = 100.0
 WAYPOINT_TOL_M = 50.0
@@ -29,6 +30,7 @@ TARMAC_HIGHWAYS = {
 PAVED = {"asphalt", "paved", "concrete", "concrete:plates", "paving_stones", "sett"}
 BUSY_ROADS = {"trunk", "primary", "secondary"}
 BUSY_MIN_M = 100.0
+RETRACE_MIN_M = 300.0
 
 
 def _km(m: float) -> float:
@@ -70,6 +72,41 @@ def check_geometry(route: Route) -> list[Check]:
                     level="error",
                     message=f"Point de passage n°{n} non atteint : le tracé passe à {d:.0f} m",
                     suggestion="Déplacer ce point sur un chemin (ou vérifier qu'un chemin y mène).",
+                )
+            )
+    return checks
+
+
+def tarmac_length(segments: list[WaySegment]) -> float:
+    """Longueur (m, distance moteur) sur route goudronnée."""
+    return sum(
+        s.end_m - s.start_m
+        for s in segments
+        if s.tags.get("highway") in TARMAC_HIGHWAYS or s.tags.get("surface") in PAVED
+    )
+
+
+def check_technical(route: Route) -> list[Check]:
+    if route.technical is None:
+        return [Check(id="D8", level="info", message="Passages techniques non analysés (lancer technical_passages)")]
+    checks = []
+    for p in route.technical:
+        if "glacier" in p.types:
+            checks.append(
+                Check(
+                    id="D8",
+                    level="error",
+                    km=p.km,
+                    message="Traversée de glacier : hors randonnée (crampons, encordement)",
+                )
+            )
+        if "via ferrata" in p.types:
+            checks.append(
+                Check(
+                    id="D9",
+                    level="warning",
+                    km=p.km,
+                    message="Via ferrata : équipement spécifique obligatoire (baudrier, longes)",
                 )
             )
     return checks
@@ -198,32 +235,36 @@ def check_numbers(route: Route) -> list[Check]:
 
 
 def check_slopes(route: Route) -> list[Check]:
-    if any(p.ele is None for p in route.points):
+    return [
+        Check(
+            id="D2",
+            level="warning",
+            km=_km(sec.start_m),
+            message=f"Passage raide : jusqu'à {sec.value:.0f} % sur ~{sec.end_m - sec.start_m:.0f} m",
+        )
+        for sec in steep_sections(route.points, STEEP_PCT, STEEP_LEN_M)[:8]
+    ]
+
+
+def check_retrace(route: Route) -> list[Check]:
+    sections = retraced_sections(route.points)
+    total = sum(sec.value for sec in sections)
+    if total < RETRACE_MIN_M:
         return []
-    lats = np.array([p.lat for p in route.points])
-    lons = np.array([p.lon for p in route.points])
-    eles = np.array([p.ele for p in route.points], dtype=float)
-    dist, _, _, e = resample(lats, lons, eles, 10.0)
-    k = int(STEEP_LEN_M / 10)
-    if len(e) <= k:
-        return []
-    slope = 100 * np.abs(e[k:] - e[:-k]) / STEEP_LEN_M
-    checks = []
-    steep = np.flatnonzero(slope > STEEP_PCT)
-    # Regroupe les fenêtres raides consécutives en passages
-    if len(steep):
-        groups = np.split(steep, np.flatnonzero(np.diff(steep) > 1) + 1)
-        for g in groups[:5]:
-            pct = slope[g].max()
-            checks.append(
-                Check(
-                    id="D2",
-                    level="warning",
-                    km=_km(dist[g[0]]),
-                    message=f"Passage raide : jusqu'à {pct:.0f} % sur ~{(len(g) + k) * 10} m",
-                )
-            )
-    return checks
+    # Un aller-retour vers un sommet est souvent voulu ; il ne pose problème que si une boucle était demandée.
+    level = "warning" if route.request.loop else "info"
+    where = ", ".join(f"km {_km(sec.start_m):.1f}–{_km(sec.end_m):.1f}" for sec in sections[:4])
+    return [
+        Check(
+            id="G4",
+            level=level,
+            km=_km(sections[0].start_m),
+            message=f"{total / 1000:.1f} km parcourus deux fois (aller-retour) : {where}",
+            suggestion="Ajouter un point de passage sur un autre chemin pour le retour."
+            if route.request.loop
+            else None,
+        )
+    ]
 
 
 def check_pois(route: Route) -> list[Check]:
@@ -248,7 +289,15 @@ def check_pois(route: Route) -> list[Check]:
 
 
 def validate(route: Route) -> ValidationReport:
-    checks = check_geometry(route) + check_ways(route) + check_numbers(route) + check_slopes(route) + check_pois(route)
+    checks = (
+        check_geometry(route)
+        + check_ways(route)
+        + check_numbers(route)
+        + check_slopes(route)
+        + check_retrace(route)
+        + check_pois(route)
+        + check_technical(route)
+    )
     levels = {c.level for c in checks}
     status = "error" if "error" in levels else "warning" if "warning" in levels else "ok"
     return ValidationReport(status=status, checks=sorted(checks, key=lambda c: (c.km is None, c.km or 0)))

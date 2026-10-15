@@ -41,3 +41,7 @@ line-length = 120
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+# Gabarit HTML/JS : les lignes longues sont plus lisibles telles quelles.
+"src/randoforge/formats/html.py" = ["E501"]

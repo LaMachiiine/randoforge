@@ -11,7 +11,7 @@ tags: [architecture, validation]
 | G1 | Chaque segment est sur un way OSM praticable à pied (distance au chemin < 15 m) | error |
 | G2 | Pas de saut entre deux points consécutifs (> 100 m sans géométrie) | error |
 | G3 | Boucle : départ = arrivée (< 50 m) | error |
-| G4 | Pas d'aller-retour involontaire (même tronçon parcouru 2× en sens inverse, sauf si demandé) | warning |
+| G4 | Pas d'aller-retour involontaire (même tronçon parcouru 2×) : warning si boucle demandée, info sinon | warning |
 | G5 | Pas de micro-boucle / zigzag absurde (détour > 3× la distance directe sur < 500 m) | warning |
 | G6 | Waypoints demandés effectivement atteints (< 50 m) | error |
 
@@ -33,6 +33,8 @@ tags: [architecture, validation]
 | D4 | Arrivée estimée avant coucher du soleil (avec départ donné) | warning |
 | D5 | Altitude > 2 500 m hors saison estivale → risque neige | warning |
 | D6 | Aucun point d'eau sur > X h de marche (si demandé) | warning |
+| D8 | Traversée de glacier | error |
+| D9 | Via ferrata (équipement spécifique) | warning |
 | D7 | Franchissement de cours d'eau sans pont (gué) | warning |
 
 ## Règles de cohérence des chiffres

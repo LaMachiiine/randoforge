@@ -23,6 +23,7 @@ def write_fiche(route: Route, gpx_filename: str = "route.gpx") -> str:
         "alt_min": fm(s and s.alt_min_m),
         "alt_max": fm(s and s.alt_max_m),
         "duree": fm(s and s.duration_label),
+        "niveau_technique": max((t.niveau for t in route.technical or [] if t.niveau), default=""),
         "validation": route.validation.status if route.validation else "",
         "gpx": gpx_filename,
     }
@@ -62,6 +63,15 @@ def write_fiche(route: Route, gpx_filename: str = "route.gpx") -> str:
             "",
         ]
 
+    if route.technical:
+        lines += ["## Passages techniques", "", "| km | Longueur | Niveau | Quoi |", "|---|---|---|---|"]
+        for t in route.technical:
+            what = " ; ".join(t.details) + (" *(à vérifier)*" if t.a_verifier else "")
+            lines.append(f"| {t.km:.1f} | {t.longueur_m:.0f} m | {t.niveau or '—'} | {what} |")
+        lines += ["", "*Niveaux : échelle CAS T1 (sentier) à T6 (alpinisme), d'après OpenStreetMap.*", ""]
+    elif route.technical == []:
+        lines += ["## Passages techniques", "Aucun passage technique détecté.", ""]
+
     if route.validation:
         v = route.validation
         lines += [f"## Validation : {v.status}", ""]
@@ -84,5 +94,5 @@ def write_fiche(route: Route, gpx_filename: str = "route.gpx") -> str:
             f"lissage {p.smooth_window_m:g} m, seuil {p.threshold_m:g} m"
         )
         lines.append("- Durée : méthode DIN 33466, pauses non comprises")
-    lines += [f"- {ATTRIBUTION}", ""]
+    lines += [f"- {ATTRIBUTION}", "- Carte : [[carte.html]]", ""]
     return "\n".join(lines)
