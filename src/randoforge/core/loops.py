@@ -46,11 +46,21 @@ class CandidateScore:
     d_plus_err: float
     retrace_frac: float
     tarmac_frac: float
+    marked_frac: float = 0.0
+    done_frac: float = 0.0
 
     @property
     def total(self) -> float:
-        """Plus petit = meilleur. L'aller-retour et le goudron sont pénalisés plus que l'écart de distance."""
-        return self.distance_err + 0.7 * self.d_plus_err + 1.5 * self.retrace_frac + 0.8 * self.tarmac_frac
+        """Plus petit = meilleur. L'aller-retour et le goudron sont pénalisés plus que l'écart de distance ;
+        les sentiers balisés sont favorisés, le déjà-fait pénalisé (si demandé)."""
+        return (
+            self.distance_err
+            + 0.7 * self.d_plus_err
+            + 1.5 * self.retrace_frac
+            + 0.8 * self.tarmac_frac
+            - 0.2 * self.marked_frac
+            + 0.6 * self.done_frac
+        )
 
 
 def score(
@@ -60,6 +70,8 @@ def score(
     target_d_plus_m: float | None,
     retrace_m: float,
     tarmac_m: float,
+    marked_frac: float = 0.0,
+    done_frac: float = 0.0,
 ) -> CandidateScore:
     d_plus_err = 0.0
     if target_d_plus_m and d_plus_m is not None:
@@ -69,4 +81,6 @@ def score(
         d_plus_err=d_plus_err,
         retrace_frac=retrace_m / distance_m if distance_m else 0,
         tarmac_frac=tarmac_m / distance_m if distance_m else 0,
+        marked_frac=marked_frac,
+        done_frac=done_frac,
     )

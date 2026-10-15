@@ -17,8 +17,18 @@ def _route(**kw):
 
 def test_map_neutralises_osm_names():
     # Les noms OSM sont modifiables par n'importe qui : ils ne doivent pas pouvoir injecter de script.
-    poi = Poi(km=0.5, categorie="cascade", type="waterfall", nom=EVIL, lat=45.005, lon=6, distance_m=0,
-              detour_m=0, score=0.9, osm_id="node/1")  # fmt: skip
+    poi = Poi(
+        km=0.5,
+        categorie="cascade",
+        type="waterfall",
+        nom=EVIL,
+        lat=45.005,
+        lon=6,
+        distance_m=0,
+        detour_m=0,
+        score=0.9,
+        osm_id="node/1",
+    )
     page = write_map(_route(pois=[poi]))
     # Seul « </script » peut fermer le bloc de données : il ne doit apparaître que pour les 2 vrais blocs.
     assert page.count("</script") == 2
@@ -27,8 +37,14 @@ def test_map_neutralises_osm_names():
 
 
 def test_map_and_fiche_show_technical_passages():
-    tech = TechnicalPassage(km=0.2, longueur_m=150, niveau="T3", types=["pente forte"],
-                            details=["Pente jusqu'à 45 % sur ~150 m"], sources=["MNT"])  # fmt: skip
+    tech = TechnicalPassage(
+        km=0.2,
+        longueur_m=150,
+        niveau="T3",
+        types=["pente forte"],
+        details=["Pente jusqu'à 45 % sur ~150 m"],
+        sources=["MNT"],
+    )
     route = _route(technical=[tech])
     page = write_map(route)
     assert 'class="tech"' in page

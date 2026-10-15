@@ -58,11 +58,19 @@ def test_segment_clues_keep_t3_and_above():
 
 def test_osm_clues_ladder_on_route_and_ignores_parallel_path():
     pts = line(100)
-    on_route = {"type": "way", "id": 1, "tags": {"highway": "path", "ladder": "yes"},
-                "geometry": [{"lat": 45.003, "lon": 6.0}, {"lat": 45.004, "lon": 6.0}]}  # fmt: skip
+    on_route = {
+        "type": "way",
+        "id": 1,
+        "tags": {"highway": "path", "ladder": "yes"},
+        "geometry": [{"lat": 45.003, "lon": 6.0}, {"lat": 45.004, "lon": 6.0}],
+    }
     # Chemin parallèle à ~80 m à l'est : ne doit pas compter
-    parallel = {"type": "way", "id": 2, "tags": {"highway": "path", "safety_rope": "yes"},
-                "geometry": [{"lat": 45.003, "lon": 6.001}, {"lat": 45.004, "lon": 6.001}]}  # fmt: skip
+    parallel = {
+        "type": "way",
+        "id": 2,
+        "tags": {"highway": "path", "safety_rope": "yes"},
+        "geometry": [{"lat": 45.003, "lon": 6.001}, {"lat": 45.004, "lon": 6.001}],
+    }
     clues = osm_clues(pts, [on_route, parallel])
     assert [c.kind for c in clues] == ["échelle"]
     assert 300 < clues[0].start_m < 360

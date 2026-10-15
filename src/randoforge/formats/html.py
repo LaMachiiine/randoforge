@@ -87,7 +87,20 @@ def write_map(route: Route) -> str:
     status = route.validation.status if route.validation else "non validé"
     title = html.escape(route.name)
     # Les noms viennent d'OSM (modifiables par tous) : on empêche toute sortie du bloc <script>.
-    data = json.dumps({"coords": coords, "pois": pois, "tech": tech}, ensure_ascii=False).replace("</", "<\\/")
+    nights = [
+        {
+            "lat": float(np.interp(st.km_fin * 1000, cum, lats)),
+            "lon": float(np.interp(st.km_fin * 1000, cum, lons)),
+            "label": f"Nuit {st.jour} : {st.arrivee}",
+        }
+        for st in (route.stages or [])[:-1]
+    ]
+    camps = [
+        {"lat": b.lat, "lon": b.lon, "label": f"{b.type}{' — ' + b.nom if b.nom else ''} (km {b.km:.1f}, {b.source})"}
+        for b in sorted(route.bivouacs or [], key=lambda b: -b.score)[:15]
+    ]
+    payload = {"coords": coords, "pois": pois, "tech": tech, "nights": nights, "camps": camps}
+    data = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
     return f"""<!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title}</title>
@@ -104,7 +117,7 @@ header {{ padding:12px 16px; }} h1 {{ margin:0 0 4px; font-size:20px; }}
 .profile .area {{ fill:var(--area); }} .profile .tech {{ fill:var(--tech); }}
 </style></head><body>
 <header><h1>{title}</h1><div>{summary}</div>
-<div class="meta">Validation : {html.escape(status)} · rouge = passage technique · © OpenStreetMap, OpenTopoMap, IGN</div></header>
+<div class="meta">Validation : {html.escape(status)} · rouge = passage technique · violet = où dormir · © OpenStreetMap, OpenTopoMap, IGN</div></header>
 <div id="map"></div>
 <div class="profile">{_profile_svg(route)}</div>
 <script src="{LEAFLET}/leaflet.js"></script>
@@ -122,6 +135,8 @@ d.tech.forEach(t => L.polyline(t.coords, {{color: '#dc2626', weight: 8, opacity:
 d.pois.forEach(p => L.circleMarker([p.lat, p.lon], {{radius: 6, color: p.cat === 'riviere' ? '#2563eb' : '#15803d'}})
   .bindPopup(`<b>${{esc(p.label)}}</b><br>km ${{p.km.toFixed(1)}}`).addTo(map));
 L.marker(d.coords[0]).bindPopup('Départ').addTo(map);
+d.camps.forEach(c => L.circleMarker([c.lat, c.lon], {{radius: 5, color: '#7c3aed', dashArray: '3'}}).bindPopup(esc(c.label)).addTo(map));
+d.nights.forEach(n => L.marker([n.lat, n.lon]).bindPopup(`<b>${{esc(n.label)}}</b>`).addTo(map));
 // Recadre quand la taille du conteneur change (panneau redimensionné), tant que l'utilisateur n'a pas bougé la carte.
 let userMoved = false;
 map.on('dragstart', () => {{ userMoved = true; }});

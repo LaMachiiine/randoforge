@@ -37,7 +37,9 @@ Implémentation : `src/randoforge/core/technical.py`. Testé sur Lans → Mouche
 
 ---
 
-## 2. Bivouac — `find_bivouac_spots` (phase 3)
+## 2. Bivouac — `find_bivouac_spots` ✅ (implémenté le 2026-10-15)
+
+Implémentation : `src/randoforge/core/bivouac.py`. Testé sur la traversée des Hauts-Plateaux du Vercors : 42 emplacements (10 refuges.info, 8 OSM, 24 calculés). La pente est mesurée sur 5 points (centre ± 15 m). Limite : la distance aux routes n'est estimée que le long du tracé.
 
 ### La réglementation d'abord
 Le bivouac est **réglementé différemment selon les pays et les zones** (cœurs de parcs nationaux, réserves naturelles, arrêtés municipaux, sites classés ; règles variables en Suisse, Italie, Espagne…). RandoForge **ne dira jamais « bivouac autorisé »** :
@@ -60,7 +62,9 @@ Rappel « sans trace » dans la fiche (petit groupe, une nuit, pas de feu, déch
 
 ---
 
-## 3. Rando sur plusieurs jours — `plan_stages` (phase 3)
+## 3. Rando sur plusieurs jours — `plan_stages` ✅ (implémenté le 2026-10-15)
+
+Implémentation : `src/randoforge/core/stages.py`. D+/D- de chaque portion par sommes cumulées recalées sur le total exact (rapide). Sans nombre de jours, prend le minimum compatible avec la durée max. Export : `route.gpx` (itinéraire complet, une trace) + `jour-N.gpx` par étape.
 
 ### Entrées
 `route_id`, nombre de jours **ou** durée max par jour, type d'hébergement (`refuge`, `bivouac`, `indifférent`), profil marcheur.

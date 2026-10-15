@@ -2,7 +2,7 @@
   "mcpServers": {
     "randoforge": {
       "command": "uv",
-      "args": ["run", "randoforge"]
+      "args": ["run", "--directory", "${CLAUDE_PLUGIN_ROOT:-.}", "randoforge"]
     }
   }
 }

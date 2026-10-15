@@ -4,25 +4,25 @@ Combine plusieurs indices indépendants puis fusionne ceux qui se touchent :
 - difficulté `sac_scale` des segments fournis par le moteur de routage ;
 - pentes fortes calculées sur le MNT ;
 - équipements et état du sentier tagués dans OSM (via ferrata, échelles, câbles, visibilité) ;
-- pierriers et glaciers traversés, dangers ponctuels (`hazard=*`).
-Aucun appel réseau : les éléments Overpass sont fournis par l'appelant.
+- pierriers et glaciers traversés, dangers ponctuels (`hazard=*`) ;
+- « passages délicats » signalés sur refuges.info.
+Aucun appel réseau : les données externes sont fournies par l'appelant.
 """
 
 from __future__ import annotations
 
-import numpy as np
-import shapely
 from pydantic import BaseModel, Field
-from shapely.geometry import LineString, Point, Polygon
+from shapely.geometry import Point
 
 from .models import SAC_SCALE, TechnicalPassage, TrackPoint, WaySegment
-from .terrain import _runs, route_line, steep_sections
+from .osmgeom import RouteFrame, element_geometry
+from .terrain import steep_sections
 
-T_LEVELS = {s: f"T{i + 1}" for i, s in enumerate(SAC_SCALE)}
 TECH_SAC_MIN = SAC_SCALE.index("demanding_mountain_hiking")  # T3
 ON_WAY_M = 8.0
 MERGE_GAP_M = 100.0
 HAZARD_M = 30.0
+REFUGES_M = 60.0  # les points refuges.info sont souvent pointés à quelques dizaines de mètres près
 STEEP_PCT = 35.0
 SUSPICIOUS_PCT = 60.0  # pente extrême sur un sentier facile : probable artefact du MNT
 
@@ -45,22 +45,12 @@ class Clue(BaseModel):
     check: bool = False  # à vérifier sur place (indice douteux)
 
 
-def build_query(points: list[TrackPoint], around_m: float = 15.0, max_coords: int = 150) -> str:
-    """Requête Overpass le long du tracé (filtre `around` sur une polyligne simplifiée) +
-    pierriers/glaciers dans l'emprise (un polygone traversé peut avoir ses bords loin du tracé)."""
-    line, proj, _ = route_line(points)
-    tol = 5.0
-    simple = line.simplify(tol)
-    while len(simple.coords) > max_coords:
-        tol *= 2
-        simple = line.simplify(tol)
-    xs, ys = zip(*simple.coords, strict=True)
-    lats, lons = proj.to_latlon(np.array(xs), np.array(ys))
-    poly = ",".join(f"{la:.6f},{lo:.6f}" for la, lo in zip(lats, lons, strict=True))
-    around = f"around:{around_m + tol:.0f},{poly}"
-    lat_all = [p.lat for p in points]
-    lon_all = [p.lon for p in points]
-    bbox = f"{min(lat_all):.5f},{min(lon_all):.5f},{max(lat_all):.5f},{max(lon_all):.5f}"
+def build_query(points: list[TrackPoint], around_m: float = 15.0) -> str:
+    """Requête Overpass le long du tracé + pierriers/glaciers dans l'emprise
+    (une surface traversée peut avoir ses bords loin du tracé)."""
+    frame = RouteFrame(points)
+    around = frame.polyline_filter(around_m)
+    hazard_around = frame.polyline_filter(HAZARD_M)
     return (
         "[out:json][timeout:90];("
         f'way({around})["highway"="via_ferrata"];'
@@ -69,126 +59,111 @@ def build_query(points: list[TrackPoint], around_m: float = 15.0, max_coords: in
         f'way({around})["highway"="ladder"];'
         f'way({around})["safety_rope"="yes"];'
         f'way({around})["trail_visibility"~"^(bad|horrible|no)$"];'
-        f'node(around:{HAZARD_M + tol:.0f},{poly})["hazard"];'
-        f'nwr["natural"~"^(scree|glacier)$"]({bbox});'
+        f'node({hazard_around})["hazard"];'
+        f'nwr["natural"~"^(scree|glacier)$"]({frame.bbox()});'
         ");out geom;"
     )
 
 
-def _geometry(el: dict, proj):
-    if el["type"] == "node":
-        x, y = proj.to_xy(el["lat"], el["lon"])
-        return Point(x, y)
-    rings = []
-    ways = [el.get("geometry", [])] if el["type"] == "way" else [m.get("geometry", []) for m in el.get("members", [])]
-    for coords in ways:
-        if len(coords) >= 2:
-            xs, ys = proj.to_xy([c["lat"] for c in coords], [c["lon"] for c in coords])
-            rings.append(LineString(np.column_stack([xs, ys])))
-    if not rings:
-        return None
-    if el["tags"].get("natural") in {"scree", "glacier"}:
-        polys = [Polygon(r.coords) for r in rings if r.is_closed and len(r.coords) >= 4]
-        if el["type"] == "relation":
-            # Multipolygone : on reconstruit les surfaces à partir des membres
-            polys = list(shapely.polygonize(rings).geoms) or polys
-        return shapely.union_all(polys) if polys else None
-    return shapely.union_all(rings)
-
-
-def _ranges_on(geom, pts_xy, cum: np.ndarray, within_m: float) -> list[tuple[float, float]]:
-    """Portions du tracé (en m) à moins de `within_m` de la géométrie (ou à l'intérieur pour une surface)."""
-    if isinstance(geom, Polygon) or geom.geom_type == "MultiPolygon":
-        mask = shapely.contains(geom, pts_xy) | (shapely.distance(geom, pts_xy) <= 1.0)
-    else:
-        mask = shapely.distance(geom, pts_xy) <= within_m
-    return [(float(cum[a]), float(cum[b])) for a, b in _runs(mask)]
+def _osm_clue(tags: dict, start: float, end: float) -> Clue | None:
+    length = end - start
+    name = f" ({tags['name']})" if tags.get("name") else ""
+    if tags.get("natural") == "glacier":
+        return Clue(
+            start_m=start,
+            end_m=end,
+            kind="glacier",
+            detail=f"Traversée de glacier{name}",
+            level=5,
+            source="OSM natural=glacier",
+        )
+    if tags.get("natural") == "scree":
+        if length < 20:
+            return None
+        return Clue(
+            start_m=start,
+            end_m=end,
+            kind="pierrier",
+            detail=f"Pierrier sur ~{length:.0f} m{name}",
+            level=3,
+            source="OSM natural=scree",
+        )
+    if tags.get("highway") == "via_ferrata" or "via_ferrata_scale" in tags:
+        scale = f" (cotation {tags['via_ferrata_scale']})" if "via_ferrata_scale" in tags else ""
+        return Clue(
+            start_m=start,
+            end_m=end,
+            kind="via ferrata",
+            detail=f"Via ferrata{scale}{name} : baudrier et longes",
+            level=4,
+            source="OSM via_ferrata",
+        )
+    if length < 5 and tags.get("highway") != "ladder":
+        return None  # simple croisement d'un chemin voisin
+    if tags.get("highway") == "ladder" or tags.get("ladder") == "yes":
+        return Clue(start_m=start, end_m=end, kind="échelle", detail=f"Échelle{name}", source="OSM ladder")
+    if tags.get("safety_rope") == "yes":
+        return Clue(
+            start_m=start,
+            end_m=end,
+            kind="câbles",
+            detail=f"Câbles / main courante sur ~{length:.0f} m{name}",
+            source="OSM safety_rope",
+        )
+    if tags.get("trail_visibility") in {"bad", "horrible", "no"}:
+        return Clue(
+            start_m=start,
+            end_m=end,
+            kind="sentier peu visible",
+            detail=f"Sentier peu visible ({tags['trail_visibility']}) : orientation nécessaire",
+            source="OSM trail_visibility",
+        )
+    return None
 
 
 def osm_clues(points: list[TrackPoint], elements: list[dict]) -> list[Clue]:
-    line, proj, cum = route_line(points)
-    xy = np.asarray(line.coords)
-    pts_xy = shapely.points(xy)
-    proj_cum = np.concatenate([[0.0], np.cumsum(np.hypot(*np.diff(xy, axis=0).T))])
+    frame = RouteFrame(points)
     clues: list[Clue] = []
     for el in elements:
         tags = el.get("tags", {})
-        geom = _geometry(el, proj)
+        geom = element_geometry(el, frame.proj)
         if geom is None:
             continue
-        name = f" ({tags['name']})" if tags.get("name") else ""
         if el["type"] == "node" and "hazard" in tags:
-            d = line.distance(geom)
-            if d <= HAZARD_M:
-                m = float(np.interp(line.project(geom), proj_cum, cum))
+            if frame.line.distance(geom) <= HAZARD_M:
+                m = frame.km_of(geom)
                 label = HAZARDS_FR.get(tags["hazard"], tags["hazard"])
                 clues.append(
                     Clue(start_m=m, end_m=m, kind="danger", detail=f"Danger signalé : {label}", source="OSM hazard")
                 )
             continue
-        for start, end in _ranges_on(geom, pts_xy, cum, ON_WAY_M):
-            length = end - start
-            if tags.get("natural") == "glacier":
-                clues.append(
-                    Clue(
-                        start_m=start,
-                        end_m=end,
-                        kind="glacier",
-                        detail=f"Traversée de glacier{name}",
-                        level=5,
-                        source="OSM natural=glacier",
-                    )
+        for start, end in frame.ranges_on(geom, ON_WAY_M):
+            clue = _osm_clue(tags, start, end)
+            if clue:
+                clues.append(clue)
+    return clues
+
+
+def refuges_clues(points: list[TrackPoint], refuges: list[dict]) -> list[Clue]:
+    """« Passages délicats » de refuges.info proches du tracé."""
+    frame = RouteFrame(points)
+    clues = []
+    for r in refuges:
+        if "délicat" not in r.get("type", ""):
+            continue
+        x, y = frame.proj.to_xy(r["lat"], r["lon"])
+        pt = Point(x, y)
+        if frame.line.distance(pt) <= REFUGES_M:
+            m = frame.km_of(pt)
+            clues.append(
+                Clue(
+                    start_m=m,
+                    end_m=m,
+                    kind="passage délicat",
+                    detail=f"Passage délicat signalé : {r['nom']}",
+                    source="refuges.info",
                 )
-            elif tags.get("natural") == "scree":
-                if length >= 20:
-                    clues.append(
-                        Clue(
-                            start_m=start,
-                            end_m=end,
-                            kind="pierrier",
-                            detail=f"Pierrier sur ~{length:.0f} m{name}",
-                            level=3,
-                            source="OSM natural=scree",
-                        )
-                    )
-            elif tags.get("highway") == "via_ferrata" or "via_ferrata_scale" in tags:
-                scale = f" (cotation {tags['via_ferrata_scale']})" if "via_ferrata_scale" in tags else ""
-                clues.append(
-                    Clue(
-                        start_m=start,
-                        end_m=end,
-                        kind="via ferrata",
-                        detail=f"Via ferrata{scale}{name} : baudrier et longes",
-                        level=4,
-                        source="OSM via_ferrata",
-                    )
-                )
-            elif length < 5 and tags.get("highway") not in {"ladder"}:
-                continue  # simple croisement d'un chemin voisin
-            elif tags.get("highway") == "ladder" or tags.get("ladder") == "yes":
-                clues.append(
-                    Clue(start_m=start, end_m=end, kind="échelle", detail=f"Échelle{name}", source="OSM ladder")
-                )
-            elif tags.get("safety_rope") == "yes":
-                clues.append(
-                    Clue(
-                        start_m=start,
-                        end_m=end,
-                        kind="câbles",
-                        detail=f"Câbles / main courante sur ~{length:.0f} m{name}",
-                        source="OSM safety_rope",
-                    )
-                )
-            elif tags.get("trail_visibility") in {"bad", "horrible", "no"}:
-                clues.append(
-                    Clue(
-                        start_m=start,
-                        end_m=end,
-                        kind="sentier peu visible",
-                        detail=f"Sentier peu visible ({tags['trail_visibility']}) : orientation nécessaire",
-                        source="OSM trail_visibility",
-                    )
-                )
+            )
     return clues
 
 
@@ -262,9 +237,18 @@ def merge(clues: list[Clue]) -> list[TechnicalPassage]:
 
 
 def technical_passages(
-    points: list[TrackPoint], segments: list[WaySegment], elements: list[dict], engine_distance_m: float | None
+    points: list[TrackPoint],
+    segments: list[WaySegment],
+    elements: list[dict],
+    engine_distance_m: float | None,
+    refuges: list[dict] | None = None,
 ) -> list[TechnicalPassage]:
-    _, _, cum = route_line(points)
-    scale = cum[-1] / engine_distance_m if engine_distance_m else 1.0
-    clues = segment_clues(segments, scale) + slope_clues(points, segments, scale) + osm_clues(points, elements)
+    frame = RouteFrame(points)
+    scale = frame.cum[-1] / engine_distance_m if engine_distance_m else 1.0
+    clues = (
+        segment_clues(segments, scale)
+        + slope_clues(points, segments, scale)
+        + osm_clues(points, elements)
+        + refuges_clues(points, refuges or [])
+    )
     return merge(clues)

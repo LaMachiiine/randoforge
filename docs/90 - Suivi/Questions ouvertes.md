@@ -8,9 +8,11 @@ tags: [suivi]
 - [x] Usage → **partagé** : dépôt GitHub public, licence MIT, installation en une commande (`uv sync`)
 - [x] Le vault Obsidian est la **doc du dépôt** (`docs/`) ; les fiches générées vont dans `~/.randoforge/routes/` (configurable)
 
+## Tranchées pendant la réalisation
+- [x] Interface : Claude Code + carte HTML et roadbook exportés (pas d'application web)
+- [x] Boucles auto : triangles BRouter dans plusieurs directions + bonus sentiers balisés
+- [x] Services publics : cache, bascule Overpass, User-Agent, URLs configurables pour l'auto-hébergement
+
 ## Encore ouvertes
-- [ ] Interface hors Claude (carte web) ou Claude Code suffit-il ?
-- [ ] Moteur pour les boucles auto : BRouter + waypoints en étoile, round-trip GraphHopper, ou graphe local `osmnx` ?
-- [ ] GPX de référence pour calibrer le D+ : traces de montre barométrique + topo-guides ? Licence de ces traces si publiées dans `tests/` ?
-- [ ] Usage partagé = beaucoup d'appels : faut-il imposer une instance BRouter/Overpass self-hostée, ou laisser chacun configurer ses URL ?
-- [ ] Respect des conditions d'usage des API publiques (User-Agent identifiable, cache obligatoire, 1 req/s Nominatim)
+- [ ] GPX de référence pour calibrer le D+ (`scripts/calibrate.py`) : traces de montre barométrique + topo-guides ? Licence de ces traces si publiées dans `tests/` ?
+- [ ] Au-delà d'un usage modéré : proposer une image Docker BRouter + Overpass prête à l'emploi ?

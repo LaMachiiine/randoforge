@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from datetime import date as Date
+from datetime import time as Time
 
 from pydantic import BaseModel, Field
 
@@ -79,6 +81,8 @@ class Poi(BaseModel):
     intermittent: bool = False
     wikidata: str | None = None
     wikipedia: str | None = None
+    description: str | None = Field(None, description="Description Wikidata, si disponible")
+    wikipedia_url: str | None = None
     osm_id: str
 
 
@@ -98,6 +102,90 @@ class RouteRequest(BaseModel):
     loop: bool = False
     max_sac_scale: str | None = None
     max_tarmac_pct: float = 30.0
+    target_distance_km: float | None = None
+    target_d_plus_m: float | None = None
+    max_duration_h: float | None = None
+    date: Date | None = None
+    start_time: Time | None = None
+    with_dog: bool = False
+    with_children: bool = False
+    stroller: bool = False
+
+
+class AreaCrossing(BaseModel):
+    """Zone réglementée traversée (parc national, réserve, terrain militaire…)."""
+
+    nom: str | None
+    kind: str = Field(
+        description="parc national, réserve naturelle, parc naturel régional, zone protégée, zone militaire"
+    )
+    protect_class: str | None = None
+    km_debut: float
+    km_fin: float
+    chiens: str | None = Field(None, description="interdits, en laisse, autorisés ou None si inconnu")
+    bivouac: str | None = Field(None, description="interdit, réglementé ou None si inconnu")
+    notes: list[str] = Field(default_factory=list)
+    osm_id: str
+
+
+class BivouacSpot(BaseModel):
+    km: float
+    lat: float
+    lon: float
+    source: str = Field(description="OSM, refuges.info ou calculé")
+    type: str
+    nom: str | None = None
+    detour_m: float = 0
+    alt: float | None = None
+    pente_pct: float | None = Field(None, description="Pente max mesurée sur ±15 m (emplacements calculés)")
+    eau_m: float | None = Field(None, description="Distance au point d'eau connu le plus proche")
+    places: int | None = None
+    lien: str | None = None
+    score: float = 0
+    avertissements: list[str] = Field(default_factory=list)
+
+
+class Stage(BaseModel):
+    jour: int
+    km_debut: float
+    km_fin: float
+    distance_km: float
+    d_plus_m: int
+    d_minus_m: int
+    duree_min: int
+    duree: str
+    arrivee: str = Field(description="Hébergement ou point d'arrivée de l'étape")
+    arrivee_type: str
+    passages_techniques: list[str] = Field(default_factory=list)
+    points_eau: int = 0
+
+
+class WeatherWindow(BaseModel):
+    lieu: str
+    altitude_m: float
+    temp_min_c: float | None
+    temp_max_c: float | None
+    pluie_mm: float | None
+    rafales_max_kmh: float | None
+    neige_m: float | None
+    orage: bool
+
+
+class WeatherReport(BaseModel):
+    date: Date
+    heures: str
+    points: list[WeatherWindow]
+    alertes: list[str]
+    source: str = "Open-Meteo"
+
+
+class Quality(BaseModel):
+    score: float = Field(description="Confiance dans les données, de 0 à 1")
+    niveau: str
+    raisons: list[str]
+    sur_chemin_pct: float | None = None
+    hors_chemin: list[tuple[float, float]] = Field(default_factory=list, description="Portions hors chemin (km)")
+    annee_mediane_edition: int | None = None
 
 
 class Check(BaseModel):
@@ -130,6 +218,13 @@ class Route(BaseModel):
     pois: list[Poi] | None = None
     technical: list[TechnicalPassage] | None = None
     validation: ValidationReport | None = None
+    areas: list[AreaCrossing] | None = None
+    bivouacs: list[BivouacSpot] | None = None
+    stages: list[Stage] | None = None
+    weather: WeatherReport | None = None
+    quality: Quality | None = None
+    done_on: Date | None = None
+    done_notes: str | None = None
 
 
 class RouteSummary(BaseModel):

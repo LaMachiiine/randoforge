@@ -3,7 +3,12 @@
 from __future__ import annotations
 
 from ..core.models import Route
-from .gpx import ATTRIBUTION, POI_LABELS
+from .gpx import ATTRIBUTION
+from .sections import all_sections, highlights
+
+
+def _cell(text: str) -> str:
+    return text.replace("|", "\\|").replace("\n", " ")
 
 
 def write_fiche(route: Route, gpx_filename: str = "route.gpx") -> str:
@@ -23,8 +28,11 @@ def write_fiche(route: Route, gpx_filename: str = "route.gpx") -> str:
         "alt_min": fm(s and s.alt_min_m),
         "alt_max": fm(s and s.alt_max_m),
         "duree": fm(s and s.duration_label),
+        "jours": len(route.stages) if route.stages else 1,
         "niveau_technique": max((t.niveau for t in route.technical or [] if t.niveau), default=""),
         "validation": route.validation.status if route.validation else "",
+        "confiance": route.quality.niveau if route.quality else "",
+        "fait_le": fm(route.done_on),
         "gpx": gpx_filename,
     }
     lines = ["---", *(f"{k}: {v}" for k, v in frontmatter.items()), "---", f"# {route.name}", ""]
@@ -32,54 +40,25 @@ def write_fiche(route: Route, gpx_filename: str = "route.gpx") -> str:
     if s:
         dplus = f"{s.d_plus_m} m D+" if s.d_plus_m is not None else "D+ inconnu"
         duree = s.duration_label or "durée inconnue"
-        lines += ["> [!summary] En bref", f"> **{s.distance_km} km** · **{dplus}** · **{duree}**", ""]
-
-    if route.pois:
-        top = sorted(route.pois, key=lambda p: -p.score)[:3]
-        lines += ["## À voir en chemin", ""]
+        days = f" · **{len(route.stages)} jours**" if route.stages else ""
+        lines += ["> [!summary] En bref", f"> **{s.distance_km} km** · **{dplus}** · **{duree}**{days}", ""]
+    if best := highlights(route):
+        lines += ["**À ne pas manquer :** " + " · ".join(f"⭐ {h}" for h in best), ""]
+    if route.done_on:
         lines += [
-            f"- ⭐ **{p.nom or POI_LABELS.get(p.categorie, p.categorie)}** (km {p.km:.1f})"
-            for p in top
-            if p.score >= 0.4
-        ]
-        lines += ["", "| km | Quoi | Détail |", "|---|---|---|"]
-        for p in route.pois:
-            what = POI_LABELS.get(p.categorie, p.categorie) + (f" — {p.nom}" if p.nom else "")
-            detail = []
-            if p.via:
-                detail.append(f"⚠️ {p.via}")
-            if p.detour_m:
-                detail.append(f"détour ~{p.detour_m:.0f} m")
-            if p.ele:
-                detail.append(f"{p.ele:.0f} m")
-            if p.intermittent:
-                detail.append("peut être à sec")
-            lines.append(f"| {p.km:.1f} | {what} | {', '.join(detail)} |")
-        lines.append("")
-    elif route.pois == []:
-        lines += [
-            "## À voir en chemin",
-            "Aucun point notable cartographié dans OpenStreetMap le long du tracé.",
+            f"> [!done] Faite le {route.done_on:%d/%m/%Y}" + (f" — {route.done_notes}" if route.done_notes else ""),
             "",
         ]
 
-    if route.technical:
-        lines += ["## Passages techniques", "", "| km | Longueur | Niveau | Quoi |", "|---|---|---|---|"]
-        for t in route.technical:
-            what = " ; ".join(t.details) + (" *(à vérifier)*" if t.a_verifier else "")
-            lines.append(f"| {t.km:.1f} | {t.longueur_m:.0f} m | {t.niveau or '—'} | {what} |")
-        lines += ["", "*Niveaux : échelle CAS T1 (sentier) à T6 (alpinisme), d'après OpenStreetMap.*", ""]
-    elif route.technical == []:
-        lines += ["## Passages techniques", "Aucun passage technique détecté.", ""]
-
-    if route.validation:
-        v = route.validation
-        lines += [f"## Validation : {v.status}", ""]
-        for c in v.checks:
-            if c.level != "info":
-                where = f"km {c.km:.1f} — " if c.km is not None else ""
-                lines.append(f"- **{c.id}** ({c.level}) {where}{c.message}")
-        lines.append("")
+    for sec in all_sections(route):
+        lines += [f"## {sec.title}", ""]
+        if sec.rows:
+            lines += ["| " + " | ".join(sec.headers) + " |", "|" + "---|" * len(sec.headers)]
+            lines += ["| " + " | ".join(_cell(c) for c in row) + " |" for row in sec.rows]
+            lines.append("")
+        lines += [f"- {n}" for n in sec.notes]
+        if sec.notes:
+            lines.append("")
 
     if route.warnings:
         lines += ["## Points de vigilance", "> [!warning]"]
@@ -94,5 +73,5 @@ def write_fiche(route: Route, gpx_filename: str = "route.gpx") -> str:
             f"lissage {p.smooth_window_m:g} m, seuil {p.threshold_m:g} m"
         )
         lines.append("- Durée : méthode DIN 33466, pauses non comprises")
-    lines += [f"- {ATTRIBUTION}", "- Carte : [[carte.html]]", ""]
+    lines += [f"- {ATTRIBUTION}", "- Refuges : © contributeurs refuges.info (CC BY-SA)", "- Carte : [[carte.html]]", ""]
     return "\n".join(lines)

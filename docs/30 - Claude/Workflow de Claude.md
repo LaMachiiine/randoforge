@@ -3,7 +3,7 @@ tags: [claude]
 ---
 # Workflow de Claude
 
-> Comment Claude doit raisonner pour produire un itinéraire propre. Ce workflow deviendra un **skill Claude Code** (voir [[Brouillon CLAUDE.md]]).
+> Comment Claude doit raisonner pour produire un itinéraire propre. **Version opérationnelle : le skill `skills/planifier-rando/SKILL.md`** du plugin, qui couvre aussi l'itinérance, la météo et le repli.
 
 ## 1. Clarifier la demande
 Infos indispensables (demander si absentes, proposer des valeurs par défaut sinon) :

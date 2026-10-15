@@ -1,80 +1,102 @@
 # 🥾 RandoForge
 
-Serveur [MCP](https://modelcontextprotocol.io) qui donne à **Claude / Claude Code** des outils fiables pour concevoir des itinéraires de randonnée : distance et dénivelé précis, tracés sur de vrais chemins, validation automatique.
+Serveur [MCP](https://modelcontextprotocol.io) et plugin **Claude Code** qui donnent à Claude des outils fiables pour concevoir des itinéraires de randonnée : tracés sur de vrais chemins, distance et dénivelé précis, points notables, passages techniques, zones réglementées, bivouacs et étapes, météo, validation automatique, exports GPX / Obsidian / carte / roadbook.
 
 > **Principe : Claude raisonne, les outils calculent.** Claude n'invente jamais une distance, un dénivelé ou un chemin ; il orchestre des outils déterministes et explique le résultat.
 
-🚧 **Statut : phase 2** — tracés sur vrais chemins, altimétrie précise, points notables, passages techniques, boucles automatiques, validation, carte HTML. Prochaines étapes : itinérance sur plusieurs jours et bivouac (voir la [roadmap](docs/20%20-%20Plan/Roadmap.md)).
+Exemples de demandes : *« une boucle de 12 km depuis Autrans qui passe par une cascade, niveau T2 max »*, *« 3 jours sur les Hauts-Plateaux du Vercors en dormant en cabane »*, *« analyse ma trace montre.gpx »*.
 
-## Outils disponibles
+## Outils (23)
 
-| Outil | Rôle |
+| Thème | Outils |
 |---|---|
-| `geocode` | Coordonnées d'un lieu (village, sommet, parking…) |
-| `find_pois` | Points notables autour d'un lieu pour planifier : cascades, points de vue, lacs, sommets… |
-| `route_between` | Tracé sur de vrais chemins (BRouter) via des points imposés, boucle possible |
-| `generate_loop_candidates` | Boucles automatiques depuis un départ pour une distance et un D+ cibles |
-| `compare_routes` | Tableau comparatif de plusieurs itinéraires |
-| `import_gpx` | Importe une trace GPX existante |
-| `compute_stats` | Distance, D+/D-, altitudes, durée selon un profil marcheur (famille, moyen, sportif) |
-| `annotate_route` | Points notables le long du tracé au km près, rivières traversées et gués |
-| `technical_passages` | Passages techniques au km : T3+, pentes fortes, échelles, câbles, pierriers, glaciers |
-| `validate_route` | Vérifications : points non atteints, accès interdits, difficulté, pentes, gués, cohérence des chiffres |
-| `get_route` / `list_routes` | Consulte les itinéraires enregistrés |
-| `export_route` | GPX (avec waypoints), fiche Markdown (Obsidian) et carte HTML avec profil altimétrique |
+| Recherche | `geocode`, `find_pois` (cascades, points de vue, lacs, sommets, patrimoine, eau, refuges, transports), `find_hiking_routes` (GR, PR) |
+| Construction | `route_between` (points imposés, boucle), `generate_loop_candidates` (boucles automatiques), `import_gpx`, `bailout_route` (repli) |
+| Analyse | `set_constraints`, `compute_stats` (profils famille/moyen/sportif), `annotate_route` (points notables au km, gués, Wikidata), `technical_passages`, `route_areas` (parcs, réserves, militaire), `data_quality` (confiance, % sur chemin), `weather_forecast`, `compare_routes`, `compare_with_reference`, `validate_route` (~35 règles) |
+| Itinérance | `find_bivouac_spots` (refuges, cabanes, emplacements calculés), `plan_stages` (découpage en jours) |
+| Sortie | `export_route` (GPX complet + un GPX par jour, fiche Obsidian, carte HTML, roadbook imprimable), `mark_done`, `get_route`, `list_routes` |
 
-Exemple de demande à Claude : *« Fais-moi une boucle de 15 km depuis Lans-en-Vercors qui passe par une cascade, niveau T2 maximum. »*
+Détail : [catalogue des outils](docs/10%20-%20Architecture/Serveur%20MCP%20-%20Outils.md) · [règles de validation](docs/10%20-%20Architecture/Validation%20%26%20coh%C3%A9rence.md).
 
 ## Installation
 
 Prérequis : [uv](https://docs.astral.sh/uv/).
 
-```bash
-git clone https://github.com/LaMachiiine/randoforge.git
-cd randoforge
-uv sync
-```
-
-Ouvrez Claude Code dans ce dossier : le fichier `.mcp.json` déclare le serveur automatiquement. Pour l'ajouter depuis un autre dossier :
+**Comme plugin Claude Code** (serveur MCP + skill `planifier-rando`) :
 
 ```bash
-claude mcp add randoforge -- uv run --directory /chemin/vers/randoforge randoforge
+claude plugin marketplace add LaMachiiiine/randoforge
 ```
 
-Les itinéraires sont stockés dans `~/.randoforge/routes/` (modifiable avec la variable `RANDOFORGE_HOME`).
+```bash
+claude plugin install randoforge@randoforge
+```
+
+**Depuis le dépôt** :
+
+```bash
+git clone https://github.com/LaMachiiiine/randoforge.git
+```
+
+```bash
+cd randoforge && uv sync
+```
+
+Ouvrez Claude Code dans ce dossier : `.mcp.json` déclare le serveur. Pour tester le plugin localement : `claude --plugin-dir .`
+
+## Configuration (variables d'environnement)
+
+| Variable | Rôle | Défaut |
+|---|---|---|
+| `RANDOFORGE_HOME` | Itinéraires et cache | `~/.randoforge` |
+| `RANDOFORGE_BROUTER_URL` | Instance BRouter (auto-hébergement) | `https://brouter.de/brouter` |
+| `RANDOFORGE_OVERPASS_URLS` | Serveurs Overpass, séparés par des virgules | 3 serveurs publics en secours |
+| `RANDOFORGE_DEM_DIR` | Dossier de GeoTIFF prioritaires (MNT local, toute projection) | — |
 
 ## Sources de données
 
-| Besoin | Source | Configurable par |
-|---|---|---|
-| Tracé | [BRouter](https://brouter.de) (profils `hiking-mountain`, `hiking-beta`, `shortest`) | `RANDOFORGE_BROUTER_URL` |
-| Altitude | IGN RGE ALTI 1–5 m en France, sinon Copernicus GLO-30 (30 m) | — |
-| Lieux, points notables | OpenStreetMap via Nominatim et Overpass (3 serveurs en secours) | `RANDOFORGE_OVERPASS_URLS` |
+| Besoin | Source |
+|---|---|
+| Tracé | [BRouter](https://brouter.de) (profils `hiking-mountain`, `hiking-beta`, `shortest`) |
+| Altitude | IGN RGE ALTI 1–5 m en France, Copernicus GLO-30 ailleurs, ou MNT local |
+| Lieux, chemins, zones | OpenStreetMap (Nominatim, Overpass) |
+| Refuges, cabanes, points d'eau | [refuges.info](https://www.refuges.info) |
+| Météo, neige | [Open-Meteo](https://open-meteo.com) |
+| Descriptions | Wikidata |
 
-Les réponses sont mises en cache dans `~/.randoforge/cache.sqlite` pour respecter les services publics gratuits. Pour un usage intensif, hébergez votre propre BRouter / Overpass.
+Les réponses sont mises en cache (`cache.sqlite`) pour ménager ces services gratuits. Pour un usage intensif, hébergez BRouter et Overpass.
 
 ## Comment le dénivelé est calculé
 
-Le D+ brut issu d'un modèle de terrain est gonflé par le bruit (+15 à +50 % mesurés). RandoForge :
-1. rééchantillonne le tracé tous les 10 m (distance géodésique WGS84) ;
-2. applique un filtre médian de 30 m contre les artefacts ;
-3. ne compte une montée ou une descente qu'au-delà d'un seuil de 5 m (hystérésis par extremums).
+Le D+ brut d'un modèle de terrain est gonflé par le bruit (+15 à +50 % mesurés). RandoForge densifie le tracé tous les 10 m, recalcule les altitudes sur le MNT, applique un filtre médian de 30 m, puis ne compte une montée qu'au-delà de 5 m (hystérésis par extremums). La durée suit la méthode DIN 33466. Détails : [Calcul du dénivelé](docs/10%20-%20Architecture/Calcul%20du%20d%C3%A9nivel%C3%A9.md).
 
-Le tracé est d'abord densifié tous les 10 m, puis les altitudes sont recalculées sur le modèle de terrain (celles du moteur de routage sont ignorées). Détails et justification : [Calcul du dénivelé](docs/10%20-%20Architecture/Calcul%20du%20d%C3%A9nivel%C3%A9.md). La durée suit la méthode DIN 33466.
-
-## Développement
+## Tests
 
 ```bash
 uv run pytest
-uv run ruff check . && uv run ruff format --check .
 ```
 
-La documentation de conception est un vault [Obsidian](https://obsidian.md) dans [`docs/`](docs/00%20-%20Accueil.md) : vision, architecture, catalogue d'outils, règles de validation, décisions (ADR).
+Tests unitaires et d'outils hors ligne (doublures, vraies réponses enregistrées), en quelques secondes.
 
-## Données et licences
+```bash
+uv run pytest -m e2e
+```
 
-- Code : licence [MIT](LICENSE).
-- Données OpenStreetMap © contributeurs OpenStreetMap, licence ODbL — attribution incluse dans les exports.
-- Altimétrie : IGN RGE ALTI (Licence Ouverte Etalab) en France, Copernicus DEM GLO-30 ailleurs.
+Tests de bout en bout sur les vrais services : le serveur est lancé en stdio comme par Claude Code (boucle à la journée, itinérance de plusieurs jours, altimétrie hors de France, réimport d'un GPX). Quelques minutes ; un service public indisponible fait sauter le test au lieu de l'échouer.
 
-⚠️ Les itinéraires générés sont une aide à la préparation. Vérifiez toujours les conditions sur place (météo, état des sentiers, réglementation).
+```bash
+uv run python scripts/demo_itinerance.py
+```
+
+Démonstration complète commentée. `scripts/calibrate.py` compare le D+ calculé à vos propres traces.
+
+## Documentation
+
+Vault [Obsidian](https://obsidian.md) dans [`docs/`](docs/00%20-%20Accueil.md) : vision, architecture, outils, règles, décisions (ADR), évals.
+
+## Licences
+
+- Code : [MIT](LICENSE).
+- Données © contributeurs OpenStreetMap (ODbL), refuges.info (CC BY-SA), IGN (Licence Ouverte), Copernicus, Open-Meteo (CC BY 4.0) — attributions incluses dans les exports.
+
+⚠️ Les itinéraires générés sont une aide à la préparation. Vérifiez toujours les conditions sur place : météo, état des sentiers, réglementation.

@@ -1,53 +1,45 @@
 ---
 tags: [plan]
+maj: 2026-10-15
 ---
 # Roadmap
 
-## Phase 0 — Fondations (≈ 1 semaine)
-- [x] Choisir la stack → [[ADR-001 - Stack technique]]
-- [x] Squelette serveur MCP Python (SDK `mcp` 2.x, `MCPServer`) + `.mcp.json` pour Claude Code
-- [x] Objet `Route` + stockage fichiers (`~/.randoforge/routes/<id>/`)
-- [x] Cœur de calcul testé : distance géodésique, D+/D- (lissage + hystérésis), durée DIN 33466
-- [x] Outils `import_gpx`, `compute_stats`, `get_route`, `list_routes`, `export_route` (GPX + fiche)
-- [x] Base du dépôt public : README, licence MIT, CLAUDE.md, ruff, 17 tests
-- [ ] Cache SQLite pour les appels externes → déplacé en phase 1 (inutile sans appel externe)
-- [ ] **Jeu de référence** : 10 randos réelles (GPX + D+ topo-guide) dans `tests/fixtures/`
+## Phase 0 — Fondations ✅
+- [x] Stack → [[ADR-001 - Stack technique]] ; serveur MCP Python (SDK `mcp` 2.x)
+- [x] Objet `Route`, stockage `~/.randoforge/routes/<id>/`, cache SQLite des appels externes
+- [x] Cœur de calcul : distance géodésique, D+/D- (lissage + hystérésis), durée DIN 33466
+- [x] Dépôt public : README, licence MIT, CLAUDE.md, ruff, tests
 
-## Phase 1 — MVP « A → B fiable » ✅ (2026-10-15)
-- [x] `geocode`, `find_pois` (Nominatim + Overpass, bascule entre 3 serveurs, cache SQLite)
-- [x] `route_between` via API BRouter publique (tags OSM par segment conservés)
-- [x] Altimétrie : chaîne IGN → Copernicus ([[ADR-003 - Altimétrie mondiale]]), tracé densifié à 10 m
-- [x] `validate_route` : G2, G3, G6, A1, A4, A5, D1, D2, D7, N0, N1, N3, N5, Q1
-- [x] `export_route` : GPX (+ waypoints des points notables) + fiche Markdown
-- [x] `annotate_route` : points notables le long du tracé (cascades, rivières, points de vue…), en waypoints GPX et dans la fiche
-- [ ] Calibrer le D+ sur le jeu de référence (cible < 5 %)
-- [ ] [[Brouillon CLAUDE.md]] v1 + premiers tests en conversation
+## Phase 1 — A → B fiable ✅
+- [x] `geocode`, `find_pois`, `route_between` (BRouter), altimétrie IGN → Copernicus ([[ADR-003 - Altimétrie mondiale]])
+- [x] `annotate_route` (points notables, gués), `validate_route`, `export_route`
 
-**Critère de sortie** : Claude produit une boucle via 3 waypoints imposés, chiffres à < 5 % de la référence, 0 error de validation.
+## Phase 2 — Boucles & personnalisation ✅
+- [x] `generate_loop_candidates`, `compare_routes`, profils marcheur, `technical_passages`
+- [x] Règles G4, D8, D9 ; carte HTML + profil altimétrique
 
-## Phase 2 — Boucles automatiques & personnalisation ✅ (2026-10-15)
-- [x] `technical_passages` : passages techniques au km → [[Itinérance, bivouac et passages techniques]]
-- [x] Règle G4 : aller-retour involontaire sur le même tronçon
-- [x] `generate_loop_candidates` (triangles dans 3 à 12 directions, taille corrigée après un essai)
-- [ ] Autres stratégies de boucle : sentiers balisés (GR/PR), via un point imposé
-- [x] `compare_routes` + scoring (distance, D+, aller-retour, goudron)
-- [x] Profils marcheur prédéfinis (famille, moyen, sportif) dans `compute_stats`
-- [x] Règles de validation : + G4, D8 (glacier), D9 (via ferrata)
-- [ ] Règles restantes : D3 (durée max), D4 (coucher du soleil), D6 (eau), N4 (tolérance de la demande)
-- [x] Carte HTML (fond OpenTopoMap) + profil altimétrique
+## Phase 3 — Itinérance & contexte ✅
+- [x] `find_bivouac_spots` (OSM, refuges.info, emplacements calculés), `plan_stages`
+- [x] `route_areas` (parcs, réserves, militaire), règles A2, A3, C1
+- [x] `set_constraints` + règles N4, D3, D4 (soleil), D5 (saison), D6 (eau), E1, P1
+- [x] `data_quality` (G1, Q3, score de confiance), `bailout_route`, `find_hiking_routes`
+- [x] MNT local (`RANDOFORGE_DEM_DIR`) ; URLs BRouter / Overpass configurables
 
-## Phase 3 — Itinérance & contexte
-- [ ] `plan_stages` (itinérance multi-jours), refuges.info
-- [ ] `find_bivouac_spots` (cartographiés + calculés), zones réglementées
-- [ ] Zones réglementées, coucher du soleil
-- [ ] Self-host BRouter/GraphHopper + MNT local (fiabilité, pas de quota)
+## Phase 4 — Confort ✅
+- [x] `weather_forecast` (orage, pluie, vent, gel, neige) + règle W1
+- [x] `mark_done`, historique, évitement des chemins déjà faits ; `compare_with_reference`
+- [x] Descriptions Wikidata, arrêts de transport en commun
+- [x] Exports : GPX complet + GPX par jour, roadbook imprimable, copie dans un vault Obsidian
+- [x] Plugin Claude Code + skill `planifier-rando` ; serveur découpé en modules d'outils
 
-## Phase 4 — Confort
-- [ ] Skill Claude Code packagé (plugin)
-- [ ] Météo, enneigement
-- [ ] Mémoire des randos faites, intégration Dataview
+## Reste à faire (dépend de données ou d'usage réel)
+- [ ] **Calibration** : lancer `scripts/calibrate.py` sur 10–20 traces réelles (GPX barométriques + D+ topo-guides), ajuster pas / lissage / seuil (cible < 5 %).
+- [ ] **Évals** : rejouer les scénarios de [[Évals]] en conversation et corriger le skill.
+- [ ] Variante « mauvais temps » calculée automatiquement (itinéraire abrité, hors crêtes).
+- [ ] Publication du dépôt en public.
 
 ## Stratégie de test
-- **Unitaires** : calculs géo (distance connue entre deux points, D+ sur profil synthétique).
-- **Référence** : écart vs randos réelles, suivi dans un tableau de bord.
-- **Évals Claude** : 20 demandes types (« boucle facile en famille », « 2 jours avec refuge »…) → vérifier que Claude appelle bien les outils et respecte les contraintes.
+- **Unitaires et outils (hors ligne)** : `uv run pytest` — doublures des services, vraies réponses BRouter/Overpass enregistrées.
+- **Bout en bout (réseau)** : `uv run pytest -m e2e` — serveur lancé en stdio comme par Claude Code, vrais services ; un service public indisponible saute le test au lieu de l'échouer.
+- **Démonstration** : `uv run python scripts/demo_itinerance.py` (traversée des Hauts-Plateaux du Vercors).
+- **Calibration** : `scripts/calibrate.py`.

@@ -1,93 +1,61 @@
 ---
 tags: [architecture, mcp]
-statut: brouillon
+maj: 2026-10-15
 ---
 # Serveur MCP — Catalogue d'outils
 
-> C'est le **cœur du projet** : la qualité des itinéraires dépend directement de la qualité de ces outils (clarté, granularité, messages d'erreur).
+> 23 outils, regroupés par module dans `src/randoforge/tools/`. Chaque outil renvoie un résumé compact
+> (jamais la géométrie complète) ; un `route_id` désigne l'itinéraire stocké côté serveur.
 
-## Règles de design des outils
-- Noms explicites en `snake_case`, descriptions rédigées **pour Claude** (quand l'utiliser, quand ne pas l'utiliser).
-- Entrées typées et bornées (ex. `distance_km` entre 1 et 60).
-- Sorties **compactes** : stats + `route_id` + warnings. Jamais 5 000 coordonnées dans la réponse.
-- Erreurs actionnables : `"Aucun chemin trouvé entre A et B : B est à 340 m du chemin le plus proche. Essayez snap_to_trail."`
-- Chaque sortie inclut `sources` (provenance des données).
+## Règles de design
+- Descriptions rédigées **pour Claude** : quand l'utiliser, ce qu'il faut en dire à l'utilisateur.
+- Entrées typées et bornées ; erreurs prévues levées en `ToolError` (seul message transmis au client).
+- Analyses coûteuses (Overpass) mises en cache ; `validate_route` lance celles qui manquent.
+- Les sources de données sont indiquées dans les sorties (provenance, licences).
 
-## Objet central : `Route`
-```json
-{
-  "route_id": "r_2026-10-15_a1b2",
-  "waypoints": [[45.12, 5.58], [45.10, 5.61]],
-  "geometry_file": "routes/r_.../route.geojson",
-  "stats": {
-    "distance_km": 14.82,
-    "d_plus_m": 812,
-    "d_minus_m": 812,
-    "alt_min_m": 1012,
-    "alt_max_m": 1786,
-    "duree_estimee": "5h10",
-    "pente_max_pct": 38,
-    "sac_scale_max": "mountain_hiking",
-    "part_goudron_pct": 6
-  },
-  "warnings": [],
-  "sources": {"routing": "brouter:hiking-mountain", "dem": "IGN RGE ALTI 5m"}
-}
-```
-
-## Famille 1 — Recherche & contexte
-| Outil | Entrée | Sortie |
-|---|---|---|
-| `geocode` | texte | lieux candidats (lat/lon, type, commune) |
-| `find_pois` | bbox ou centre+rayon, types | POI (sommets avec altitude, lacs, refuges, eau, parkings) |
-| `find_hiking_routes` | zone | sentiers balisés existants (GR/PR) |
-| `area_info` | zone | parcs/réserves, réglementations (chiens, bivouac) |
-| `annotate_route` | route_id, catégories, détour max | points notables au km près (cascades, rivières, points de vue…) → [[Points notables le long du tracé]] |
-
-## Famille 2 — Construction de tracé
+## Recherche — `tools/search.py`
 | Outil | Rôle |
 |---|---|
-| `snap_to_trail` | Accroche un point au chemin praticable le plus proche (renvoie la distance de snap) |
-| `route_between` | Tracé A → B (→ C…) via moteur de routage, profil choisi |
-| `generate_loop_candidates` | N boucles candidates depuis un départ pour une distance/D+ cible |
-| `modify_route` | Ajouter/supprimer/déplacer un waypoint, inverser le sens |
-| `split_into_stages` | Découpe en étapes (multi-jours) selon durée max/jour et hébergements |
+| `geocode` | Coordonnées d'un lieu par son nom (Nominatim) |
+| `find_pois` | Points notables autour d'un lieu, triés par intérêt ; catégorie `transport` pour bus/gares |
+| `find_hiking_routes` | Sentiers balisés (GR, PR…) proches, réseau national d'abord |
 
-## Famille 3 — Mesure
+## Construction — `tools/build.py`
 | Outil | Rôle |
 |---|---|
-| `compute_stats` | Distance géodésique, D+/D-, altitudes, durée — voir [[Calcul du dénivelé]] |
-| `elevation_profile` | Profil altimétrique échantillonné + segments raides |
-| `estimate_time` | Durée selon profil marcheur (vitesses plat / montée / descente) |
-| `surface_breakdown` | % sentier / piste / goudron, répartition `sac_scale` |
+| `route_between` | Tracé BRouter par des points imposés (≤ 30), boucle possible ; altitudes recalculées sur MNT |
+| `generate_loop_candidates` | Boucles automatiques (triangles dans 3–12 directions), notées et mesurées |
+| `import_gpx` | Import d'une trace (altitudes du fichier ou du MNT) |
+| `bailout_route` | Itinéraire de repli depuis un km vers le départ, l'arrivée ou un lieu |
 
-## Famille 4 — Validation
+## Analyse — `tools/analyze.py`
 | Outil | Rôle |
 |---|---|
-| `validate_route` | Lance toutes les règles de [[Validation & cohérence]] → `ok` / warnings / erreurs |
-| `compare_routes` | Tableau comparatif de candidats |
-| `check_against_reference` | Compare à un GPX réel (tests de précision) |
+| `set_constraints` | Distance/D+ visés, durée max, date et heure, chien, enfants, poussette… |
+| `compute_stats` | Distance, D+/D-, altitudes, durée (profils famille / moyen / sportif) |
+| `annotate_route` | Points notables au km, gués, descriptions Wikidata |
+| `technical_passages` | Passages techniques (T3+, pente, via ferrata, échelles, câbles, pierriers, glaciers, refuges.info) |
+| `route_areas` | Zones réglementées traversées (parcs, réserves, militaire) |
+| `data_quality` | Score de confiance, % sur chemin cartographié, fraîcheur OSM, part balisée |
+| `weather_forecast` | Prévisions Open-Meteo au départ / point culminant / arrivée sur la plage de marche |
+| `compare_routes` | Tableau comparatif (dont goudron, balisage, déjà fait) |
+| `compare_with_reference` | Écart à une trace de référence |
+| `validate_route` | Toutes les règles de [[Validation & cohérence]] |
 
-## Famille 5 — Export
+## Itinérance — `tools/trek.py`
 | Outil | Rôle |
 |---|---|
-| `export_route` | GPX, GeoJSON, fiche Markdown, carte HTML — voir [[Formats de sortie]] |
-| `import_gpx` | Charger un GPX existant pour l'analyser/le modifier |
+| `find_bivouac_spots` | Refuges, cabanes, aires de bivouac et emplacements calculés, avec avertissements réglementaires |
+| `plan_stages` | Découpage en jours (programmation dynamique sur les hébergements) |
 
-## Famille 6 — Itinérance
-| Outil | Rôle | Statut |
-|---|---|---|
-| `technical_passages` | Passages techniques au km (niveau, pente, échelles, câbles) | ✅ |
-| `find_bivouac_spots` | Emplacements de bivouac, avec avertissements réglementaires | à venir |
-| `plan_stages` | Découpage en étapes avec hébergement | à venir |
+## Sortie & historique — `tools/output.py`
+| Outil | Rôle |
+|---|---|
+| `get_route`, `list_routes` | Consultation (filtre randos faites / projets) |
+| `mark_done` | Historique ; évité ensuite par les boucles générées |
+| `export_route` | `gpx` (complet + un fichier par jour), `md`, `html`, `roadbook` ; copie dans un vault |
 
-Voir [[Itinérance, bivouac et passages techniques]].
-
-## MVP minimal (phase 1)
-`geocode`, `find_pois`, `route_between`, `compute_stats`, `validate_route`, `export_route`.
-Avec ça, Claude peut déjà construire des boucles « à la main » en enchaînant des waypoints.
-
-## Ressources MCP (lecture seule)
-- `profiles://walker` — profils marcheur enregistrés
-- `routes://{route_id}` — détail d'un itinéraire
-- `docs://sac_scale` — explication de l'échelle de difficulté pour Claude
+## Objet central : `Route` (`core/models.py`)
+Points densifiés à 10 m avec altitudes MNT, segments et tags OSM du moteur, contraintes (`RouteRequest`),
+statistiques, puis résultats d'analyse optionnels : `pois`, `technical`, `areas`, `bivouacs`, `stages`,
+`weather`, `quality`, `validation`, historique (`done_on`).

@@ -1,11 +1,13 @@
 """Doublures des services externes : les tests ne touchent jamais le réseau.
 
-Les réponses BRouter et Overpass sont de vraies réponses enregistrées
-(Lans-en-Vercors → Moucherotte, octobre 2026).
+Les réponses BRouter et Overpass (points notables) sont de vraies réponses enregistrées
+(Lans-en-Vercors → Moucherotte, octobre 2026). Les autres réponses Overpass sont synthétiques,
+choisies selon le contenu de la requête.
 """
 
 import json
 import math
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -23,6 +25,11 @@ def load_fixture(name: str):
     return json.loads((FIXTURES / name).read_text(encoding="utf-8"))
 
 
+def route_geometry() -> list[dict]:
+    coords = load_fixture("brouter_lans_moucherotte.json")["features"][0]["geometry"]["coordinates"]
+    return [{"lat": c[1], "lon": c[0]} for c in coords]
+
+
 class FakeRouter:
     def __init__(self):
         self.calls = []
@@ -33,7 +40,7 @@ class FakeRouter:
 
 
 class FakeElevation:
-    """Relief analytique : monte de 1000 m vers le nord-est (≈ 100 m par km vers le nord)."""
+    """Relief analytique : monte vers le nord, avec une ondulation."""
 
     name = "Relief de test"
 
@@ -48,12 +55,68 @@ class FakeNominatim:
 
 
 class FakeOverpass:
+    """Répond selon la requête : zones, chemins, sentiers balisés, hébergements, sinon points notables."""
+
     def __init__(self):
         self.queries = []
 
     def query(self, ql):
         self.queries.append(ql)
+        geom = route_geometry()
+        if "national_park" in ql:
+            # Parc national couvrant la seconde moitié du tracé (km ~4 → fin)
+            lat0 = geom[len(geom) // 2]["lat"]
+            ring = [(lat0, 5.5), (45.3, 5.5), (45.3, 5.8), (lat0, 5.8), (lat0, 5.5)]
+            return [{"type": "way", "id": 900, "tags": {"boundary": "national_park", "name": "Parc de test"},
+                     "geometry": [{"lat": a, "lon": b} for a, b in ring]}]  # fmt: skip
+        if "way(around" in ql and '["highway"];out meta geom' in ql:
+            return [{"type": "way", "id": 901, "tags": {"highway": "path"}, "timestamp": "2024-05-01T00:00:00Z",
+                     "geometry": geom}]  # fmt: skip
+        if 'route"="hiking' in ql:
+            return [
+                {"type": "relation", "id": 1, "tags": {"route": "hiking", "network": "lwn", "name": "Boucle locale"},
+                 "center": {"lat": 45.13, "lon": 5.59}},
+                {"type": "relation", "id": 2, "tags": {"route": "hiking", "network": "nwn", "ref": "GR 91",
+                 "name": "Traversée du Vercors"}, "center": {"lat": 45.14, "lon": 5.6}},
+                {"type": "relation", "id": 3, "tags": {"route": "hiking", "network": "lwn"}, "center": {"lat": 45.1, "lon": 5.5}},
+            ]  # fmt: skip
+        if "camp_site" in ql:
+            mid = geom[len(geom) // 2]
+            return [{"type": "node", "id": 902, "lat": mid["lat"], "lon": mid["lon"] + 0.0005,
+                     "tags": {"tourism": "wilderness_hut", "name": "Cabane de test"}}]  # fmt: skip
+        if "via_ferrata" in ql:
+            return []
         return load_fixture("overpass_lans_moucherotte.json")
+
+
+class FakeRefuges:
+    def points(self, s, w, n, e):
+        geom = route_geometry()
+        q = geom[len(geom) // 4]
+        return [
+            {"id": 1, "nom": "Refuge de test", "type": "refuge gardé", "lat": q["lat"], "lon": q["lon"], "alt": 1200,
+             "places": 20, "lien": "https://www.refuges.info/point/1"},
+            {"id": 2, "nom": "Source", "type": "point d'eau", "lat": q["lat"], "lon": q["lon"], "alt": 1200,
+             "places": None, "lien": None},
+        ]  # fmt: skip
+
+
+class FakeWeather:
+    def __init__(self, storm: bool = False):
+        self.storm = storm
+
+    def hourly(self, lat, lon, elevation, day):
+        hours = [f"{day.isoformat()}T{h:02d}:00" for h in range(24)]
+        return {"hourly": {"time": hours, "temperature_2m": [12 - elevation / 300] * 24, "precipitation": [0.5] * 24,
+                           "weather_code": [95 if self.storm and h == 15 else 1 for h in range(24)],
+                           "wind_gusts_10m": [30] * 24, "snow_depth": [0] * 24, "cape": [100] * 24}}  # fmt: skip
+
+
+class FakeWikidata:
+    def describe(self, ids, lang="fr"):
+        return {
+            i: {"description": f"description de {i}", "wikipedia": f"https://fr.wikipedia.org/wiki/{i}"} for i in ids
+        }
 
 
 @pytest.fixture
@@ -68,9 +131,15 @@ def store(tmp_path):
 
 @pytest.fixture
 def services():
-    return Services(router=FakeRouter(), elevation=FakeElevation(), nominatim=FakeNominatim(), overpass=FakeOverpass())
+    return Services(router=FakeRouter(), elevation=FakeElevation(), nominatim=FakeNominatim(), overpass=FakeOverpass(),
+                    refuges=FakeRefuges(), weather=FakeWeather(), wikidata=FakeWikidata())  # fmt: skip
 
 
 @pytest.fixture
 def server(store, services):
     return build_server(store, services)
+
+
+@pytest.fixture
+def soon():
+    return date.today()

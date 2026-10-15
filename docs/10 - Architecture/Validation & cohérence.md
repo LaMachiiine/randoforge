@@ -1,68 +1,61 @@
 ---
 tags: [architecture, validation]
+maj: 2026-10-15
 ---
 # Validation & cohérence
 
-> `validate_route` exécute toutes ces règles. Chaque règle renvoie `ok`, `warning` ou `error`, avec la position (km) et une suggestion de correction. **Claude ne présente jamais un itinéraire avec une `error` non résolue.**
+> `validate_route` exécute toutes ces règles (`src/randoforge/validation.py`). Chaque règle renvoie `ok`,
+> `info`, `warning` ou `error`, avec la position (km) et souvent une suggestion. **Claude ne présente jamais
+> un itinéraire avec une `error` sans le dire.** Une règle qui ne peut pas être vérifiée le dit en `info`.
 
-## Règles géométriques
+## Géométrie
 | ID | Règle | Niveau |
 |---|---|---|
-| G1 | Chaque segment est sur un way OSM praticable à pied (distance au chemin < 15 m) | error |
-| G2 | Pas de saut entre deux points consécutifs (> 100 m sans géométrie) | error |
-| G3 | Boucle : départ = arrivée (< 50 m) | error |
-| G4 | Pas d'aller-retour involontaire (même tronçon parcouru 2×) : warning si boucle demandée, info sinon | warning |
-| G5 | Pas de micro-boucle / zigzag absurde (détour > 3× la distance directe sur < 500 m) | warning |
-| G6 | Waypoints demandés effectivement atteints (< 50 m) | error |
+| G1 | Trace sur des chemins cartographiés (≥ 95 %), via `data_quality` | error |
+| G2 | Pas de saut > 100 m sans géométrie | error |
+| G3 | Boucle demandée : arrivée à < 50 m du départ | error |
+| G4 | Aller-retour sur le même tronçon (> 300 m) | warning si boucle demandée, sinon info |
+| G6 | Points de passage imposés atteints (< 50 m) | error |
 
-## Règles d'accès & réglementation
+## Accès & réglementation
 | ID | Règle | Niveau |
 |---|---|---|
-| A1 | Aucun way `access=no/private` ou `foot=no` | error |
-| A2 | Traversée de parc national / réserve → rappel réglementation (chiens, bivouac) | warning |
-| A3 | Terrain militaire, zone interdite | error |
-| A4 | Traversée de route à fort trafic (`highway=primary/trunk`) | warning |
-| A5 | Portion sur route goudronnée > seuil du profil | warning |
+| A1 | Pas de chemin `access=no/private` ou `foot=no` | error |
+| A2 | Parc national / réserve / zone protégée traversés, avec règles probables | warning (PNR : info) |
+| A3 | Zone militaire | error |
+| A4 | > 100 m sur route fréquentée (simples traversées ignorées) | warning |
+| A5 | Part de goudron > maximum souhaité | warning |
+| C1 | Chien demandé et zone où les chiens sont interdits / en laisse | error / warning |
 
-## Règles de difficulté & sécurité
+## Difficulté, sécurité, publics
 | ID | Règle | Niveau |
 |---|---|---|
-| D1 | `sac_scale` max ≤ niveau max du profil | error |
-| D2 | Pente > 35 % sur plus de 100 m | warning |
-| D3 | Durée estimée ≤ durée max demandée | error |
-| D4 | Arrivée estimée avant coucher du soleil (avec départ donné) | warning |
-| D5 | Altitude > 2 500 m hors saison estivale → risque neige | warning |
-| D6 | Aucun point d'eau sur > X h de marche (si demandé) | warning |
+| D1 | `sac_scale` au-delà du maximum demandé | error |
+| D2 | Pente > 35 % sur 100 m | warning |
+| D3 | Durée (ou étape la plus longue) > durée max demandée | error |
+| D4 | Arrivée après le coucher du soleil / < 30 min avant / départ de nuit ; sans heure : heure limite conseillée | error / warning / info |
+| D5 | Point culminant > 2 500 m de novembre à mai | warning |
+| D6 | Pas de point d'eau connu sur > 3 h de marche | warning |
+| D7 | Gué (cours d'eau sans pont) | warning |
 | D8 | Traversée de glacier | error |
-| D9 | Via ferrata (équipement spécifique) | warning |
-| D7 | Franchissement de cours d'eau sans pont (gué) | warning |
+| D9 | Via ferrata | warning |
+| E1 | Enfants : sentiers T2+, passages techniques, durée > 4 h | warning |
+| P1 | Poussette : sentiers, marches, pistes dégradées / pentes > 15 % | error / warning |
 
-## Règles de cohérence des chiffres
+## Cohérence des chiffres et de la demande
 | ID | Règle | Niveau |
 |---|---|---|
+| N0 | Altitudes manquantes | error |
 | N1 | Boucle : \|D+ − D-\| < 1 % | error |
-| N2 | Alt. max ≈ `ele` des sommets OSM traversés (< 15 m) | warning |
-| N3 | D+ ≥ (alt. max − alt. départ) | error |
-| N4 | Distance et D+ dans la tolérance de la demande | error |
-| N5 | Les stats recalculées indépendamment = celles du moteur de routage (± 3 %) | warning |
+| N3 | D+ ≥ altitude max − altitude de départ | error |
+| N4 | Distance (±10 %) et D+ (±15 %) conformes à la demande | error |
+| N5 | D+ recalculé vs D+ du moteur de routage (± max(30 m, 15 %)) | warning |
 
-> N5 est une **double vérification** : le moteur de routage donne ses propres stats ; on les recalcule avec notre pipeline ([[Calcul du dénivelé]]). Un gros écart signale un problème de données.
-
-## Qualité des données
+## Données & météo
 | ID | Règle | Niveau |
 |---|---|---|
-| Q1 | Sentiers sans `sac_scale` en zone de montagne → difficulté incertaine | warning |
-| Q2 | Ways `trail_visibility=bad/horrible` | warning |
-| Q3 | Zone avec peu de contributions OSM récentes | info |
-
-## Sortie type
-```json
-{
-  "route_id": "r_...",
-  "status": "warning",
-  "checks": [
-    {"id": "A5", "level": "warning", "km": 3.2, "message": "1,4 km sur route D106", "suggestion": "Variante par le GR91 (+0,6 km, +40 m D+)"},
-    {"id": "D2", "level": "warning", "km": 8.7, "message": "Pente 41 % sur 180 m (descente)"}
-  ]
-}
-```
+| Q1 | Sentiers sans difficulté renseignée en montagne | info |
+| Q3 | Chemins peu mis à jour dans OSM (édition médiane > 6 ans) | info |
+| Q4 | Score de confiance faible | warning |
+| W1 | Alertes météo du jour prévu : orage, pluie, rafales, neige, gel | warning |
+| X0 | Une analyse n'a pas pu être faite (service indisponible) | info |

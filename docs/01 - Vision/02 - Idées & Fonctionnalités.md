@@ -1,49 +1,78 @@
 ---
 tags: [vision, idees]
+maj: 2026-10-15
 ---
-# Idées & Fonctionnalités
+# Idées & Fonctionnalités — état d'avancement
 
-Légende priorité : 🟢 MVP · 🟡 V2 · 🔵 Plus tard
+Légende : ✅ fait · 🟨 partiel (limite précisée) · ⏳ dépend de données à fournir
 
 ## Génération d'itinéraires
-- 🟢 **Point A → B** sur sentiers réels
-- 🟢 **Boucle** depuis un départ avec distance/D+ cible (« 12 km ± 1, 600 m D+ »)
-- 🟢 **Via des points imposés** (sommet, lac, refuge)
-- 🟡 **Boucle « intelligente »** : générer plusieurs candidates, les scorer, proposer les 3 meilleures
-- 🟡 **Itinérance multi-jours** : découpage en étapes avec hébergement (refuges, gîtes, bivouac) → [[Itinérance, bivouac et passages techniques]]
-- 🟡 **Emplacements de bivouac** : cartographiés (OSM, refuges.info) ou calculés (plat + eau + loin des routes), réglementation signalée
-- 🟢 **Passages techniques** indiqués au km (T3+, pente forte, échelles, câbles, pierriers)
-- 🟡 **Variantes** : raccourci de repli, variante par mauvais temps
-- 🔵 Accès en transports en commun (départ/arrivée sur arrêt de bus/gare)
+| Idée | Statut | Réalisé par |
+|---|---|---|
+| Point A → B sur sentiers réels | ✅ | `route_between` (BRouter) |
+| Boucle avec distance / D+ cible | ✅ | `generate_loop_candidates` |
+| Via des points imposés (sommet, lac, refuge) | ✅ | `route_between` avec `loop=True` |
+| Boucle « intelligente » : plusieurs candidates notées | ✅ | `generate_loop_candidates` + `compare_routes` |
+| Itinérance multi-jours avec hébergement | ✅ | `plan_stages` → [[Itinérance, bivouac et passages techniques]] |
+| Emplacements de bivouac (cartographiés + calculés) | ✅ | `find_bivouac_spots` (OSM, refuges.info, terrain plat + eau + loin des routes) |
+| Passages techniques au km | ✅ | `technical_passages` |
+| Variante de repli | ✅ | `bailout_route` (vers départ, arrivée ou lieu choisi) |
+| Variante par mauvais temps | 🟨 | `weather_forecast` + `bailout_route` ; pas de recalcul automatique d'un itinéraire « abrité » |
+| Accès en transports en commun | ✅ | `find_pois` catégorie `transport` (arrêts de bus, gares) |
+| GPX de l'itinérance complète **et** un GPX par jour | ✅ | `export_route` : `route.gpx` + `jour-N.gpx` |
 
 ## Personnalisation
-- 🟢 Profil marcheur : vitesse à plat, vitesse en montée (m/h), niveau technique max (`sac_scale`)
-- 🟢 Préférences : éviter routes goudronnées, privilégier sentiers balisés (GR, PR)
-- 🟡 Points d'intérêt souhaités : points de vue, cascades, lacs, eau potable
-- 🟢 **Points notables le long du tracé** (rivières, cascades, lacs, points de vue, patrimoine) avec position au km → [[Points notables le long du tracé]]
-- 🟡 Contraintes : enfants, chien (zones interdites en parc national !), poussette
-- 🔵 Mémoire des randos déjà faites → éviter les doublons, progression
+| Idée | Statut | Réalisé par |
+|---|---|---|
+| Profil marcheur (vitesses, niveau max) | ✅ | `compute_stats` (`walker` famille / moyen / sportif), `max_sac_scale` |
+| Éviter le goudron, privilégier les sentiers balisés | ✅ | règle A5, bonus balisage dans le score des boucles, `find_hiking_routes` |
+| Points d'intérêt souhaités | ✅ | `find_pois` |
+| Points notables le long du tracé, au km | ✅ | `annotate_route` (+ descriptions Wikidata) → [[Points notables le long du tracé]] |
+| Contraintes enfants / chien / poussette | ✅ | `set_constraints` + règles E1, C1, P1 |
+| Mémoire des randos faites, éviter les doublons | ✅ | `mark_done`, `list_routes(done)`, pénalité `avoid_done`, colonne `deja_fait_pct` |
 
 ## Précision & fiabilité
-- 🟢 Distance calculée en géodésique (ellipsoïde WGS84)
-- 🟢 D+/D- sur MNT haute résolution avec lissage (voir [[Calcul du dénivelé]])
-- 🟢 Temps estimé (méthode type DIN 33466 / FFRandonnée)
-- 🟢 Validation automatique (voir [[Validation & cohérence]])
-- 🟡 Pente max par segment, profil altimétrique, passages > 30 %
-- 🟡 Score de confiance du tracé (qualité des données OSM sur la zone)
+| Idée | Statut | Réalisé par |
+|---|---|---|
+| Distance géodésique WGS84 | ✅ | `core/geo.py` |
+| D+/D- sur MNT avec lissage | ✅ | [[Calcul du dénivelé]] ; IGN, Copernicus, ou MNT local (`RANDOFORGE_DEM_DIR`) |
+| Durée (DIN 33466) | ✅ | `core/timing.py` |
+| Validation automatique | ✅ | `validate_route`, ~35 règles → [[Validation & cohérence]] |
+| Pentes, profil altimétrique | ✅ | règle D2, carte HTML et roadbook |
+| Score de confiance des données | ✅ | `data_quality` (altimétrie, difficulté renseignée, fraîcheur OSM, présence sur chemin) |
+| Calibration sur des randos réelles | ⏳ | `scripts/calibrate.py` prêt ; il faut tes GPX de référence |
+| Comparaison à une trace réelle | ✅ | `compare_with_reference` |
 
 ## Contexte & sécurité
-- 🟡 Points d'eau, refuges, parkings (OSM / refuges.info)
-- 🟡 Zones réglementées : parcs nationaux, réserves, terrains militaires, propriétés privées
-- 🟡 Heure de coucher du soleil vs heure d'arrivée estimée
-- 🔵 Météo (Météo-France / Open-Meteo), risque orageux en montagne
-- 🔵 Enneigement saisonnier
+| Idée | Statut | Réalisé par |
+|---|---|---|
+| Points d'eau, refuges, parkings | ✅ | `annotate_route`, `find_bivouac_spots`, règle D6 |
+| Zones réglementées (parcs, réserves, militaire) | ✅ | `route_areas`, règles A2, A3, C1 |
+| Propriétés privées | ✅ | règle A1 (`access=private`, `foot=no` sur les chemins) |
+| Coucher du soleil vs heure d'arrivée | ✅ | règle D4 (calcul hors ligne + fuseau horaire du lieu) |
+| Météo, risque d'orage | ✅ | `weather_forecast` (Open-Meteo, 15 jours) + règle W1 |
+| Enneigement | ✅ | hauteur de neige prévue (W1) + règle saisonnière D5 au-delà de 2 500 m |
 
 ## Sorties
-- 🟢 GPX (importable dans Komoot, IGNrando, montre GPS)
-- 🟢 Fiche rando Markdown (→ directement dans ce vault Obsidian !)
-- 🟡 Carte HTML interactive (Leaflet) + profil altimétrique
-- 🔵 Roadbook PDF imprimable
+| Idée | Statut | Réalisé par |
+|---|---|---|
+| GPX (montre, applis) | ✅ | `export_route` (points notables et nuits en waypoints) |
+| Fiche Markdown Obsidian / Dataview | ✅ | `export_route` + `vault_dir` pour copier dans un vault |
+| Carte HTML interactive + profil | ✅ | `export_route` format `html` |
+| Roadbook imprimable (PDF) | ✅ | format `roadbook` (HTML pensé pour l'impression → « Enregistrer en PDF ») |
 
-## Idée bonus : Obsidian comme base de randos
-Chaque itinéraire généré = une note Obsidian avec frontmatter (`distance_km`, `d_plus`, `duree`, `difficulte`, `massif`) → requêtable avec **Dataview** (« toutes mes boucles < 15 km dans le Vercors »).
+## Outillage
+| Idée | Statut | Réalisé par |
+|---|---|---|
+| Skill Claude Code packagé | ✅ | plugin `.claude-plugin/` + skill `skills/planifier-rando` |
+| Auto-hébergement (routage, Overpass, MNT) | ✅ | `RANDOFORGE_BROUTER_URL`, `RANDOFORGE_OVERPASS_URLS`, `RANDOFORGE_DEM_DIR` |
+| Tests de bout en bout | ✅ | `uv run pytest -m e2e` (serveur réel en stdio, vrais services) |
+| Évals de Claude sur des demandes types | 🟨 | scénarios écrits dans [[Évals]] ; à rejouer en conversation |
+
+## Requête Dataview d'exemple
+```dataview
+TABLE distance_km AS "km", d_plus AS "D+", duree, jours, niveau_technique, fait_le
+FROM #rando
+WHERE distance_km < 15 AND validation != "error"
+SORT d_plus ASC
+```

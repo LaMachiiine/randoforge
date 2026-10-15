@@ -82,12 +82,15 @@ sequenceDiagram
 ```
 randoforge/
 ├── src/randoforge/
-│   ├── server.py          # point d'entrée MCP (FastMCP)
-│   ├── tools/             # 1 fichier par famille d'outils
-│   ├── engines/           # clients BRouter, Overpass, IGN, DEM
-│   ├── core/              # Route, Segment, calculs géo, D+, temps
-│   ├── validation/        # règles de cohérence
-│   └── export/            # gpx, geojson, markdown, html
+│   ├── server.py          # point d'entrée MCP (MCPServer, SDK 2.x)
+│   ├── app.py, services.py# contexte partagé, services externes injectables
+│   ├── tools/             # outils par thème : search, build, analyze, trek, output
+│   ├── engines/           # BRouter, IGN/Copernicus/MNT local, Nominatim, Overpass, refuges.info, Open-Meteo, Wikidata
+│   ├── core/              # calculs purs : géo, D+, pentes, POI, technique, zones, bivouac, étapes, soleil, météo
+│   ├── validation.py      # ~35 règles
+│   └── formats/           # gpx, markdown, carte html, roadbook
+├── .claude-plugin/, skills/  # plugin Claude Code
+├── scripts/               # démonstration, calibration
 ├── tests/                 # pytest + traces de référence
 ├── data/cache/            # SQLite, tuiles MNT
 └── routes/                # itinéraires générés

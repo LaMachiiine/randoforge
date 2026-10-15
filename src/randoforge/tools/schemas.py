@@ -1,0 +1,149 @@
+"""Types d'entrée et de sortie des outils MCP."""
+
+from __future__ import annotations
+
+from typing import Literal
+
+from pydantic import BaseModel, Field
+
+from ..core.models import AreaCrossing, BivouacSpot, Poi, Quality, RouteSummary, Stage, TechnicalPassage, WalkerProfile
+from ..core.similarity import ReferenceComparison
+from ..engines.osm import Place
+
+CategoryName = Literal[
+    "cascade", "point_de_vue", "lac", "sommet", "curiosite", "riviere", "patrimoine", "eau", "pause", "transport"
+]
+SacScale = Literal["hiking", "mountain_hiking", "demanding_mountain_hiking", "alpine_hiking", "demanding_alpine_hiking"]
+Profile = Literal["hiking-mountain", "hiking-beta", "shortest"]
+Walker = Literal["famille", "moyen", "sportif"]
+WALKERS = {
+    "famille": WalkerProfile(flat_kmh=3.0, up_m_per_h=200, down_m_per_h=350),
+    "moyen": WalkerProfile(),
+    "sportif": WalkerProfile(flat_kmh=5.0, up_m_per_h=450, down_m_per_h=700),
+}
+
+
+class LatLon(BaseModel):
+    lat: float = Field(ge=-90, le=90)
+    lon: float = Field(ge=-180, le=180)
+
+
+class PlaceList(BaseModel):
+    places: list[Place]
+
+
+class PoiNearby(BaseModel):
+    poi: Poi
+    distance_from_center_m: float
+
+
+class PoiSearchResult(BaseModel):
+    pois: list[PoiNearby]
+    truncated: bool
+    source: str = "OpenStreetMap (Overpass)"
+
+
+class HikingRoute(BaseModel):
+    nom: str | None
+    ref: str | None
+    reseau: str = Field(description="international, national, régional ou local")
+    distance_km: float | None = Field(None, description="Longueur déclarée dans OSM, si renseignée")
+    balisage: str | None = Field(None, description="Symbole osmc:symbol")
+    wikipedia: str | None = None
+    osm_id: str
+
+
+class HikingRouteList(BaseModel):
+    routes: list[HikingRoute]
+    source: str = "OpenStreetMap (relations route=hiking)"
+
+
+class AnnotationResult(BaseModel):
+    route_id: str
+    pois: list[Poi]
+    warnings: list[str]
+    source: str = "OpenStreetMap (Overpass), descriptions Wikidata"
+
+
+class TechnicalResult(BaseModel):
+    route_id: str
+    passages: list[TechnicalPassage]
+    niveau_max: str | None
+    notes: list[str]
+
+
+class AreasResult(BaseModel):
+    route_id: str
+    zones: list[AreaCrossing]
+    notes: list[str]
+
+
+class QualityResult(BaseModel):
+    route_id: str
+    qualite: Quality
+    balise_pct: float | None
+
+
+class LoopCandidate(BaseModel):
+    route: RouteSummary
+    bearing_deg: float = Field(description="Direction générale de la boucle depuis le départ (0 = nord)")
+    retrace_km: float = Field(description="Distance parcourue deux fois (aller-retour)")
+    tarmac_pct: float
+    balise_pct: float | None = Field(None, description="Part sur sentiers balisés (GR, PR…)")
+    deja_fait_pct: float = Field(0, description="Part commune avec des randos déjà faites")
+    score: float = Field(description="Plus petit = plus proche de la demande")
+
+
+class LoopCandidates(BaseModel):
+    candidates: list[LoopCandidate]
+    tried: int
+    failed: int
+    notes: list[str]
+
+
+class ComparisonRow(BaseModel):
+    route_id: str
+    name: str
+    distance_km: float | None
+    d_plus_m: int | None
+    duree: str | None
+    alt_max_m: int | None
+    tarmac_pct: float | None
+    balise_pct: float | None
+    retrace_km: float
+    deja_fait_pct: float
+    niveau_technique_max: str | None
+    n_passages_techniques: int | None
+    n_pois: int | None
+    validation: str | None
+
+
+class Comparison(BaseModel):
+    rows: list[ComparisonRow]
+
+
+class ReferenceResult(BaseModel):
+    route_id: str
+    reference_id: str
+    comparaison: ReferenceComparison
+
+
+class BivouacResult(BaseModel):
+    route_id: str
+    emplacements: list[BivouacSpot]
+    rappels: list[str]
+
+
+class StagesResult(BaseModel):
+    route_id: str
+    etapes: list[Stage]
+    notes: list[str]
+
+
+class RouteList(BaseModel):
+    routes: list[RouteSummary]
+
+
+class ExportResult(BaseModel):
+    route_id: str
+    files: dict[str, str]

@@ -1,0 +1,14 @@
+{
+  "name": "randoforge",
+  "owner": { "name": "LaMachiiiine" },
+  "metadata": {
+    "description": "RandoForge : itinéraires de randonnée fiables avec Claude (tracés, dénivelé, bivouacs, étapes, validation)."
+  },
+  "plugins": [
+    {
+      "name": "randoforge",
+      "source": "./",
+      "description": "Serveur MCP et skill pour concevoir des itinéraires de randonnée fiables."
+    }
+  ]
+}

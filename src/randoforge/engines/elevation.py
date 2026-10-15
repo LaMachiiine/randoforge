@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 from collections import defaultdict
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 
@@ -65,7 +66,6 @@ class CopernicusElevation:
         import rasterio
         from rasterio.env import Env
         from rasterio.errors import RasterioIOError
-        from rasterio.windows import Window
 
         out: list[float | None] = [None] * len(points)
         by_tile: dict[str, list[int]] = defaultdict(list)
@@ -81,25 +81,75 @@ class CopernicusElevation:
                 except RasterioIOError:
                     continue  # pas de tuile (mer) : on laisse None
                 with ds:
-                    lats = np.array([points[i][0] for i in idx])
-                    lons = np.array([points[i][1] for i in idx])
-                    cols, rows = ~ds.transform * (lons, lats)
-                    # Coordonnées relatives aux centres de pixels
-                    c, r = np.asarray(cols) - 0.5, np.asarray(rows) - 0.5
-                    c0, r0 = int(np.floor(c.min())), int(np.floor(r.min()))
-                    win = Window(c0, r0, int(np.floor(c.max())) - c0 + 2, int(np.floor(r.max())) - r0 + 2)
-                    grid = ds.read(1, window=win, boundless=True, fill_value=np.nan).astype(float)
-                    fc, fr = c - c0, r - r0
-                    ic, ir = np.floor(fc).astype(int), np.floor(fr).astype(int)
-                    dc, dr = fc - ic, fr - ir
-                    z = (
-                        grid[ir, ic] * (1 - dc) * (1 - dr)
-                        + grid[ir, ic + 1] * dc * (1 - dr)
-                        + grid[ir + 1, ic] * (1 - dc) * dr
-                        + grid[ir + 1, ic + 1] * dc * dr
-                    )
-                    for i, v in zip(idx, z, strict=True):
-                        out[i] = None if np.isnan(v) else round(float(v), 2)
+                    z = sample_bilinear(ds, [points[i] for i in idx])
+                for i, v in zip(idx, z, strict=True):
+                    out[i] = None if np.isnan(v) else round(float(v), 2)
+        return out
+
+
+def sample_bilinear(ds, points: list[LatLon]) -> np.ndarray:
+    """Altitudes interpolées (bilinéaire) dans un raster ouvert ; NaN hors emprise ou sans donnée.
+
+    Les points (WGS84) sont reprojetés dans le système du raster si besoin.
+    """
+    from rasterio.windows import Window
+
+    lats = np.array([p[0] for p in points])
+    lons = np.array([p[1] for p in points])
+    if ds.crs and ds.crs.to_epsg() != 4326:
+        from pyproj import Transformer
+
+        xs, ys = Transformer.from_crs("EPSG:4326", ds.crs.to_wkt(), always_xy=True).transform(lons, lats)
+    else:
+        xs, ys = lons, lats
+    cols, rows = ~ds.transform * (np.asarray(xs), np.asarray(ys))
+    # Coordonnées relatives aux centres de pixels
+    c, r = np.asarray(cols) - 0.5, np.asarray(rows) - 0.5
+    c0, r0 = int(np.floor(c.min())), int(np.floor(r.min()))
+    win = Window(c0, r0, int(np.floor(c.max())) - c0 + 2, int(np.floor(r.max())) - r0 + 2)
+    grid = ds.read(1, window=win, boundless=True, fill_value=np.nan).astype(float)
+    if ds.nodata is not None:
+        grid[grid == ds.nodata] = np.nan
+    fc, fr = c - c0, r - r0
+    ic, ir = np.floor(fc).astype(int), np.floor(fr).astype(int)
+    dc, dr = fc - ic, fr - ir
+    return (
+        grid[ir, ic] * (1 - dc) * (1 - dr)
+        + grid[ir, ic + 1] * dc * (1 - dr)
+        + grid[ir + 1, ic] * (1 - dc) * dr
+        + grid[ir + 1, ic + 1] * dc * dr
+    )
+
+
+class LocalDemElevation:
+    """MNT local : tous les GeoTIFF d'un dossier (variable RANDOFORGE_DEM_DIR), dans n'importe quelle projection.
+
+    Pour l'auto-hébergement ou une source plus précise (swissALTI3D, MNT régional…) :
+    prioritaire sur les autres fournisseurs, les points hors emprise passent au suivant.
+    """
+
+    def __init__(self, directory: Path, name: str | None = None):
+        self.files = sorted(p for p in Path(directory).glob("**/*") if p.suffix.lower() in {".tif", ".tiff"})
+        self.name = name or f"MNT local ({Path(directory).name})"
+
+    def elevations(self, points: list[LatLon]) -> list[float | None]:
+        import rasterio
+        from rasterio.warp import transform_bounds
+
+        out: list[float | None] = [None] * len(points)
+        for f in self.files:
+            remaining = [i for i, v in enumerate(out) if v is None]
+            if not remaining:
+                break
+            with rasterio.open(f) as ds:
+                w, s, e, n = transform_bounds(ds.crs, "EPSG:4326", *ds.bounds) if ds.crs else ds.bounds
+                inside = [i for i in remaining if s <= points[i][0] <= n and w <= points[i][1] <= e]
+                if not inside:
+                    continue
+                z = sample_bilinear(ds, [points[i] for i in inside])
+            for i, v in zip(inside, z, strict=True):
+                if not np.isnan(v):
+                    out[i] = round(float(v), 2)
         return out
 
 

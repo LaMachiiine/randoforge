@@ -85,3 +85,11 @@ class LocalProjection:
     def to_latlon(self, xs, ys):
         lons, lats = self._inv.transform(xs, ys)
         return lats, lons
+
+
+def destination_points(lat: float, lon: float, bearings_deg: list[float], dist_m: float) -> list[tuple[float, float]]:
+    """Points à `dist_m` du point donné, dans chacune des directions (0 = nord)."""
+    lons2, lats2, _ = GEOD.fwd(
+        [lon] * len(bearings_deg), [lat] * len(bearings_deg), bearings_deg, [dist_m] * len(bearings_deg)
+    )
+    return list(zip(lats2, lons2, strict=True))

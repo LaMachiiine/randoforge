@@ -124,6 +124,14 @@ CATEGORIES: dict[str, tuple[float, list[Selector]]] = {
             Selector('nwr["tourism"~"^(alpine_hut|wilderness_hut)$"]', _in("tourism", HUTS)),
         ],
     ),
+    # Pas inclus par défaut : utile pour un départ/une arrivée en transports en commun.
+    "transport": (
+        0.2,
+        [
+            Selector('node["highway"="bus_stop"]', _eq("highway", "bus_stop")),
+            Selector('nwr["railway"~"^(station|halt)$"]', _in("railway", {"station", "halt"})),
+        ],
+    ),
 }
 FORD = Selector('nwr["ford"="yes"]', _eq("ford", "yes"))
 

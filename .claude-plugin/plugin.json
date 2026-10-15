@@ -1,0 +1,10 @@
+{
+  "name": "randoforge",
+  "version": "0.3.0",
+  "description": "Outils fiables pour concevoir des itinéraires de randonnée avec Claude : tracés sur vrais chemins, distance et dénivelé précis, points notables, passages techniques, bivouacs, étapes, validation.",
+  "author": { "name": "LaMachiiiine" },
+  "homepage": "https://github.com/LaMachiiine/randoforge",
+  "repository": "https://github.com/LaMachiiine/randoforge",
+  "license": "MIT",
+  "keywords": ["randonnée", "hiking", "gpx", "openstreetmap", "mcp"]
+}
