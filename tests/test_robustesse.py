@@ -573,3 +573,26 @@ def test_n1_tolerates_the_normal_gap_of_a_low_relief_loop():
     assert loop_gap_excess(400, 360, 1000, 1000, 5.0) == 30
     # Boucle refermée à 50 m près mais 12 m plus bas : l'écart correspondant est normal.
     assert loop_gap_excess(300, 312, 1012, 1000, 5.0) == 0
+
+
+# --- Épingles des boucles générées --------------------------------------------------------------
+
+
+def test_spur_to_an_attraction_point_is_removed_but_a_wanted_one_is_kept():
+    from randoforge.core.loops import remove_spurs
+    from randoforge.core.models import TrackPoint, WaySegment
+
+    def p(lat, lon):
+        return TrackPoint(lat=lat, lon=lon)
+
+    # Départ → A → pointe d'un chemin en impasse (≈ 330 m aller-retour) → A → suite de la boucle.
+    a, tip = p(45.0, 6.0), p(45.0015, 6.0)
+    pts = [p(44.999, 6.0), a, p(45.0008, 6.0), tip, p(45.0008, 6.0), a, p(45.0, 6.002), p(44.99, 6.002),
+           p(44.99, 6.0), p(44.999, 6.0)]  # fmt: skip
+    segs = [WaySegment(start_m=0, end_m=10_000, tags={"highway": "path"})]
+    out, new_segs, cut = remove_spurs(pts, segs, [(44.999, 6.0)])
+    assert out == [pts[0], a, *pts[6:]] and 320 < cut < 340
+    assert new_segs[-1].end_m < 10_000  # tronçons recalés sur le tracé raccourci
+    # Même épingle, mais vers un point imposé (sommet choisi) : conservée.
+    kept, _, cut = remove_spurs(pts, segs, [(44.999, 6.0), (45.0015, 6.0)])
+    assert kept == pts and cut == 0

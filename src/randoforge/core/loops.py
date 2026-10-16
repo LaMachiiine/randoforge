@@ -7,9 +7,13 @@ Les chemins réels serpentent ; on corrige r d'après la distance obtenue par le
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
-from .geo import GEOD
+import numpy as np
+
+from .geo import GEOD, cumulative_distance
+from .models import TrackPoint, WaySegment
 
 INITIAL_WINDING = 1.3  # longueur réelle / périmètre à vol d'oiseau, à corriger après un premier essai
 HALF_ANGLE = 30.0
@@ -84,3 +88,77 @@ def score(
         marked_frac=marked_frac,
         done_frac=done_frac,
     )
+
+
+# --- Épingles : aller-retour parasite vers un point d'attraction ----------------------------------
+
+SPUR_SAME_M = 2.0  # deux points du tracé à moins de 2 m : le même nœud de chemin, à l'aller et au retour
+SPUR_MIN_M = 10.0  # en dessous, ce n'est qu'un raccord
+SPUR_MAX_SHARE = 0.3  # une « épingle » de plus de 30 % du parcours est la rando elle-même (aller-retour)
+SPUR_PROTECT_M = 25.0  # épingle menant à un point imposé (sommet, lieu choisi) : voulue, conservée
+
+
+def _close(a, b, tol_m: float) -> bool:
+    dlat = (a.lat - b.lat) * 111_195.0
+    dlon = (a.lon - b.lon) * 111_195.0 * math.cos(math.radians(a.lat))
+    return dlat * dlat + dlon * dlon <= tol_m * tol_m
+
+
+def spurs(points: list[TrackPoint], protect: list[tuple[float, float]]) -> list[tuple[int, int]]:
+    """Épingles du tracé : (a, b) tels que le tracé va de a à une pointe puis revient sur ses pas jusqu'à b,
+    au même endroit que a. Le moteur de routage en crée quand un point d'attraction tombe à côté d'un chemin :
+    il va au plus près, fait demi-tour et revient. Les épingles vers un point de `protect` sont conservées."""
+    n = len(points)
+    if n < 3:
+        return []
+    cum = cumulative_distance(np.array([p.lat for p in points]), np.array([p.lon for p in points]))
+    out: list[tuple[int, int]] = []
+    k = 1
+    while k < n - 1:
+        # Pointe : demi-tour sur un point (A, S, A) ou sur deux points confondus (A, S, S, A).
+        if _close(points[k - 1], points[k + 1], SPUR_SAME_M):
+            a, b = k - 1, k + 1
+        elif (
+            k + 2 < n
+            and _close(points[k], points[k + 1], SPUR_SAME_M)
+            and _close(points[k - 1], points[k + 2], SPUR_SAME_M)
+        ):
+            a, b = k - 1, k + 2
+        else:
+            k += 1
+            continue
+        while a > 0 and b < n - 1 and _close(points[a - 1], points[b + 1], SPUR_SAME_M):
+            a, b = a - 1, b + 1
+        length = cum[b] - cum[a]
+        tip = points[k]
+        protected = any(_close(tip, TrackPoint(lat=la, lon=lo), SPUR_PROTECT_M) for la, lo in protect)
+        if SPUR_MIN_M <= length <= SPUR_MAX_SHARE * cum[-1] and not protected:
+            out.append((a, b))
+        k = b + 1
+    return out
+
+
+def remove_spurs(
+    points: list[TrackPoint], segments: list[WaySegment], protect: list[tuple[float, float]]
+) -> tuple[list[TrackPoint], list[WaySegment], float]:
+    """Retire les épingles (voir `spurs`) ; recale les tronçons de chemin. Renvoie (points, tronçons, m retirés)."""
+    found = spurs(points, protect)
+    if not found:
+        return points, segments, 0.0
+    cum = cumulative_distance(np.array([p.lat for p in points]), np.array([p.lon for p in points]))
+    scale = (segments[-1].end_m / cum[-1]) if segments and cum[-1] else 1.0  # tronçons : distances du moteur
+    keep = np.ones(len(points), dtype=bool)
+    cuts: list[tuple[float, float]] = []  # (début, longueur) en distance du moteur
+    for a, b in found:
+        keep[a + 1 : b + 1] = False
+        cuts.append((cum[a] * scale, (cum[b] - cum[a]) * scale))
+    new_segments: list[WaySegment] = []
+    for seg in segments:
+        pieces = [(seg.start_m, seg.end_m)]
+        for start, length in cuts:  # on retire chaque intervalle coupé
+            pieces = [p for s, e in pieces for p in ((s, min(e, start)), (max(s, start + length), e)) if p[1] > p[0]]
+        for s, e in pieces:
+            shift = sum(length for start, length in cuts if start + length <= s)
+            new_segments.append(WaySegment(start_m=s - shift, end_m=e - shift, tags=seg.tags))
+    removed = float(sum(cum[b] - cum[a] for a, b in found))
+    return [p for p, k in zip(points, keep, strict=True) if k], new_segments, removed

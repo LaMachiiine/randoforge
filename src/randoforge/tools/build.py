@@ -216,6 +216,10 @@ def register(mcp: MCPServer, app: App) -> None:
                 except ToolError:
                     failed += 1
                     break
+                # Épingles vers les sommets du triangle (points d'attraction arbitraires) : retirées.
+                draft.points, draft.segments, cut = loops.remove_spurs(draft.points, draft.segments, [origin])
+                if cut and draft.engine_stats.get("distance_m"):
+                    draft.engine_stats["distance_m"] -= cut
                 actual = draft.engine_stats.get("distance_m") or 0
                 if best is None or abs(actual - target_m) < abs(best.engine_stats.get("distance_m", 0) - target_m):
                     best = draft
