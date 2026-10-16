@@ -213,7 +213,12 @@ def grade_reference(scenario: dict, run_dir: Path, official: list[tuple[float, f
     g = grade_behaviour({**scenario, "tools": ["route_between|generate_loop_candidates|import_hiking_route"]}, run_dir)
     # Le tracé présenté : celui exporté en dernier ; à défaut, le dernier construit, hors itinéraire de repli
     # (demandé en fin de démarche par le skill). Les tracés construits pour comparer ne comptent pas.
-    exported = [c["args"].get("route_id") for c in calls if c["outil"] == "export_route" and not c.get("erreur")]
+    bailouts = set(created_routes([c for c in calls if c["outil"] == "bailout_route"]))
+    exported = [
+        c["args"].get("route_id")
+        for c in calls
+        if c["outil"] == "export_route" and not c.get("erreur") and c["args"].get("route_id") not in bailouts
+    ]
     ids = created_routes(calls, exclude=frozenset({"bailout_route"})) + [r for r in exported if r]
     routes_dir = run_dir / "home" / "routes"
     agent_route = None

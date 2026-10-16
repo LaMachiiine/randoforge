@@ -102,7 +102,7 @@ défaut de réglage. Conséquence produit : la règle N5 conseille de **prévoir
 
 ### Fourchette de D+ plausible (`d_plus_fourchette_m`, mesurée le 2026-10-16)
 Puisqu'aucun réglage unique ne colle aux deux parcs, on annonce en plus du D+ retenu une **fourchette** :
-bas = 93 % du D+ retenu, haut = D+ peu lissé (10 m / seuil 1 m, garde les petites ondulations).
+bas = **85 %** du D+ retenu, haut = D+ peu lissé (**10 m / seuil 0,5 m**, garde les petites ondulations).
 Mesure sur les 80 randos officielles (part des D+ publiés tombant dans la fourchette) :
 
 | Fourchette | Écrins | Cévennes | Global | Largeur médiane |
@@ -110,11 +110,17 @@ Mesure sur les 80 randos officielles (part des D+ publiés tombant dans la fourc
 | D+ retenu seul (±3 %) | 40 % | 28 % | 34 % | 6 % |
 | [D+ retenu, 10 m / 3 m] | 10 % | 32 % | 21 % | 5 % |
 | [93 % du D+, 10 m / 3 m] | 57 % | 55 % | 56 % | 12 % |
-| **[93 % du D+, 10 m / 1 m] (retenu)** | **65 %** | **70 %** | **68 %** | 18 % |
+| [93 % du D+, 10 m / 1 m] (premier choix) | 65 % | 70 % | 68 % | 18 % |
 | [90 % du D+, 10 m / 1 m] | 75 % | 70 % | 72 % | 21 % |
+| [90 % du D+, 10 m / 0,5 m] | 75 % | 78 % | 76 % | 23 % |
+| **[85 % du D+, 10 m / 0,5 m] (retenu)** | **80 %** | **80 %** | **80 %** | 28 % |
+| [85 % du D+, somme brute] | 80 % | 80 % | 80 % | 31 % |
 
-Retenu : couverture d'environ 2 cas sur 3 sans élargir inutilement (au-delà, on gagne peu pour une fourchette
-plus large). Aire-de-Côte : 166 m, plausible **154–255 m**, publié 223 m (dans la fourchette). La règle N5 cite
+Retenu (révisé le 2026-10-16 après les évals) : 4 cas sur 5 dans les **deux** parcs ; au-delà la couverture
+plafonne à 80 % même avec la somme brute, plus large et bruitée : les 20 % restants sont des désaccords de modèle de
+terrain, pas de méthode. Aire-de-Côte : tracé du parc 166 m, plausible **141–274 m** (publié 223 m, dedans) ;
+tracé OSM du même sentier 160 m, plausible 136–213 m (publié 223 m, juste au-dessus : un des 20 %). Le D+ dépend
+donc aussi du tracé exact : deux géométries du même sentier diffèrent de 10 à 40 m de D+ peu lissé. La règle N5 cite
 la fourchette et dit si la valeur de l'autre source y tombe ; fiche, carte et roadbook l'affichent.
 
 ## Pièges connus

@@ -11,10 +11,11 @@ from .timing import estimate_minutes, format_duration
 
 LOOP_TOLERANCE_M = 50.0
 # Fourchette de D+ (mesurée sur 80 randos officielles des parcs nationaux, voir « Calcul du dénivelé ») :
-# bas = 93 % du D+ retenu ; haut = D+ peu lissé (10 m / seuil 1 m), qui garde les petites ondulations.
-# La valeur publiée par le parc y tombe dans 68 % des cas (Écrins 65 %, Cévennes 70 %).
-RANGE_LOW_FACTOR = 0.93
-RANGE_HIGH_PARAMS = ElevationParams(smooth_window_m=10.0, threshold_m=1.0)
+# bas = 85 % du D+ retenu ; haut = D+ peu lissé (10 m / seuil 0,5 m), qui garde les petites ondulations.
+# La valeur publiée par le parc y tombe dans 80 % des cas (Écrins 80 %, Cévennes 80 %) ; au-delà, élargir
+# n'apporte presque plus rien (les écarts restants viennent de modèles de terrain différents).
+RANGE_LOW_FACTOR = 0.85
+RANGE_HIGH_PARAMS = ElevationParams(smooth_window_m=10.0, threshold_m=0.5)
 
 
 def _gain(lats: np.ndarray, lons: np.ndarray, eles: np.ndarray, params: ElevationParams) -> float:

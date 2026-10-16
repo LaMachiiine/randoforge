@@ -32,7 +32,7 @@ def _exported_from(folder: Path, route_id: str) -> bool:
     fiche = folder / "fiche.md"
     try:
         return fiche.is_file() and f"\nroute_id: {route_id}\n" in fiche.read_text(encoding="utf-8")[:2000]
-    except OSError:
+    except (OSError, ValueError):  # illisible ou pas en UTF-8 : pas un export reconnu
         return False
 
 
@@ -104,7 +104,10 @@ def register(mcp: MCPServer, app: App) -> None:
             target = vault / "Randos" / f"{slug(route.name)}-{route_id.rsplit('_', 1)[-1]}"
             legacy = vault / "Randos" / slug(route.name)  # ancien nommage, sans identifiant
             if not target.exists() and _exported_from(legacy, route_id):
-                legacy.rename(target)  # même itinéraire : dossier renommé (notes de l'utilisateur comprises)
+                try:
+                    legacy.rename(target)  # même itinéraire : dossier renommé (notes de l'utilisateur comprises)
+                except OSError:
+                    pass  # dossier ouvert ailleurs (Obsidian…) : l'ancien reste en place, le nouveau est créé
             target.mkdir(parents=True, exist_ok=True)
             if "gpx" in formats:
                 for old in target.glob("jour-*.gpx"):  # étapes d'un ancien découpage

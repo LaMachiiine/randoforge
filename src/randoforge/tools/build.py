@@ -29,6 +29,7 @@ from ..validation import tarmac_length
 from .schemas import LatLon, LoopCandidate, LoopCandidates, Park, Profile, SacScale
 
 # Brouillons en parallèle : autant que le serveur BRouter accepte de requêtes simultanées (au-delà, ils attendraient).
+MAX_IMPORT_KM = 300  # au-delà : ~30 000 altitudes à demander et un stockage lourd ; importer par étapes
 PARALLEL_ROUTES = 4  # serveur sans limite connue (ex. BRouter local)
 
 
@@ -263,12 +264,12 @@ def register(mcp: MCPServer, app: App) -> None:
         except ValueError as exc:
             raise ToolError(str(exc)) from exc
         tags = rel.get("tags", {})
+        # Valeurs déclarées dans OSM, comparées aux nôtres (N5) ; tout format douteux est ignoré plutôt que mal lu.
         engine: dict[str, float] = {}
-        for key, field, factor in (("distance", "distance_m", 1000), ("ascent", "d_plus_m", 1)):
-            try:  # valeurs déclarées dans OSM (« 12.5 », « 12,5 km », « 650 m »), comparées aux nôtres (N5)
-                engine[field] = float(tags.get(key, "").replace(",", ".").split()[0]) * factor
-            except (ValueError, IndexError):
-                pass
+        if dist := re.fullmatch(r"\s*(\d+(?:[.,]\d+)?)\s*(km|m)?\s*", tags.get("distance", "")):
+            engine["distance_m"] = float(dist[1].replace(",", ".")) * (1 if dist[2] == "m" else 1000)
+        if asc := re.fullmatch(r"\s*(\d+)\s*(m)?\s*", tags.get("ascent", "")):
+            engine["d_plus_m"] = float(asc[1])
         route = Route(
             route_id=new_route_id(),
             name=name or tags.get("name") or tags.get("ref") or f"Sentier OSM {m[1]}",
@@ -278,6 +279,14 @@ def register(mcp: MCPServer, app: App) -> None:
         )
         if len(route.points) < 2:
             raise ToolError("Tracé trop court.")
+        length_km = (
+            cumulative_distance(np.array([la for la, _ in coords]), np.array([lo for _, lo in coords]))[-1] / 1000
+        )
+        if length_km > MAX_IMPORT_KM:
+            raise ToolError(
+                f"Sentier de {length_km:.0f} km : trop long pour un import d'un bloc (max {MAX_IMPORT_KM} km). "
+                "Importer une étape (relation d'étape) ou tracer une portion avec route_between."
+            )
         app.apply_dem(route)
         app.stats_into(route)
         route.warnings += warnings

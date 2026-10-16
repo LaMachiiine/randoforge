@@ -64,7 +64,7 @@ Les emplacements « calculés » sont des pistes à vérifier sur place : dis-le
 
 ## Précision à annoncer
 Le D+ est à ~5 % des topo-guides officiels en médiane. Donne aussi la fourchette `d_plus_fourchette_m`
-(« D+ 166 m, plausible 154–255 m ») : les topo-guides y tombent 2 fois sur 3, et le haut de la fourchette sert à
+(« D+ 166 m, plausible 141–274 m ») : les topo-guides y tombent 4 fois sur 5, et le haut de la fourchette sert à
 prévoir l'effort quand le terrain est très vallonné. Annonce toujours la source d'altitude quand ce n'est pas
 l'IGN (`elevation_source` : Copernicus = 30 m, modèle de surface, D+ moins précis — par ex. hors de France). Si la règle N2 signale un sommet acéré,
 annonce que le D+ réel est probablement plus élevé de l'écart indiqué.

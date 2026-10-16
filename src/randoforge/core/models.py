@@ -53,7 +53,7 @@ class RouteStats(BaseModel):
     distance_km: float
     d_plus_m: int | None
     d_plus_fourchette_m: tuple[int, int] | None = Field(
-        None, description="D+ plausible (bas, haut) : la référence officielle y tombe 2 fois sur 3 (calibration)"
+        None, description="D+ plausible (bas, haut) : la référence officielle y tombe 4 fois sur 5 (calibration)"
     )
     d_minus_m: int | None
     alt_min_m: int | None
@@ -264,7 +264,7 @@ class StatsSummary(Compact):
     distance_km: float
     d_plus_m: int | None
     d_plus_fourchette_m: tuple[int, int] | None = Field(
-        None, description="D+ plausible (bas, haut) : la référence officielle y tombe 2 fois sur 3 (calibration)"
+        None, description="D+ plausible (bas, haut) : la référence officielle y tombe 4 fois sur 5 (calibration)"
     )
     d_minus_m: int | None
     alt_min_m: int | None

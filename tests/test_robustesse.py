@@ -196,7 +196,7 @@ def test_d_plus_range_brackets_the_retained_value():
     pts = line(900, ele=lambda i: 1000 + 0.5 * i + 3 * math.sin(i / 3))
     s, _ = compute_stats(pts)
     low, high = s.d_plus_fourchette_m
-    assert abs(low - s.d_plus_m * 0.93) <= 1 and high > s.d_plus_m  # les ondulations relèvent le haut
+    assert abs(low - s.d_plus_m * 0.85) <= 1 and high > s.d_plus_m  # les ondulations relèvent le haut
     assert "plausible" in write_fiche(route_of(pts)) and "D+ plausible" in write_roadbook(route_of(pts))
 
 
@@ -205,9 +205,9 @@ def test_n5_gives_the_range_and_whether_it_contains_the_other_value():
 
     from randoforge.validation import validate
 
-    pts = line(900, ele=lambda i: 1000 + 0.5 * i + 3 * math.sin(i / 3))  # D+ 449 m, plausible 417–542 m
+    pts = line(900, ele=lambda i: 1000 + 0.5 * i + 3 * math.sin(i / 3))  # D+ 449 m, plausible 381–542 m
     n5 = next(c for c in validate(route_of(pts, engine_stats={"d_plus_m": 540})).checks if c.id == "N5")
-    assert "fourchette plausible 417–542 m (contient l'autre valeur)" in n5.message
+    assert "fourchette plausible 381–542 m (contient l'autre valeur)" in n5.message
 
 
 # --- Relecture finale ---------------------------------------------------------------------------
@@ -323,3 +323,55 @@ async def test_import_hiking_route_follows_the_marked_trail(server):
         assert summary["source"] == "osm:relation/1"
         res = await client.call_tool("import_hiking_route", {"osm_id": "way/12"})
         assert res.is_error and "relation/123" in res.content[0].text
+
+
+def test_chain_route_relation_hard_cases():
+    from randoforge.core.osmgeom import chain_route_relation
+
+    def way(*pts, role=""):
+        return {"type": "way", "role": role, "geometry": [{"lat": a, "lon": b} for a, b in pts]}
+
+    a, b, e, w, c = (45.0, 6.0), (45.0, 6.002), (45.001, 6.001), (44.999, 6.001), (45.0, 5.99)
+    # Petite boucle en tête : le 2e chemin touche les deux bouts du 1er ; seul le sens A→…→A évite un saut vers C.
+    line, warnings = chain_route_relation({"members": [way(b, e, a), way(b, w, a), way(a, c)]})
+    assert line[0] == line[-2] == a and line[-1] == c and not any("saut" in x for x in warnings)
+    # Section à sens unique : seul le sens aller est gardé.
+    line, warnings = chain_route_relation(
+        {"members": [way(a, b), way(b, e, role="forward"), way(e, b, role="backward"), way(e, c)]}
+    )
+    assert len(line) == 4 and any("sens aller" in x for x in warnings)
+    # Relation mixte : sous-itinéraire signalé ; coordonnées nulles ignorées.
+    rel = {"members": [way(a, b), {"type": "relation", "ref": 9},
+                       {"type": "way", "geometry": [{"lat": None, "lon": 6.0}, {"lat": 45.0, "lon": 6.002}]}]}  # fmt: skip
+    _, warnings = chain_route_relation(rel)
+    assert any("sous-itinéraire" in x for x in warnings)
+
+
+def test_unreadable_legacy_fiche_is_ignored(tmp_path):
+    from randoforge.tools.output import _exported_from
+
+    legacy = tmp_path / "Ancienne"
+    legacy.mkdir()
+    (legacy / "fiche.md").write_bytes("---\nroute_id: r_x\nnom: Crête\n".encode("cp1252") + b"\xff")
+    assert _exported_from(legacy, "r_x") is False  # pas de l'UTF-8 : ignoré, sans planter
+
+
+@pytest.mark.anyio
+async def test_export_survives_a_locked_legacy_folder(server, tmp_path, monkeypatch):
+    from pathlib import Path
+
+    from .test_server import LANS, MOUCHEROTTE, call
+
+    vault = tmp_path / "vault"
+    async with Client(server) as client:
+        rid = (await call(client, "route_between", {"waypoints": [LANS, MOUCHEROTTE], "name": "Ma rando"}))["route_id"]
+        legacy = vault / "Randos" / "Ma rando"
+        legacy.mkdir(parents=True)
+        (legacy / "fiche.md").write_text(f"---\nroute_id: {rid}\n---\n", encoding="utf-8")
+
+        def locked(self, target):
+            raise PermissionError("dossier ouvert dans Obsidian")
+
+        monkeypatch.setattr(Path, "rename", locked)
+        res = await call(client, "export_route", {"route_id": rid, "formats": ["md"], "vault_dir": str(vault)})
+    assert Path(res["files"]["vault_md"]).exists() and legacy.exists()
