@@ -1,6 +1,6 @@
 [project]
 name = "randoforge"
-version = "0.4.0"
+version = "0.5.0"
 description = "Serveur MCP qui donne à Claude des outils fiables pour concevoir des itinéraires de randonnée"
 readme = "README.md"
 license = "MIT"

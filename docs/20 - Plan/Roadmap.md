@@ -63,3 +63,8 @@ maj: 2026-10-16
 - [x] Relectures complètes du code : ~60 bugs corrigés, chacun couvert par un test (`tests/test_robustesse.py`)
 - [x] Boucles générées sans « épingles » ; bivouacs limités aux endroits logiques pour une nuit ; règle N1 corrigée
 - [x] Évals : modes reconstruction, catalogue et descriptif → [[Résultats des évals]]
+
+## Phase 6 — Conditions et livraison ✅ (2026-10-16, v0.5.0)
+- [x] `snow_conditions` (satellites, limite de la neige, durée ajustée) → [[Neige]] ; `avalanche_terrain` → [[Terrain avalancheux]]
+- [x] `public_transport`, `water_and_huts`, `mobile_coverage` → [[Accès, eau et réseau]] ; `wildlife` → [[Faune]]
+- [x] `prepare_dossier` : analyses utiles en un appel, trace GPX + page unique avec carte
