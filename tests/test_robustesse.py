@@ -340,6 +340,23 @@ def test_chain_route_relation_hard_cases():
         {"members": [way(a, b), way(b, e, role="forward"), way(e, b, role="backward"), way(e, c)]}
     )
     assert len(line) == 4 and any("sens aller" in x for x in warnings)
+    # Boucle à sens unique : les chemins « backward » sont la seule voie, ils sont gardés.
+    d = (45.002, 6.0)
+    line, warnings = chain_route_relation(
+        {
+            "members": [
+                way(a, b, role="forward"),
+                way(e, b, role="backward"),
+                way(e, d, role="forward"),
+                way(a, d, role="backward"),
+            ]
+        }  # fmt: skip
+    )
+    assert line[0] == line[-1] and len(line) == 5 and not warnings
+    # Premier chemin court dessiné à l'envers (16 m) : pas d'aller-retour parasite au départ.
+    a2 = (45.0, 6.0002)
+    line, _ = chain_route_relation({"members": [way(a2, a), way(a2, b)]})
+    assert line == [a, a2, b]
     # Relation mixte : sous-itinéraire signalé ; coordonnées nulles ignorées.
     rel = {"members": [way(a, b), {"type": "relation", "ref": 9},
                        {"type": "way", "geometry": [{"lat": None, "lon": 6.0}, {"lat": 45.0, "lon": 6.002}]}]}  # fmt: skip

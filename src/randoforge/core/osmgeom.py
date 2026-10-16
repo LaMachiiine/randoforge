@@ -107,56 +107,66 @@ JOIN_TOLERANCE_M = 30.0  # deux chemins OSM consécutifs sont censés se toucher
 
 
 def _chain(ways: list[list[tuple[float, float]]], flip_first: bool) -> tuple[list[tuple[float, float]], list[float]]:
+    """Chemins mis bout à bout ; renvoie le tracé et tous les raccords (m), petits compris."""
     from .geo import distance_m
 
     line = list(ways[0][::-1] if flip_first else ways[0])
-    gaps: list[float] = []
+    joins: list[float] = []
     for way in ways[1:]:
         to_start, to_end = distance_m(line[-1], way[0]), distance_m(line[-1], way[-1])
         seg, gap = (way[::-1], to_end) if to_end < to_start else (way, to_start)
-        if gap > JOIN_TOLERANCE_M:
-            gaps.append(gap)
+        joins.append(gap)
         line.extend(seg[1:] if gap < 1 else seg)
-    return line, gaps
+    return line, joins
+
+
+def _coords(member: dict) -> list[tuple[float, float]]:
+    return [
+        (c["lat"], c["lon"])
+        for c in member.get("geometry") or []
+        if c and c.get("lat") is not None and c.get("lon") is not None
+    ]
 
 
 def chain_route_relation(rel: dict) -> tuple[list[tuple[float, float]], list[str]]:
     """Met bout à bout les chemins d'une relation OSM `route=hiking` (sortie `out geom`).
 
-    Les chemins sont pris dans l'ordre de la relation et retournés si besoin ; le sens du premier chemin est celui
-    qui laisse le moins de trous. Sections à sens unique (rôles forward/backward) : seul le sens aller est gardé.
-    Renvoie le tracé (lat, lon) et des avertissements. Lève ValueError si aucun tracé n'est exploitable.
+    Les chemins sont pris dans l'ordre de la relation et retournés si besoin. « backward » veut dire « parcouru à
+    contresens du dessin » : c'est soit la seule voie (gardée), soit la branche retour d'une section dédoublée
+    (écartée). Entre ces variantes et les deux sens du premier chemin, on garde celle qui laisse le moins de trous,
+    tous raccords comptés ; à égalité, tous les chemins et le sens du dessin. Renvoie le tracé (lat, lon) et des
+    avertissements. Lève ValueError si aucun tracé n'est exploitable.
     """
     members = rel.get("members", [])
-    way_members = [m for m in members if m.get("type") == "way"]
-    roles = {(m.get("role") or "") for m in way_members}
-    skip = SIDE_ROLES | ({"backward"} if "forward" in roles else set())
-    ways = [
-        [
-            (c["lat"], c["lon"])
-            for c in m.get("geometry") or []
-            if c and c.get("lat") is not None and c.get("lon") is not None
-        ]
-        for m in way_members
-        if (m.get("role") or "") not in skip
-    ]
-    ways = [w for w in ways if len(w) >= 2]
+    main = [m for m in members if m.get("type") == "way" and (m.get("role") or "") not in SIDE_ROLES]
+    every = [(w, m.get("role") or "") for m in main if len(w := _coords(m)) >= 2]
     sub_relations = sum(1 for m in members if m.get("type") == "relation")
-    if not ways:
+    if not every:
         if sub_relations:
             raise ValueError("Itinéraire découpé en sous-itinéraires (étapes) : importer une étape à la fois.")
         raise ValueError("Relation OSM sans chemin exploitable.")
-    line, gaps = min((_chain(ways, flip) for flip in (False, True)), key=lambda r: (sum(r[1]), len(r[1])))
+    variants = [([w for w, _ in every], False)]
+    if any(r == "backward" for _, r in every) and any(r != "backward" for _, r in every):
+        variants.append(([w for w, r in every if r != "backward"], True))
+    best = None
+    for ways, dropped in variants:
+        for flip in (False, True):
+            line, joins = _chain(ways, flip)
+            key = (round(sum(joins), 1), dropped, flip)
+            if best is None or key < best[0]:
+                best = (key, line, joins, dropped)
+    _, line, joins, dropped_backward = best
+    gaps = [g for g in joins if g > JOIN_TOLERANCE_M]
     warnings = []
     if gaps:
         warnings.append(
             f"Relation OSM incomplète ou désordonnée : {len(gaps)} saut(s) entre chemins (max {max(gaps):.0f} m), "
             "reliés en ligne droite. Vérifier le tracé (data_quality) ou le reconstruire avec route_between."
         )
-    side = sum(1 for m in way_members if (m.get("role") or "") in SIDE_ROLES)
+    side = sum(1 for m in members if m.get("type") == "way" and (m.get("role") or "") in SIDE_ROLES)
     if side:
         warnings.append(f"{side} chemin(s) de variante ou d'accès ignoré(s) : seul le tracé principal est importé.")
-    if "backward" in skip and any((m.get("role") or "") == "backward" for m in way_members):
+    if dropped_backward:
         warnings.append("Sections à sens unique (aller/retour différents) : seul le sens aller est importé.")
     if sub_relations:
         warnings.append(
