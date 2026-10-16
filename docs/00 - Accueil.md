@@ -5,7 +5,7 @@ tags: [moc]
 
 > Donner à Claude / Claude Code une **boîte à outils fiable** pour concevoir des itinéraires de randonnée personnalisés : distance et dénivelé précis, tracé vérifié sur de vrais chemins, aucune incohérence.
 
-> **État (2026-10-15)** : toutes les idées retenues de [[02 - Idées & Fonctionnalités]] sont réalisées, D+ calibré sur 80 itinéraires officiels ([[Calibration du dénivelé]]) → [[Roadmap]].
+> **État (2026-10-16, v0.4.0)** : 28 outils ; toutes les idées retenues de [[02 - Idées & Fonctionnalités]] sont réalisées ; D+ calibré sur 80 itinéraires officiels, avec fourchette plausible ([[Calibration du dénivelé]]) ; randos nommées retrouvées dans 44 catalogues officiels, en sentier balisé OSM ou d'après leur descriptif → [[Roadmap]], [[Résultats des évals]].
 
 ## Principe directeur
 **Claude raisonne, les outils calculent.**
@@ -35,7 +35,8 @@ Claude ne doit *jamais* inventer une distance, un dénivelé ou un chemin. Il or
 
 ### Claude
 - [[Workflow de Claude]]
-- [[Brouillon CLAUDE.md]] (remplacé par le skill `skills/planifier-rando`)
+- [[Évals]] · [[Résultats des évals]]
+- Consignes de l'agent : skill `skills/planifier-rando/SKILL.md` du dépôt
 
 ### Suivi
 - [[Questions ouvertes]]

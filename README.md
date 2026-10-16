@@ -4,9 +4,9 @@ Serveur [MCP](https://modelcontextprotocol.io) et plugin **Claude Code** qui don
 
 > **Principe : Claude raisonne, les outils calculent.** Claude n'invente jamais une distance, un dénivelé ou un chemin ; il orchestre des outils déterministes et explique le résultat.
 
-Exemples de demandes : *« une boucle de 12 km depuis Autrans qui passe par une cascade, niveau T2 max »*, *« 3 jours sur les Hauts-Plateaux du Vercors en dormant en cabane »*, *« analyse ma trace montre.gpx »*.
+Exemples de demandes : *« prépare-moi le Chemin des fileuses au départ de L'Estréchure »*, *« une boucle de 12 km depuis Autrans qui passe par une cascade, niveau T2 max »*, *« 3 jours sur les Hauts-Plateaux du Vercors en dormant en cabane »*, *« analyse ma trace montre.gpx »*.
 
-## Outils (26)
+## Outils (28)
 
 | Thème | Outils |
 |---|---|
@@ -25,7 +25,7 @@ Prérequis : [uv](https://docs.astral.sh/uv/).
 **Comme plugin Claude Code** (serveur MCP + skill `planifier-rando`) :
 
 ```bash
-claude plugin marketplace add LaMachiiiine/randoforge
+claude plugin marketplace add LaMachiiine/randoforge
 ```
 
 ```bash
@@ -43,6 +43,30 @@ cd randoforge && uv sync
 ```
 
 Ouvrez Claude Code dans ce dossier : `.mcp.json` déclare le serveur. Pour tester le plugin localement : `claude --plugin-dir .`
+
+**Activer / désactiver** le plugin selon les besoins (effet dans les nouvelles sessions, rien n'est désinstallé) :
+
+```bash
+claude plugin disable randoforge@randoforge
+```
+
+```bash
+claude plugin enable randoforge@randoforge
+```
+
+## Trouver ou construire une rando
+
+Pour une rando **nommée**, l'agent cherche dans cet ordre et s'arrête au premier tracé trouvé :
+
+1. **Catalogues officiels** (`find_official_treks` → `import_official_trek`) : 44 catalogues Geotrek publics (parcs
+   nationaux et régionaux, départements, intercommunalités), ~10 000 randos pédestres avec leur tracé exact.
+2. **Sentiers balisés OpenStreetMap** (`find_hiking_routes` → `import_hiking_route`) : GR, PR et boucles locales
+   du monde entier.
+3. **Descriptif** (`route_via_places`) : les lieux cités (hameaux, cols, sommets) sont cherchés autour du départ,
+   les homonymes départagés, les lieux introuvables ou isolés signalés, jamais devinés.
+
+Sinon, il construit sur mesure : boucle automatique (`generate_loop_candidates`) ou passage par des lieux imposés
+(`route_between`).
 
 ## Configuration (variables d'environnement)
 
@@ -62,6 +86,7 @@ Ouvrez Claude Code dans ce dossier : `.mcp.json` déclare le serveur. Pour teste
 | Lieux, chemins, zones | OpenStreetMap (Nominatim, Overpass) |
 | Refuges, cabanes, points d'eau | [refuges.info](https://www.refuges.info) |
 | Météo, neige | [Open-Meteo](https://open-meteo.com) |
+| Randos officielles | 44 catalogues [Geotrek](https://geotrek.fr) publics (registre `src/randoforge/engines/geotrek_catalogs.json`, régénéré par `scripts/build_geotrek_catalogs.py`) |
 | Descriptions | Wikidata |
 
 Les réponses sont mises en cache (`cache.sqlite`) pour ménager ces services gratuits. Pour un usage intensif, hébergez BRouter et Overpass.
@@ -94,9 +119,10 @@ Démonstration complète commentée. `scripts/calibrate_reference.py --report` r
 
 ## Évals avec de vrais agents
 
-`evals/` lance de vrais agents Claude Code, limités aux outils RandoForge, sur 20 demandes types et sur des randos
-réelles des parcs nationaux qu'ils doivent reconstruire ; tout est noté automatiquement (chiffres traçables jusqu'aux
-outils, avertissements, écart au tracé officiel). Voir [`evals/README.md`](evals/README.md).
+`evals/` lance de vrais agents Claude Code, limités aux outils RandoForge, sur 20 demandes types et sur 16 randos
+réelles (à retrouver dans les catalogues officiels, à reconstruire sans leur tracé ou d'après leur descriptif) ;
+tout est noté automatiquement (chiffres traçables jusqu'aux
+outils, avertissements, écart au tracé officiel). Voir [`evals/README.md`](evals/README.md) et les [derniers résultats](docs/30%20-%20Claude/R%C3%A9sultats%20des%20%C3%A9vals.md).
 
 ```bash
 uv run python evals/run.py --model sonnet
@@ -116,6 +142,6 @@ Vault [Obsidian](https://obsidian.md) dans [`docs/`](docs/00%20-%20Accueil.md) :
 ## Licences
 
 - Code : [MIT](LICENSE).
-- Données © contributeurs OpenStreetMap (ODbL), refuges.info (CC BY-SA), IGN (Licence Ouverte), Copernicus, Open-Meteo (CC BY 4.0) — attributions incluses dans les exports.
+- Données © contributeurs OpenStreetMap (ODbL), refuges.info (CC BY-SA), IGN (Licence Ouverte), Copernicus, Open-Meteo (CC BY 4.0), catalogues Geotrek (© chaque organisme éditeur, licence propre à chaque catalogue) — attributions incluses dans les exports.
 
 ⚠️ Les itinéraires générés sont une aide à la préparation. Vérifiez toujours les conditions sur place : météo, état des sentiers, réglementation.

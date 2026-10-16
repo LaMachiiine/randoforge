@@ -70,7 +70,9 @@ Légende : ✅ fait · 🟨 partiel (limite précisée) · ⏳ dépend de donné
 | Auto-hébergement (routage, Overpass, MNT) | ✅ | `RANDOFORGE_BROUTER_URL`, `RANDOFORGE_OVERPASS_URLS`, `RANDOFORGE_DEM_DIR` |
 | Tests de bout en bout | ✅ | `uv run pytest -m e2e` : 7 tests (scénarios en stdio + précision sur références officielles) |
 | Évals avec de vrais agents Claude | ✅ | `evals/` : 20 demandes types + randos officielles des parcs, notées automatiquement → [[Résultats des évals]] |
-| Randos officielles des parcs nationaux | ✅ | `find_official_treks` + `import_official_trek` (Écrins, Cévennes, Port-Cros) |
+| Randos officielles | ✅ | `find_official_treks` + `import_official_trek` : 44 catalogues Geotrek (parcs, départements, intercommunalités) |
+| Sentiers balisés OSM importés tels quels | ✅ | `import_hiking_route` (relation OSM mise bout à bout, variantes et trous signalés) |
+| Rando reconstruite d'après son descriptif | ✅ | `route_via_places` (lieux cités, homonymes départagés) |
 | Sobriété en jetons et vitesse | ✅ | réponses compactes, `analyze_route` en un appel, serveurs Overpass en concurrence, limites des API respectées |
 
 ## Requête Dataview d'exemple

@@ -35,7 +35,7 @@ flowchart TB
 - Comprend la demande, pose les questions manquantes (niveau, durée, départ).
 - Planifie : choisit les waypoints, appelle les outils, compare les candidats.
 - **Ne calcule rien lui-même.** Toute donnée chiffrée vient d'un outil.
-- Guidé par un skill / [[Brouillon CLAUDE.md]] et le [[Workflow de Claude]].
+- Guidé par le skill `skills/planifier-rando` et le [[Workflow de Claude]].
 
 ### 2. Couche « outils » — serveur MCP
 - Interface stable, typée (schémas JSON), documentée → voir [[Serveur MCP - Outils]].

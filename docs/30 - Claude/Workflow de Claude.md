@@ -14,11 +14,13 @@ Infos indispensables (demander si absentes, proposer des valeurs par défaut sin
 - Date (saison, durée du jour)
 
 ## 2. Explorer la zone
-`geocode` → `find_pois` → `find_hiking_routes` → `area_info`
+`geocode` → `find_pois` → `find_hiking_routes`
 Objectif : connaître les « ingrédients » (sommets, lacs, sentiers balisés, parkings).
 
 ## 3. Construire des candidats
-- Soit `generate_loop_candidates`, soit placement manuel de waypoints + `route_between`.
+- Rando **nommée** : catalogue officiel (`find_official_treks` → `import_official_trek`), sinon sentier balisé OSM
+  (`find_hiking_routes` → `import_hiking_route`), sinon d'après le descriptif (`route_via_places`).
+- Sinon `generate_loop_candidates`, ou placement de points de passage + `route_between`.
 - Toujours **2 à 5 candidats** pour pouvoir comparer.
 
 ## 4. Mesurer et valider

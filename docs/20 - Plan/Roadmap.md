@@ -1,6 +1,6 @@
 ---
 tags: [plan]
-maj: 2026-10-15
+maj: 2026-10-16
 ---
 # Roadmap
 
@@ -55,3 +55,11 @@ maj: 2026-10-15
 - **Bout en bout (réseau)** : `uv run pytest -m e2e` — serveur lancé en stdio comme par Claude Code, vrais services ; un service public indisponible saute le test au lieu de l'échouer.
 - **Référence** : `tests/e2e/test_reference.py` + `scripts/calibrate_reference.py --report` (itinéraires officiels des parcs).
 - **Démonstration** : `uv run python scripts/demo_itinerance.py` (traversée des Hauts-Plateaux du Vercors).
+
+## Phase 5 — Randos réelles et robustesse ✅ (2026-10-16, v0.4.0)
+- [x] `find_official_treks` / `import_official_trek` sur 44 catalogues Geotrek (registre généré) ; `import_hiking_route`
+  (sentiers balisés OSM) ; `route_via_places` (reconstruction d'après un descriptif)
+- [x] Fourchette de D+ plausible (le topo-guide y tombe 4 fois sur 5) ; antiméridien ; calculs locaux 10× plus rapides
+- [x] Relectures complètes du code : ~60 bugs corrigés, chacun couvert par un test (`tests/test_robustesse.py`)
+- [x] Boucles générées sans « épingles » ; bivouacs limités aux endroits logiques pour une nuit ; règle N1 corrigée
+- [x] Évals : modes reconstruction, catalogue et descriptif → [[Résultats des évals]]

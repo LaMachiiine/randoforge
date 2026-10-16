@@ -14,5 +14,5 @@ tags: [suivi]
 - [x] Services publics : cache, bascule Overpass, User-Agent, URLs configurables pour l'auto-hébergement
 
 ## Encore ouvertes
-- [ ] GPX de référence pour calibrer le D+ (`scripts/calibrate.py`) : traces de montre barométrique + topo-guides ? Licence de ces traces si publiées dans `tests/` ?
+- [x] Référence pour calibrer le D+ : 80 itinéraires officiels des parcs nationaux (Geotrek) plutôt que des traces de montre, dont la licence posait question → [[Calibration du dénivelé]] ; `scripts/calibrate.py` reste disponible pour ses propres traces
 - [ ] Au-delà d'un usage modéré : proposer une image Docker BRouter + Overpass prête à l'emploi ?
