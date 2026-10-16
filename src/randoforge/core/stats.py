@@ -18,6 +18,17 @@ RANGE_LOW_FACTOR = 0.85
 RANGE_HIGH_PARAMS = ElevationParams(smooth_window_m=10.0, threshold_m=0.5)
 
 
+def loop_gap_excess(d_plus: float, d_minus: float, ele_start: float, ele_end: float, threshold_m: float) -> float:
+    """Écart D+/D- d'une boucle au-delà de ce qui est normal (m, 0 si normal).
+
+    Normal : la différence d'altitude entre départ et arrivée (une boucle se referme à 50 m près, pas forcément
+    à la même altitude), plus le seuil d'hystérésis à chaque bout (une petite montée de moins de `threshold_m`
+    en début ou en fin n'est pas comptée). Un pourcentage serait trop strict sur une boucle de faible D+.
+    """
+    expected = abs(ele_end - ele_start) + 2 * threshold_m
+    return max(0.0, abs(d_plus - d_minus) - expected)
+
+
 def _gain(lats: np.ndarray, lons: np.ndarray, eles: np.ndarray, params: ElevationParams) -> float:
     _, _, _, e = resample(lats, lons, eles, params.step_m)
     return elevation_gain(median_smooth(e, int(round(params.smooth_window_m / params.step_m))), params.threshold_m)[0]
@@ -65,8 +76,10 @@ def compute_stats(
             high = _gain(lats, lons, eles, RANGE_HIGH_PARAMS)
             d_plus_range = (round(up * RANGE_LOW_FACTOR), max(d_plus, round(high)))
         alt_min, alt_max = round(float(e.min())), round(float(e.max()))
-        if is_loop and max(up, down) > 0 and abs(up - down) / max(up, down) > 0.01:
-            warnings.append(f"Boucle avec D+ ({d_plus} m) ≠ D- ({d_minus} m) de plus de 1 % : altitudes incohérentes ?")
+        if is_loop and loop_gap_excess(up, down, eles[0], eles[-1], params.threshold_m) > 0:
+            warnings.append(
+                f"Boucle avec D+ ({d_plus} m) ≠ D- ({d_minus} m) au-delà de l'écart normal : altitudes incohérentes ?"
+            )
 
     if d_plus is not None:
         duration_min = estimate_minutes(distance_km, d_plus, d_minus, profile)

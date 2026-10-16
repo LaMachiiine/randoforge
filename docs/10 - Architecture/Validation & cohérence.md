@@ -46,7 +46,7 @@ maj: 2026-10-15
 | ID | Règle | Niveau |
 |---|---|---|
 | N0 | Altitudes manquantes | error |
-| N1 | Boucle : \|D+ − D-\| < 1 % | error |
+| N1 | Boucle : \|D+ − D-\| ≤ \|alt. arrivée − alt. départ\| + 2 × seuil d'hystérésis (un pourcentage était trop strict sur une boucle peu dénivelée : 169/172 m signalé à tort) | warning |
 | N2 | Sommet atteint dont l'altitude officielle dépasse le MNT de > 15 m (D+ sous-estimé) | warning |
 | N3 | D+ ≥ altitude max − altitude de départ | error |
 | N4 | Distance (±10 %) et D+ (±15 %) conformes à la demande | error |

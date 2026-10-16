@@ -562,3 +562,14 @@ def test_isolated_place_is_flagged_but_a_single_summit_is_not():
     route = [(44.12, 3.79), (44.197, 3.78), (44.115, 3.80), (44.110, 3.785)]  # le 2e : homonyme à ~10 km
     assert outliers(start, route, start, 3.0) == [1]
     assert outliers(start, [(44.15, 3.83)], start, 3.0) == []  # boucle vers un seul sommet : légitime
+
+
+def test_n1_tolerates_the_normal_gap_of_a_low_relief_loop():
+    from randoforge.core.stats import loop_gap_excess
+
+    # Boucle réelle de Clohars-Carnoët : D+ 169 m / D- 172 m, départ = arrivée (39 m) → écart normal (≤ 2 × 5 m).
+    assert loop_gap_excess(169, 172, 39.3, 39.3, 5.0) == 0
+    # Écart de 40 m sans différence d'altitude aux bouts : vraie incohérence.
+    assert loop_gap_excess(400, 360, 1000, 1000, 5.0) == 30
+    # Boucle refermée à 50 m près mais 12 m plus bas : l'écart correspondant est normal.
+    assert loop_gap_excess(300, 312, 1012, 1000, 5.0) == 0

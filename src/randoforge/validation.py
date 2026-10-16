@@ -13,7 +13,7 @@ import numpy as np
 
 from .core.geo import distance_m, segment_lengths
 from .core.models import SAC_SCALE, Check, Route, ValidationReport, WaySegment
-from .core.stats import LOOP_TOLERANCE_M
+from .core.stats import LOOP_TOLERANCE_M, loop_gap_excess
 from .core.sun import sun_times, timezone_at
 from .core.terrain import retraced_sections, steep_sections
 
@@ -260,14 +260,17 @@ def check_numbers(route: Route) -> list[Check]:
     if s is None or s.d_plus_m is None:
         return [Check(id="N0", level="error", message="Altitudes manquantes : dénivelé non calculé")]
     checks = []
-    if s.is_loop and max(s.d_plus_m, s.d_minus_m) > 0:
-        gap = abs(s.d_plus_m - s.d_minus_m) / max(s.d_plus_m, s.d_minus_m)
-        if gap > 0.01:
+    start, end = route.points[0].ele, route.points[-1].ele
+    if s.is_loop and start is not None and end is not None:
+        excess = loop_gap_excess(s.d_plus_m, s.d_minus_m, start, end, s.params.threshold_m)
+        if excess > 0:
             checks.append(
                 Check(
                     id="N1",
-                    level="error",
-                    message=f"Boucle avec D+ {s.d_plus_m:.0f} m ≠ D- {s.d_minus_m:.0f} m",
+                    level="warning",
+                    message=f"Boucle avec D+ {s.d_plus_m:.0f} m ≠ D- {s.d_minus_m:.0f} m : {excess:.0f} m de plus que "
+                    f"l'écart normal (altitudes départ {start:.0f} m / arrivée {end:.0f} m, seuil "
+                    f"{s.params.threshold_m:g} m à chaque bout) — altitudes possiblement incohérentes",
                 )
             )
     start_ele = route.points[0].ele
