@@ -1,11 +1,15 @@
 """Itinéraires officiels publiés via Geotrek (parcs nationaux) : tracé, distance et D+ des topo-guides.
 
-Sert de référence pour calibrer et tester le calcul du dénivelé. Le D+ publié est lui-même
-calculé par Geotrek sur un MNT : c'est une référence *officielle et cohérente*, pas une mesure
-terrain indépendante (voir docs/10 - Architecture/Calcul du dénivelé.md).
+Deux usages :
+- **pour l'utilisateur** : retrouver et importer la rando officielle d'un parc (`search`, `trek`) ;
+- **pour la calibration et les tests** : référence de D+ (`treks`). Le D+ publié est lui-même calculé par Geotrek
+  sur un MNT : c'est une référence *officielle et cohérente*, pas une mesure terrain indépendante
+  (voir docs/10 - Architecture/Calcul du dénivelé.md).
 """
 
 from __future__ import annotations
+
+import re
 
 from pydantic import BaseModel
 
@@ -14,8 +18,15 @@ from ..http import DAY, CachedHttp
 INSTANCES = {
     "ecrins": "https://geotrek-admin.ecrins-parcnational.fr/api/v2/trek/",
     "cevennes": "https://geotrek-admin.cevennes-parcnational.net/api/v2/trek/",
+    "portcros": "https://geotrek-admin.portcros-parcnational.fr/api/v2/trek/",
+}
+PARKS = {
+    "ecrins": "Parc national des Écrins",
+    "cevennes": "Parc national des Cévennes",
+    "portcros": "Parc national de Port-Cros",
 }
 FIELDS = "id,name,ascent,descent,length_2d,min_elevation,max_elevation,geometry"
+SEARCH_FIELDS = "id,name,departure,arrival,ascent,length_2d,route,description_teaser,departure_geom"
 
 
 class ReferenceTrek(BaseModel):
@@ -30,58 +41,115 @@ class ReferenceTrek(BaseModel):
     coords: list[tuple[float, float, float | None]]  # (lat, lon, altitude Geotrek)
 
 
+class OfficialTrek(BaseModel):
+    """Rando officielle trouvée par `search` (sans géométrie : à importer avec `trek`)."""
+
+    parc: str
+    trek_id: int
+    nom: str
+    depart: str | None
+    arrivee: str | None
+    type: str | None
+    distance_km: float | None
+    d_plus_m: int | None
+    resume: str | None
+    depart_lat: float | None = None
+    depart_lon: float | None = None
+
+
 def _name(value) -> str:
     return value if isinstance(value, str) else (value or {}).get("fr") or next(iter((value or {}).values()), "")
+
+
+def _usable(t: dict) -> bool:
+    return bool(t.get("ascent")) and bool(t.get("length_2d")) and (t.get("geometry") or {}).get("type") == "LineString"
+
+
+def _to_trek(instance: str, t: dict) -> ReferenceTrek:
+    return ReferenceTrek(
+        source=instance, id=t["id"], name=_name(t.get("name")), ascent_m=int(t["ascent"]),
+        descent_m=abs(int(t.get("descent") or 0)), length_km=round(t["length_2d"] / 1000, 3),
+        min_elevation_m=t.get("min_elevation"), max_elevation_m=t.get("max_elevation"),
+        coords=[(c[1], c[0], c[2] if len(c) > 2 else None) for c in t["geometry"]["coordinates"]],
+    )  # fmt: skip
 
 
 class GeotrekReference:
     def __init__(self, http: CachedHttp):
         self.http = http
 
+    def _get(self, instance: str, url: str, params: dict) -> dict:
+        return self.http.request_json("GET", url, params=params, ttl_s=30 * DAY, service=f"Geotrek {instance}")
+
     def walking_practices(self, instance: str) -> list[int]:
         """Identifiants des pratiques pédestres (« A pied », « Rando à pied », « Sentiers de découverte »)."""
-        url = INSTANCES[instance].replace("/trek/", "/trek_practice/")
-        res = self.http.request_json("GET", url, params={"format": "json", "language": "fr"}, ttl_s=30 * DAY,
-                                     service=f"Geotrek {instance}")  # fmt: skip
+        res = self._get(instance, INSTANCES[instance].replace("/trek/", "/trek_practice/"),
+                        {"format": "json", "language": "fr"})  # fmt: skip
         return [
             p["id"]
             for p in res.get("results", [])
             if any(k in _name(p.get("name")).lower() for k in ("pied", "découverte"))
         ]
 
+    def route_types(self, instance: str) -> dict[int, str]:
+        res = self._get(
+            instance, INSTANCES[instance].replace("/trek/", "/trek_route/"), {"format": "json", "language": "fr"}
+        )
+        return {r["id"]: r["route"] for r in res.get("results", [])}
+
+    def trek(self, instance: str, trek_id: int) -> ReferenceTrek:
+        """Un itinéraire précis, avec sa géométrie officielle."""
+        t = self._get(
+            instance, f"{INSTANCES[instance]}{trek_id}/", {"format": "json", "language": "fr", "fields": FIELDS}
+        )
+        if not _usable(t):
+            raise ValueError(f"Itinéraire Geotrek {instance}/{trek_id} sans D+, distance ou tracé exploitable")
+        return _to_trek(instance, t)
+
+    def search(
+        self,
+        instance: str,
+        query: str | None = None,
+        bbox: tuple[float, float, float, float] | None = None,
+        limit: int = 20,
+    ) -> list[OfficialTrek]:
+        """Randos pédestres officielles par nom (`query`) et/ou zone (`bbox` = sud, ouest, nord, est)."""
+        params = {"format": "json", "language": "fr", "fields": SEARCH_FIELDS, "page_size": limit,
+                  "practices": ",".join(map(str, self.walking_practices(instance)))}  # fmt: skip
+        if query:
+            params["q"] = query
+        if bbox:
+            s, w, n, e = bbox
+            params["in_bbox"] = f"{w:.5f},{s:.5f},{e:.5f},{n:.5f}"
+        types = self.route_types(instance)
+        out = []
+        for t in self._get(instance, INSTANCES[instance], params).get("results", []):
+            geom = t.get("departure_geom")  # [lon, lat] ou objet GeoJSON selon la version de Geotrek
+            dep = (geom.get("coordinates") if isinstance(geom, dict) else geom) or [None, None]
+            teaser = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", _name(t.get("description_teaser")))).strip()
+            out.append(OfficialTrek(
+                parc=instance, trek_id=t["id"], nom=_name(t.get("name")), depart=t.get("departure") or None,
+                arrivee=t.get("arrival") or None, type=types.get(t.get("route")),
+                distance_km=round(t["length_2d"] / 1000, 2) if t.get("length_2d") else None,
+                d_plus_m=t.get("ascent"), resume=teaser[:240] or None, depart_lat=dep[1], depart_lon=dep[0],
+            ))  # fmt: skip
+        return out
+
     def treks(self, instance: str, limit: int = 20, page_size: int = 50) -> list[ReferenceTrek]:
-        """Itinéraires pédestres simples (une seule ligne), répartis sur tout le catalogue."""
+        """Itinéraires pédestres simples (une seule ligne), répartis sur tout le catalogue (calibration, tests)."""
         url = INSTANCES[instance]
         params = {"format": "json", "language": "fr", "fields": FIELDS, "page_size": page_size, "ordering": "id",
                   "practices": ",".join(map(str, self.walking_practices(instance)))}  # fmt: skip
-        first = self.http.request_json("GET", url, params=params, ttl_s=30 * DAY, service=f"Geotrek {instance}")
+        first = self._get(instance, url, params)
         pages = max(1, -(-first.get("count", 0) // page_size))
         # Échantillon réparti sur tout le catalogue : quelques itinéraires par page, pages espacées.
         sampled = sorted({1 + round(i * (pages - 1) / max(1, min(pages, limit) - 1)) for i in range(min(pages, limit))})
         per_page = -(-limit // len(sampled))
         out: list[ReferenceTrek] = []
         for page in sampled:
-            taken = 0
-            data = (
-                first
-                if page == 1
-                else self.http.request_json(
-                    "GET", url, params={**params, "page": page}, ttl_s=30 * DAY, service=f"Geotrek {instance}"
-                )
-            )
-            for t in data.get("results", []):
-                g = t.get("geometry") or {}
-                if g.get("type") != "LineString" or not t.get("ascent") or not t.get("length_2d"):
-                    continue
-                out.append(ReferenceTrek(
-                    source=instance, id=t["id"], name=_name(t.get("name")), ascent_m=int(t["ascent"]),
-                    descent_m=abs(int(t.get("descent") or 0)), length_km=round(t["length_2d"] / 1000, 3),
-                    min_elevation_m=t.get("min_elevation"), max_elevation_m=t.get("max_elevation"),
-                    coords=[(c[1], c[0], c[2] if len(c) > 2 else None) for c in g["coordinates"]],
-                ))  # fmt: skip
-                taken += 1
-                if len(out) >= limit:
-                    return out
-                if taken >= per_page:
-                    break
+            data = first if page == 1 else self._get(instance, url, {**params, "page": page})
+            usable = [t for t in data.get("results", []) if _usable(t)][:per_page]
+            out += [_to_trek(instance, t) for t in usable]
+            if len(out) >= limit:
+                return out[:limit]
         return out

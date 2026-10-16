@@ -69,7 +69,9 @@ Légende : ✅ fait · 🟨 partiel (limite précisée) · ⏳ dépend de donné
 | Skill Claude Code packagé | ✅ | plugin `.claude-plugin/` + skill `skills/planifier-rando` |
 | Auto-hébergement (routage, Overpass, MNT) | ✅ | `RANDOFORGE_BROUTER_URL`, `RANDOFORGE_OVERPASS_URLS`, `RANDOFORGE_DEM_DIR` |
 | Tests de bout en bout | ✅ | `uv run pytest -m e2e` : 7 tests (scénarios en stdio + précision sur références officielles) |
-| ~~Évals de Claude en conversation~~ | — | écartées (choix du projet) ; remplacées par les tests de bout en bout et de référence |
+| Évals avec de vrais agents Claude | ✅ | `evals/` : 20 demandes types + randos officielles des parcs, notées automatiquement → [[Résultats des évals]] |
+| Randos officielles des parcs nationaux | ✅ | `find_official_treks` + `import_official_trek` (Écrins, Cévennes, Port-Cros) |
+| Sobriété en jetons et vitesse | ✅ | réponses compactes, `analyze_route` en un appel, serveurs Overpass en concurrence, limites des API respectées |
 
 ## Requête Dataview d'exemple
 ```dataview

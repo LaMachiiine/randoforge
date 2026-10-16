@@ -37,7 +37,14 @@ maj: 2026-10-15
 - [x] Règle N2 (sommets acérés sous-estimés par le MNT)
 - [x] Bivouac abrité : grottes, abris sous roche, abris naturels refuges.info, cabanes ; option `overnight="abri"`
 - [x] Tests de référence en e2e (`tests/e2e/test_reference.py`)
-- ~~Évals en conversation~~, ~~variante d'itinéraire par mauvais temps~~ : écartées (choix du projet).
+- ~~Variante d'itinéraire par mauvais temps~~ : écartée (choix du projet).
+
+## Évals, vitesse, robustesse ✅ (2026-10-16)
+- [x] Évals avec de vrais agents Claude Code (`evals/`) : 20 demandes types + 8 randos officielles → [[Résultats des évals]]
+- [x] Réponses d'outils compactes (−34 à −75 %), `analyze_route` (analyses + validation en un appel)
+- [x] Overpass : serveurs mis en concurrence, erreurs cachées détectées ; limites IGN / BRouter / Nominatim respectées
+- [x] Randos officielles des parcs : `find_official_treks`, `import_official_trek`
+- [x] `weather_forecast` valide l'itinéraire dans la foulée
 
 ## Reste à faire
 - [ ] Optionnel : calibrer aussi sur tes traces de montre barométrique (`scripts/calibrate.py`).

@@ -16,15 +16,23 @@ from pydantic import Field
 from ..app import App
 from ..core import quality as quality_lib
 from ..core import weather as weather_lib
-from ..core.models import Check, ElevationParams, RouteSummary, ValidationReport, WalkerProfile, WeatherReport
+from ..core.models import (
+    Check,
+    ElevationParams,
+    RouteSummary,
+    ValidationReport,
+    WalkerProfile,
+    WeatherReport,
+)
 from ..core.osmgeom import RouteFrame
 from ..core.similarity import ReferenceComparison, deviation, pct
 from ..core.sun import timezone_at
 from ..core.terrain import retraced_sections
-from ..validation import tarmac_length, validate
-from .build import done_overlap
+from ..validation import tarmac_length
+from .build import done_overlap, done_routes
 from .schemas import (
     WALKERS,
+    AnalysisResult,
     AnnotationResult,
     AreasResult,
     CategoryName,
@@ -102,12 +110,14 @@ def register(mcp: MCPServer, app: App) -> None:
         categories: list[CategoryName] | None = None,
         max_detour_m: Annotated[float, Field(ge=0, le=1000)] = 300.0,
         describe: bool = True,
+        limit: Annotated[int, Field(ge=1, le=200)] = 25,
     ) -> AnnotationResult:
         """Liste les points notables le long du tracé, avec leur position au km :
         cascades, rivières traversées (gués signalés), lacs, points de vue, sommets, patrimoine…
 
         `describe` ajoute une courte description et le lien Wikipédia des lieux connus de Wikidata.
-        Les points sont ajoutés au GPX, à la carte et à la fiche.
+        Renvoie les `limit` points les plus intéressants (gués toujours inclus) ; tous sont ajoutés au GPX,
+        à la carte et à la fiche.
         """
         route = app.load(route_id)
         app.ensure_pois(route, list(categories) if categories else None, max_detour_m)
@@ -132,7 +142,9 @@ def register(mcp: MCPServer, app: App) -> None:
                 "Aucun point notable cartographié dans OSM le long du tracé (couverture parfois incomplète)."
             )
         app.save(route)
-        return AnnotationResult(route_id=route_id, pois=route.pois, warnings=warnings)
+        best = sorted(route.pois, key=lambda p: (p.via != "gué", -p.score))[:limit]
+        shown = sorted(best, key=lambda p: p.km)
+        return AnnotationResult(route_id=route_id, pois=shown, total=len(route.pois), warnings=warnings)
 
     @mcp.tool()
     def technical_passages(route_id: str) -> TechnicalResult:
@@ -218,7 +230,13 @@ def register(mcp: MCPServer, app: App) -> None:
         route.weather = WeatherReport(
             date=day, heures=f"{hours.start}h–{hours.stop}h", points=windows, alertes=weather_lib.alerts(windows)
         )
-        route.validation = None
+        # Demander la météo, c'est préparer le départ : on valide l'itinéraire (météo comprise) dans la foulée,
+        # sans dépendre de l'agent. Les analyses manquantes tournent en parallèle.
+        app.validate_full(route)
+        route.weather.validation_status = route.validation.status
+        route.weather.alertes_itineraire = [
+            f"{c.id} : {c.message}" for c in route.validation.checks if c.level in {"error", "warning"}
+        ][:8]
         app.save(route)
         return route.weather
 
@@ -226,6 +244,7 @@ def register(mcp: MCPServer, app: App) -> None:
     def compare_routes(route_ids: Annotated[list[str], Field(min_length=2, max_length=10)]) -> Comparison:
         """Tableau comparatif de plusieurs itinéraires (distance, D+, durée, goudron, sentiers balisés,
         allers-retours, recouvrement avec les randos déjà faites, difficulté, validation)."""
+        done = done_routes(app)
         rows = []
         for rid in route_ids:
             r = app.load(rid)
@@ -243,7 +262,7 @@ def register(mcp: MCPServer, app: App) -> None:
                     tarmac_pct=round(100 * tarmac_length(r.segments) / engine_m) if r.segments and engine_m else None,
                     balise_pct=quality_lib.marked_share(r.segments),
                     retrace_km=round(sum(sec.value for sec in retraced_sections(r.points)) / 1000, 2),
-                    deja_fait_pct=round(100 * done_overlap(app, r)),
+                    deja_fait_pct=round(100 * done_overlap(r, done)),
                     niveau_technique_max=max(levels, default=None),
                     n_passages_techniques=len(r.technical) if r.technical is not None else None,
                     n_pois=len(r.pois) if r.pois is not None else None,
@@ -270,8 +289,34 @@ def register(mcp: MCPServer, app: App) -> None:
             d_plus_m=s.d_plus_m if s else None,
             d_plus_ref_m=rs.d_plus_m if rs else None,
             ecart_d_plus_pct=pct(s.d_plus_m if s else None, rs.d_plus_m if rs else None),
+            ecart_distance_km=round(s.distance_km - rs.distance_km, 2) if s and rs else None,
+            ecart_d_plus_m=s.d_plus_m - rs.d_plus_m
+            if s and rs and s.d_plus_m is not None and rs.d_plus_m is not None
+            else None,
         )
         return ReferenceResult(route_id=route_id, reference_id=reference_id, comparaison=comp)
+
+    @mcp.tool()
+    def analyze_route(route_id: str, limit_pois: Annotated[int, Field(ge=0, le=50)] = 10) -> AnalysisResult:
+        """Analyse complète en UN appel : points notables, passages techniques, zones réglementées (en
+        parallèle) puis validation. À préférer à annotate_route + technical_passages + route_areas +
+        validate_route appelés séparément : plus rapide et moins de jetons.
+        Penser à enregistrer d'abord les contraintes (set_constraints) pour qu'elles soient vérifiées.
+        """
+        route = app.load(route_id)
+        failures = app.validate_full(route)
+        app.save(route)
+        pois = route.pois or []
+        best = sorted(sorted(pois, key=lambda p: (p.via != "gué", -p.score))[:limit_pois], key=lambda p: p.km)
+        return AnalysisResult(
+            route_id=route_id,
+            validation=route.validation,
+            pois=best,
+            pois_total=len(pois),
+            passages_techniques=route.technical or [],
+            zones=route.areas or [],
+            indisponible=failures,
+        )
 
     @mcp.tool()
     def validate_route(route_id: str) -> ValidationReport:
@@ -282,13 +327,7 @@ def register(mcp: MCPServer, app: App) -> None:
         Lance automatiquement les analyses manquantes (points notables, passages techniques, zones).
         """
         route = app.load(route_id)
-        failures = app.best_effort(
-            route,
-            (route.pois is None, app.ensure_pois, "points notables"),
-            (route.technical is None, app.ensure_technical, "passages techniques"),
-            (route.areas is None, app.ensure_areas, "zones réglementées"),
-        )
-        route.validation = validate(route)
+        failures = app.validate_full(route)
         route.validation.checks += [
             Check(id="X0", level="info", message=f"Analyse indisponible — {f}") for f in failures
         ]

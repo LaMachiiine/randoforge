@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Annotated, Literal
 
@@ -13,21 +14,26 @@ from pydantic import Field
 from ..app import App
 from ..core import loops
 from ..core.geo import cumulative_distance
-from ..core.models import Route, RouteRequest, RouteSummary
+from ..core.models import Route, RouteRequest, RouteSummary, TrackPoint
 from ..core.quality import marked_share
 from ..core.similarity import overlap_fraction
 from ..core.terrain import retraced_sections
 from ..formats.gpx import read_gpx
 from ..storage import new_route_id
 from ..validation import tarmac_length
-from .schemas import LatLon, LoopCandidate, LoopCandidates, Profile, SacScale
+from .schemas import LatLon, LoopCandidate, LoopCandidates, Park, Profile, SacScale
 
+PARALLEL_ROUTES = 4  # requêtes simultanées au moteur de routage public : rester raisonnable
 COMPASS = ["N", "NE", "E", "SE", "S", "SO", "O", "NO"]
 
 
-def done_overlap(app: App, route: Route) -> float:
-    done = [r for r in app.store.list() if r.done_on and r.route_id != route.route_id]
-    return max((overlap_fraction(route.points, d.points) for d in done), default=0.0)
+def done_routes(app: App) -> list[Route]:
+    """Randos marquées comme faites (à charger une fois par appel d'outil : la lecture du stockage coûte cher)."""
+    return [r for r in app.store.list() if r.done_on]
+
+
+def done_overlap(route: Route, done: list[Route]) -> float:
+    return max((overlap_fraction(route.points, d.points) for d in done if d.route_id != route.route_id), default=0.0)
 
 
 def register(mcp: MCPServer, app: App) -> None:
@@ -83,12 +89,13 @@ def register(mcp: MCPServer, app: App) -> None:
         request = RouteRequest(
             loop=True, max_sac_scale=max_sac_scale, target_distance_km=distance_km, target_d_plus_m=d_plus_m
         )
-        tried = failed = 0
-        drafts: list[tuple[float, Route, float, float]] = []  # (direction, tracé, aller-retour m, goudron m)
-        for bearing in loops.bearings(directions):
+
+        def draft_direction(bearing: float) -> tuple[float, Route | None, int, int]:
+            """Brouillon de boucle dans une direction : un essai + une correction de taille."""
             radius = loops.initial_radius(target_m)
             best: Route | None = None
-            for _ in range(2):  # un essai + une correction de taille
+            tried = failed = 0
+            for _ in range(2):
                 tried += 1
                 try:
                     draft = app.make_route(
@@ -108,17 +115,28 @@ def register(mcp: MCPServer, app: App) -> None:
                 if abs(actual - target_m) / target_m < 0.08:
                     break
                 radius = loops.corrected_radius(radius, target_m, actual)
-            if best is not None:
-                retrace = sum(sec.value for sec in retraced_sections(best.points))
-                drafts.append((bearing, best, retrace, tarmac_length(best.segments)))
+            return bearing, best, tried, failed
+
+        # Toutes les directions en parallèle (le moteur de routage répond en 1–3 s par tracé).
+        with ThreadPoolExecutor(max_workers=PARALLEL_ROUTES) as pool:
+            results = list(pool.map(draft_direction, loops.bearings(directions)))
+        tried = sum(r[2] for r in results)
+        failed = sum(r[3] for r in results)
+        drafts: list[tuple[float, Route, float, float]] = [  # (direction, tracé, aller-retour m, goudron m)
+            (bearing, best, sum(sec.value for sec in retraced_sections(best.points)), tarmac_length(best.segments))
+            for bearing, best, _, _ in results
+            if best is not None
+        ]
         if not drafts:
             raise ToolError(
                 "Aucune boucle trouvée : le départ est peut-être loin de tout chemin. Essayer geocode ou find_pois."
             )
 
+        history = done_routes(app) if avoid_done else []
+
         def extra(r: Route) -> tuple[float, float]:
             marked = (marked_share(r.segments) or 0) / 100
-            return marked, done_overlap(app, r) if avoid_done else 0.0
+            return marked, done_overlap(r, history) if avoid_done else 0.0
 
         def pre_score(d) -> float:
             _, r, retrace, tarmac = d
@@ -126,9 +144,10 @@ def register(mcp: MCPServer, app: App) -> None:
 
         # Mesure fine (MNT) seulement pour les meilleurs brouillons : économise les appels d'altimétrie.
         scored = []
-        for bearing, r, retrace, tarmac in sorted(drafts, key=pre_score)[: n + 2]:
-            app.apply_dem(r)
-            app.stats_into(r)
+        shortlist = sorted(drafts, key=pre_score)[: n + 2]
+        with ThreadPoolExecutor(max_workers=len(shortlist) or 1) as pool:
+            list(pool.map(lambda d: (app.apply_dem(d[1]), app.stats_into(d[1])), shortlist))
+        for bearing, r, retrace, tarmac in shortlist:
             marked, done = extra(r)
             sc = loops.score(
                 r.stats.distance_km * 1000, target_m, r.stats.d_plus_m, d_plus_m, retrace, tarmac, marked, done
@@ -182,6 +201,27 @@ def register(mcp: MCPServer, app: App) -> None:
             app.apply_dem(route)
         else:
             route.elevation_source = "fichier GPX"
+        app.stats_into(route)
+        app.save(route)
+        return RouteSummary.of(route)
+
+    @mcp.tool()
+    def import_official_trek(parc: Park, trek_id: int, name: str | None = None) -> RouteSummary:
+        """Importe le tracé officiel d'une rando de parc national (trouvée avec find_official_treks), puis
+        recalcule distance, D+ et durée sur le MNT. Le D+ publié par le parc est comparé au nôtre (règle N5).
+        Ensuite : set_constraints, analyze_route, export_route comme pour tout itinéraire.
+        """
+        if not app.services.geotrek:
+            raise ToolError("Catalogue des parcs non configuré.")
+        trek = app.external(lambda: app.services.geotrek.trek(parc, trek_id))
+        route = Route(
+            route_id=new_route_id(),
+            name=name or trek.name,
+            source=f"officiel:{parc}:{trek_id}",
+            points=[TrackPoint(lat=la, lon=lo) for la, lo, _ in trek.coords],
+            engine_stats={"distance_m": trek.length_km * 1000, "d_plus_m": trek.ascent_m},
+        )
+        app.apply_dem(route)
         app.stats_into(route)
         app.save(route)
         return RouteSummary.of(route)

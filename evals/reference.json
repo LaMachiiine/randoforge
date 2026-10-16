@@ -1,0 +1,98 @@
+[
+ {
+  "id": "ref-ecrins-962618",
+  "prompt": "Je voudrais faire la randonnée « À la découverte des hameaux de Vallouise et Pelvoux » (boucle) dans le Parc national des Écrins : départ Maison du Parc, Vallouise. Un parcours pour apprécier le charme secret des hameaux du Pays des Écrins Prépare-moi l'itinéraire.",
+  "park": "ecrins",
+  "geotrek_id": 962618,
+  "kind": "boucle",
+  "official": {
+   "length_km": 11.01,
+   "ascent_m": 351
+  },
+  "has_geometry": true
+ },
+ {
+  "id": "ref-ecrins-903486",
+  "prompt": "Je voudrais faire la randonnée « Boucle du Pigeonnier dans le cirque du Gioberney » (boucle) dans le Parc national des Écrins : départ Au parking du Gioberney. Au plus profond de la vallée du Valgaudemar, cet itinéraire propose des points de vue d'exception sur des sommets mythiques et leurs glaciers. Un condensé de montagne ! Prépare-moi l'itinéraire.",
+  "park": "ecrins",
+  "geotrek_id": 903486,
+  "kind": "boucle",
+  "official": {
+   "length_km": 9.62,
+   "ascent_m": 831
+  },
+  "has_geometry": true
+ },
+ {
+  "id": "ref-ecrins-991062",
+  "prompt": "Je voudrais faire la randonnée « Col de la Gardette » (aller-retour) dans le Parc national des Écrins : départ Les Chirouzes, Chorges. Une belle ascension vers un col bucolique où des alpages verdoyants s'étendent à perte de vue. Prépare-moi l'itinéraire.",
+  "park": "ecrins",
+  "geotrek_id": 991062,
+  "kind": "aller-retour",
+  "official": {
+   "length_km": 9.33,
+   "ascent_m": 670
+  },
+  "has_geometry": true
+ },
+ {
+  "id": "ref-ecrins-995753",
+  "prompt": "Je voudrais faire la randonnée « De La Grave au hameau de Ventelon » (boucle) dans le Parc national des Écrins : départ Office de tourisme, La Grave. Boucle depuis La Grave jusqu'au hameau de Ventelon. Prépare-moi l'itinéraire.",
+  "park": "ecrins",
+  "geotrek_id": 995753,
+  "kind": "boucle",
+  "official": {
+   "length_km": 4.3,
+   "ascent_m": 297
+  },
+  "has_geometry": true
+ },
+ {
+  "id": "ref-cevennes-41621",
+  "prompt": "Je voudrais faire la randonnée « Aire-de-Côte » (boucle) dans le Parc national des Cévennes : départ Aire-de-Côte (Bassurels). Une balade agréable en forme de boucle, dans une forêt aux essences variées, riche en biodiversité, accompagnée par le chant des oiseaux. Prépare-moi l'itinéraire.",
+  "park": "cevennes",
+  "geotrek_id": 41621,
+  "kind": "boucle",
+  "official": {
+   "length_km": 7.85,
+   "ascent_m": 223
+  },
+  "has_geometry": true
+ },
+ {
+  "id": "ref-cevennes-45054",
+  "prompt": "Je voudrais faire la randonnée « Camias » (boucle) dans le Parc national des Cévennes : départ Ancienne gare de Pont d’Hérault. Un sentier à flanc de coteau qui monte et serpente, rejoint la voie de chemin de fer, puis suit doucement sa courbe. Prépare-moi l'itinéraire.",
+  "park": "cevennes",
+  "geotrek_id": 45054,
+  "kind": "boucle",
+  "official": {
+   "length_km": 8.79,
+   "ascent_m": 438
+  },
+  "has_geometry": true
+ },
+ {
+  "id": "ref-cevennes-98959",
+  "prompt": "Je voudrais faire la randonnée « Chemin des fileuses » (boucle) dans le Parc national des Cévennes : départ L'Estréchure. Entre sériciculture traditionnelle et paysages préservées, cette balade sur les hauteurs de l'Estréchure vous invite à découvrir les richesses de la vallée. Prépare-moi l'itinéraire.",
+  "park": "cevennes",
+  "geotrek_id": 98959,
+  "kind": "boucle",
+  "official": {
+   "length_km": 12.52,
+   "ascent_m": 625
+  },
+  "has_geometry": true
+ },
+ {
+  "id": "ref-cevennes-74874",
+  "prompt": "Je voudrais faire la randonnée « Du Bosc au valat de Merlason » (boucle) dans le Parc national des Cévennes : départ Bez et Esparon. Élevage, cultures maraîchères, prairies et châtaigneraies s’étagent du fond de la vallée jusqu’aux hauteurs du village. Prépare-moi l'itinéraire.",
+  "park": "cevennes",
+  "geotrek_id": 74874,
+  "kind": "boucle",
+  "official": {
+   "length_km": 9.04,
+   "ascent_m": 469
+  },
+  "has_geometry": true
+ }
+]

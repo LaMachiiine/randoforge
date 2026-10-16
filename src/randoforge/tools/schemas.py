@@ -6,10 +6,22 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from ..core.models import AreaCrossing, BivouacSpot, Poi, Quality, RouteSummary, Stage, TechnicalPassage, WalkerProfile
+from ..core.models import (
+    AreaCrossing,
+    BivouacSpot,
+    Poi,
+    Quality,
+    RouteSummary,
+    Stage,
+    TechnicalPassage,
+    ValidationReport,
+    WalkerProfile,
+)
 from ..core.similarity import ReferenceComparison
+from ..engines.geotrek import OfficialTrek
 from ..engines.osm import Place
 
+Park = Literal["ecrins", "cevennes", "portcros"]
 CategoryName = Literal[
     "cascade", "point_de_vue", "lac", "sommet", "curiosite", "riviere", "patrimoine", "eau", "pause", "transport"
 ]
@@ -53,6 +65,11 @@ class HikingRoute(BaseModel):
     osm_id: str
 
 
+class OfficialTrekList(BaseModel):
+    treks: list[OfficialTrek]
+    source: str = "Parcs nationaux (Geotrek) : itinéraires officiels des topo-guides"
+
+
 class HikingRouteList(BaseModel):
     routes: list[HikingRoute]
     source: str = "OpenStreetMap (relations route=hiking)"
@@ -60,9 +77,22 @@ class HikingRouteList(BaseModel):
 
 class AnnotationResult(BaseModel):
     route_id: str
-    pois: list[Poi]
+    pois: list[Poi] = Field(description="Les plus intéressants, triés par km (liste complète dans les exports)")
+    total: int = Field(description="Nombre total de points notables trouvés")
     warnings: list[str]
     source: str = "OpenStreetMap (Overpass), descriptions Wikidata"
+
+
+class AnalysisResult(BaseModel):
+    """Analyse complète en un appel (économise des tours d'agent et des jetons)."""
+
+    route_id: str
+    validation: ValidationReport
+    pois: list[Poi] = Field(description="Points notables les plus intéressants, triés par km")
+    pois_total: int
+    passages_techniques: list[TechnicalPassage]
+    zones: list[AreaCrossing]
+    indisponible: list[str] = Field(default_factory=list, description="Analyses qui n'ont pas pu être faites")
 
 
 class TechnicalResult(BaseModel):
@@ -130,8 +160,9 @@ class ReferenceResult(BaseModel):
 
 class BivouacResult(BaseModel):
     route_id: str
-    emplacements: list[BivouacSpot]
-    rappels: list[str]
+    emplacements: list[BivouacSpot] = Field(description="Les meilleurs, triés par km (tous servent à plan_stages)")
+    total: int
+    rappels: list[str] = Field(description="Avertissements communs à tous les emplacements, donnés une seule fois")
 
 
 class StagesResult(BaseModel):

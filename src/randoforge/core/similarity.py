@@ -18,9 +18,11 @@ class ReferenceComparison(BaseModel):
     distance_km: float | None
     distance_ref_km: float | None
     ecart_distance_pct: float | None
+    ecart_distance_km: float | None = None
     d_plus_m: int | None
     d_plus_ref_m: int | None
     ecart_d_plus_pct: float | None
+    ecart_d_plus_m: int | None = None
 
 
 def _xy(points: list[TrackPoint], proj: LocalProjection) -> np.ndarray:

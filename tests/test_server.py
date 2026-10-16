@@ -69,10 +69,10 @@ async def test_full_workflow(server, services):
         rid = route["route_id"]
 
         annotated = await call(client, "annotate_route", {"route_id": rid})
-        names = {p["nom"] for p in annotated["pois"]}
+        names = {p.get("nom") for p in annotated["pois"]}
         assert {"Le Furon", "Source de Moucherotte"} <= names
         assert "Lans Mairie" not in names  # abribus exclu
-        assert any(p["via"] == "gué" for p in annotated["pois"])
+        assert any(p.get("via") == "gué" for p in annotated["pois"])
         assert annotated["warnings"]
         kms = [p["km"] for p in annotated["pois"]]
         assert kms == sorted(kms)

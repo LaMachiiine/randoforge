@@ -12,6 +12,7 @@ import tempfile
 from pathlib import Path
 
 import pytest
+from mcp.server.mcpserver.exceptions import ToolError
 
 from randoforge.app import App
 from randoforge.core.models import Route, TrackPoint
@@ -54,9 +55,12 @@ def test_d_plus_matches_official_treks(app, park):
 def test_rounded_summits_match_official_altitudes(app):
     """Sommets arrondis (Cévennes) : le MNT IGN doit coller à l'altitude officielle."""
     application, _ = app
-    els = application.overpass(
-        '[out:json][timeout:60];node["natural"="peak"]["ele"]["name"](44.15,3.5,44.45,3.9);out 30;'
-    )
+    try:
+        els = application.overpass(
+            '[out:json][timeout:60];node["natural"="peak"]["ele"]["name"](44.15,3.5,44.45,3.9);out 30;'
+        )
+    except ToolError as exc:  # service public saturé : on teste RandoForge, pas la disponibilité d'Overpass
+        pytest.skip(f"Overpass indisponible : {exc}")
     pts, official = [], []
     for el in els:
         try:

@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
+
 import numpy as np
 from mcp.server.mcpserver.exceptions import ToolError
 
@@ -15,6 +18,7 @@ from .engines.elevation import CopernicusElevation
 from .http import HttpError
 from .services import Services
 from .storage import RouteStore, new_route_id
+from .validation import validate
 
 DENSIFY_M = 10.0
 DEFAULT_CATEGORIES = [c for c in poi_lib.CATEGORIES if c != "transport"]
@@ -129,11 +133,17 @@ class App:
         route.validation = None
 
     def ensure_technical(self, route: Route) -> None:
-        elements = self.overpass(technical_lib.build_query(route.points))
-        try:
-            refuges = self.refuges_near(route, 100)
-        except ToolError:
-            refuges = []  # refuges.info est un complément : son absence ne bloque pas l'analyse
+        res = self.parallel(
+            {
+                "osm": lambda: self.overpass(technical_lib.build_query(route.points)),
+                "refuges": lambda: self.refuges_near(route, 100),
+            }
+        )
+        if isinstance(res["osm"], ToolError):
+            raise res["osm"]
+        elements = res["osm"]
+        # refuges.info est un complément : son absence ne bloque pas l'analyse
+        refuges = [] if isinstance(res["refuges"], ToolError) else res["refuges"]
         route.technical = technical_lib.technical_passages(
             route.points, route.segments, elements, route.engine_stats.get("distance_m"), refuges
         )
@@ -143,13 +153,33 @@ class App:
         route.areas = areas_lib.crossings(route.points, self.overpass(areas_lib.build_query(route.points)))
         route.validation = None
 
-    def best_effort(self, route: Route, *steps) -> list[str]:
-        """Lance les analyses manquantes ; une source indisponible ne bloque pas les autres."""
-        failures = []
-        for missing, step, label in steps:
-            if missing:
-                try:
-                    step(route)
-                except ToolError as exc:
-                    failures.append(f"{label} : {exc}")
+    @staticmethod
+    def parallel(calls: dict[str, Callable[[], object]]) -> dict[str, object]:
+        """Exécute des appels indépendants en parallèle (chacun attend surtout un service externe) ;
+        renvoie {nom: résultat, ou l'exception ToolError si l'appel a échoué}."""
+        with ThreadPoolExecutor(max_workers=max(1, len(calls))) as pool:
+            futures = {name: pool.submit(fn) for name, fn in calls.items()}
+        out: dict[str, object] = {}
+        for name, f in futures.items():
+            try:
+                out[name] = f.result()
+            except ToolError as exc:
+                out[name] = exc
+        return out
+
+    def run_missing_analyses(self, route: Route) -> list[str]:
+        """Points notables, passages techniques et zones réglementées manquants, en parallèle.
+        Une source indisponible ne bloque pas les autres ; renvoie la liste des analyses impossibles."""
+        steps = (
+            ("points notables", route.pois is None, self.ensure_pois),
+            ("passages techniques", route.technical is None, self.ensure_technical),
+            ("zones réglementées", route.areas is None, self.ensure_areas),
+        )
+        res = self.parallel({label: (lambda fn=fn: fn(route)) for label, missing, fn in steps if missing})
+        return [f"{label} : {r}" for label, r in res.items() if isinstance(r, ToolError)]
+
+    def validate_full(self, route: Route) -> list[str]:
+        """Analyses manquantes puis validation ; renvoie les analyses impossibles."""
+        failures = self.run_missing_analyses(route)
+        route.validation = validate(route)
         return failures

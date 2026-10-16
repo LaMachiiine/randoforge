@@ -34,7 +34,7 @@ def line(n=300, dlat=1e-4, ele=lambda i: 1000.0, lon=6.0):
 
 
 def route_of(points, **kw):
-    r = Route(route_id="r_2026-10-15_abcdef", name="Test", source="test", points=points, **kw)
+    r = Route(route_id="r_2026-10-15_abcdef", name="Test", points=points, **{"source": "test", **kw})
     r.stats, _ = compute_stats(points)
     return r
 
@@ -249,7 +249,7 @@ async def test_trek_workflow(server, tmp_path, soon):
         assert q["qualite"]["sur_chemin_pct"] == 100 and q["qualite"]["niveau"] == "haute"
 
         annotated = await call(client, "annotate_route", {"route_id": rid})
-        assert any(p["description"] for p in annotated["pois"] if p["wikidata"])
+        assert any(p.get("description") for p in annotated["pois"] if p.get("wikidata"))
 
         w = await call(client, "weather_forecast", {"route_id": rid})
         assert len(w["points"]) == 3 and w["heures"].startswith("8h")
@@ -307,3 +307,10 @@ async def test_weather_refuses_dates_out_of_range(server):
         rid = (await call(client, "route_between", {"waypoints": [LANS, MOUCHEROTTE]}))["route_id"]
         res = await client.call_tool("weather_forecast", {"route_id": rid, "date": "2030-01-01"})
         assert res.is_error and "Prévisions disponibles" in res.content[0].text
+
+
+def test_n5_advises_the_higher_d_plus_without_claiming_ours_is_right():
+    r = route_of(line(300, ele=lambda i: 1000 + i), source="officiel:cevennes:1", engine_stats={"d_plus_m": 500})
+    check = next(c for c in validate(r).checks if c.id == "N5")
+    assert "topo-guide officiel" in check.message and "fait foi" not in (check.suggestion or "")
+    assert "valeur haute (500 m)" in check.suggestion

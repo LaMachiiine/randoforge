@@ -118,7 +118,7 @@ def tarmac_length(segments: list[WaySegment]) -> float:
 
 def check_technical(route: Route) -> list[Check]:
     if route.technical is None:
-        return [Check(id="D8", level="info", message="Passages techniques non analysés (lancer technical_passages)")]
+        return [Check(id="D8", level="info", message="Passages techniques non analysés (lancer analyze_route)")]
     checks = []
     for p in route.technical:
         if "glacier" in p.types:
@@ -284,14 +284,17 @@ def check_numbers(route: Route) -> list[Check]:
     engine_dplus = route.engine_stats.get("d_plus_m")
     if engine_dplus:
         diff = abs(s.d_plus_m - engine_dplus)
+        source = "le topo-guide officiel" if route.source.startswith("officiel:") else "le moteur de routage"
         if diff > max(30, 0.15 * engine_dplus):
             checks.append(
                 Check(
                     id="N5",
                     level="warning",
-                    message=f"D+ calculé {s.d_plus_m:.0f} m vs {engine_dplus:.0f} m selon le moteur de routage "
-                    "(MNT différents)",
-                    suggestion="Notre valeur (MNT plus précis) fait foi ; l'écart signale une zone à vérifier.",
+                    message=f"D+ calculé {s.d_plus_m:.0f} m vs {engine_dplus:.0f} m selon {source} (modèles de terrain "
+                    "et méthodes différents)",
+                    # La calibration montre qu'aucune des deux valeurs n'est systématiquement la bonne.
+                    suggestion=f"Prévoir plutôt la valeur haute ({max(s.d_plus_m, engine_dplus):.0f} m) pour l'effort "
+                    "et l'horaire.",
                 )
             )
     return checks
@@ -336,7 +339,7 @@ def check_pois(route: Route) -> list[Check]:
             Check(
                 id="D7",
                 level="info",
-                message="Franchissements de cours d'eau non vérifiés (lancer annotate_route)",
+                message="Franchissements de cours d'eau non vérifiés (lancer analyze_route)",
             )
         ]
     return [
@@ -502,7 +505,7 @@ def check_water(route: Route) -> list[Check]:
 
 def check_areas(route: Route) -> list[Check]:
     if route.areas is None:
-        return [Check(id="A2", level="info", message="Zones réglementées non vérifiées (lancer route_areas)")]
+        return [Check(id="A2", level="info", message="Zones réglementées non vérifiées (lancer analyze_route)")]
     checks = []
     for a in route.areas:
         name = f" « {a.nom} »" if a.nom else ""

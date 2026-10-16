@@ -5,25 +5,45 @@ from __future__ import annotations
 from typing import Annotated
 
 from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 from pydantic import Field
 
 from ..app import DEFAULT_CATEGORIES, App
 from ..core import pois as poi_lib
 from ..core.geo import distance_m
 from ..core.models import TrackPoint
-from .schemas import CategoryName, HikingRoute, HikingRouteList, PlaceList, PoiNearby, PoiSearchResult
+from ..engines.geotrek import INSTANCES
+from .schemas import (
+    CategoryName,
+    HikingRoute,
+    HikingRouteList,
+    LatLon,
+    OfficialTrekList,
+    Park,
+    PlaceList,
+    PoiNearby,
+    PoiSearchResult,
+)
 
 NETWORKS = {"iwn": "international", "nwn": "national", "rwn": "régional", "lwn": "local"}
 
 
 def register(mcp: MCPServer, app: App) -> None:
     @mcp.tool()
-    def geocode(query: str, limit: Annotated[int, Field(ge=1, le=10)] = 5, country: str | None = None) -> PlaceList:
+    def geocode(
+        query: str,
+        limit: Annotated[int, Field(ge=1, le=10)] = 5,
+        country: str | None = None,
+        near: LatLon | None = None,
+    ) -> PlaceList:
         """Trouve les coordonnées d'un lieu (village, sommet, parking, lac…) par son nom.
 
-        `country` : code ISO à 2 lettres (fr, ch, it…) pour lever les ambiguïtés.
+        `country` : code ISO à 2 lettres (fr, ch, it…). `near` : privilégie les résultats proches d'un point
+        (ex. le village de départ) — utile pour un sommet homonyme d'une rue ou d'un bâtiment. Pour un sommet,
+        un col ou une cascade, find_pois autour du départ est souvent plus sûr.
         """
-        return PlaceList(places=app.external(lambda: app.services.nominatim.geocode(query, limit, country)))
+        around = (near.lat, near.lon) if near else None
+        return PlaceList(places=app.external(lambda: app.services.nominatim.geocode(query, limit, country, around)))
 
     @mcp.tool()
     def find_pois(
@@ -48,6 +68,34 @@ def register(mcp: MCPServer, app: App) -> None:
             pois=[PoiNearby(poi=p, distance_from_center_m=round(d)) for p, d in found[:limit]],
             truncated=len(found) > limit,
         )
+
+    @mcp.tool()
+    def find_official_treks(
+        query: str | None = None,
+        lat: float | None = None,
+        lon: float | None = None,
+        radius_km: Annotated[float, Field(gt=0, le=30)] = 10.0,
+        parc: Park | None = None,
+        limit: Annotated[int, Field(ge=1, le=30)] = 10,
+    ) -> OfficialTrekList:
+        """Randos **officielles** des parcs nationaux (Écrins, Cévennes, Port-Cros) : par nom (`query`) et/ou
+        autour d'un lieu. Si l'utilisateur nomme une rando de parc ou veut une rando « balisée et décrite » dans
+        un de ces parcs, chercher ici d'abord puis l'importer avec import_official_trek plutôt que la reconstruire.
+        """
+        if not query and (lat is None or lon is None):
+            raise ToolError("Donner un nom (query) et/ou un lieu (lat, lon).")
+        bbox = None
+        if lat is not None and lon is not None:
+            bbox = poi_lib.bbox_around([TrackPoint(lat=lat, lon=lon)], radius_km * 1000)
+        parks = [parc] if parc else list(INSTANCES)
+        res = app.parallel({p: (lambda p=p: app.external(lambda: app.services.geotrek.search(p, query, bbox, limit)))
+                            for p in parks})  # fmt: skip
+        treks = [t for r in res.values() if isinstance(r, list) for t in r]
+        if lat is not None and lon is not None:
+            treks.sort(key=lambda t: distance_m((lat, lon), (t.depart_lat, t.depart_lon)) if t.depart_lat else 1e9)
+        if not treks and all(isinstance(r, ToolError) for r in res.values()):
+            raise ToolError("Catalogues des parcs indisponibles : " + " ; ".join(str(r) for r in res.values()))
+        return OfficialTrekList(treks=treks[:limit])
 
     @mcp.tool()
     def find_hiking_routes(

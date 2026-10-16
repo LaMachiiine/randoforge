@@ -29,22 +29,22 @@ OVERNIGHT_KINDS = {
 
 def compute_bivouacs(app: App, route: Route) -> list[str]:
     """Remplit route.bivouacs ; renvoie les sources indisponibles."""
-    failures = app.best_effort(
-        route,
-        (route.pois is None, app.ensure_pois, "points d'eau"),
-        (route.technical is None, app.ensure_technical, "passages techniques"),
-        (route.areas is None, app.ensure_areas, "zones réglementées"),
-    )
-    try:
-        refuges = app.refuges_near(route)
-    except ToolError as exc:
-        refuges, failures = [], [*failures, f"refuges.info : {exc}"]
-    try:
-        osm = app.overpass(bivouac_lib.build_query(route.points))
-    except ToolError as exc:
-        osm, failures = [], [*failures, f"OSM : {exc}"]
     candidates, probes = bivouac_lib.probe_points(route.points)
-    slopes = bivouac_lib.slope_from_probes(app.elevations(probes).values) if probes else []
+    # Toutes les sources sont interrogées en même temps : le temps total est celui de la plus lente.
+    res = app.parallel(
+        {
+            "analyses": lambda: app.run_missing_analyses(route),
+            "refuges": lambda: app.refuges_near(route),
+            "osm": lambda: app.overpass(bivouac_lib.build_query(route.points)),
+            "slopes": lambda: bivouac_lib.slope_from_probes(app.elevations(probes).values) if probes else [],
+        }
+    )
+    failures = list(res["analyses"]) if not isinstance(res["analyses"], ToolError) else [str(res["analyses"])]
+    refuges, osm, slopes = ([] if isinstance(res[k], ToolError) else res[k] for k in ("refuges", "osm", "slopes"))
+    failures += [f"{label} : {res[k]}" for k, label in (("refuges", "refuges.info"), ("osm", "OSM"), ("slopes", "relief"))
+                 if isinstance(res[k], ToolError)]  # fmt: skip
+    if isinstance(res["slopes"], ToolError):
+        candidates = []  # sans relief, pas d'emplacement calculé
     route.bivouacs = bivouac_lib.find_spots(
         route.points,
         route.segments,
@@ -62,7 +62,9 @@ def compute_bivouacs(app: App, route: Route) -> list[str]:
 
 def register(mcp: MCPServer, app: App) -> None:
     @mcp.tool()
-    def find_bivouac_spots(route_id: str, abrite_seulement: bool = False) -> BivouacResult:
+    def find_bivouac_spots(
+        route_id: str, abrite_seulement: bool = False, limit: Annotated[int, Field(ge=1, le=100)] = 12
+    ) -> BivouacResult:
         """Emplacements pour dormir le long du tracé : refuges, cabanes et gîtes (refuges.info, OSM),
         aires de bivouac, et emplacements *calculés* (terrain plat < 8 %, eau à moins de 500 m si
         possible, loin des routes, hors pierriers et zones où le bivouac est interdit).
@@ -79,7 +81,18 @@ def register(mcp: MCPServer, app: App) -> None:
         spots = [b for b in route.bivouacs if b.abrite] if abrite_seulement else route.bivouacs
         if abrite_seulement and not spots:
             rappels.append("Aucun abri cartographié le long du tracé : prévoir une tente.")
-        return BivouacResult(route_id=route_id, emplacements=spots, rappels=rappels)
+        best = sorted(sorted(spots, key=lambda b: -b.score)[:limit], key=lambda b: b.km)
+        # Les avertissements répétés sur la plupart des emplacements ne sont donnés qu'une fois (économie de jetons).
+        counts: dict[str, int] = {}
+        for b in best:
+            for w in b.avertissements:
+                counts[w] = counts.get(w, 0) + 1
+        common = {w for w, n in counts.items() if n >= max(2, len(best) // 2)}
+        rappels += sorted(common)
+        shown = [
+            b.model_copy(update={"avertissements": [w for w in b.avertissements if w not in common]}) for b in best
+        ]
+        return BivouacResult(route_id=route_id, emplacements=shown, total=len(spots), rappels=rappels)
 
     @mcp.tool()
     def plan_stages(

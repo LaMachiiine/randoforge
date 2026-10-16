@@ -6,11 +6,20 @@ from pydantic import BaseModel
 
 from ..http import DAY, CachedHttp
 
+# Ordre = priorité : du plus rapide mesuré au plus lent (les serveurs sont mis en concurrence, voir query()).
 OVERPASS_URLS = [
     "https://overpass.kumi.systems/api/interpreter",
-    "https://overpass-api.de/api/interpreter",
     "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
+    "https://overpass-api.de/api/interpreter",
 ]
+HEDGE_AFTER_S = 3.0
+
+
+def overpass_problem(value) -> str | None:
+    """Overpass renvoie parfois 200 avec une erreur d'exécution : ce n'est pas « aucun résultat »."""
+    remark = str(value.get("remark") or "") if isinstance(value, dict) else ""
+    return remark[:200] if "error" in remark.lower() else None
 
 
 class Place(BaseModel):
@@ -28,10 +37,16 @@ class Nominatim:
         self.http = http
         self.url = url or self.URL
 
-    def geocode(self, query: str, limit: int = 5, country: str | None = None) -> list[Place]:
+    def geocode(
+        self, query: str, limit: int = 5, country: str | None = None, near: tuple[float, float] | None = None
+    ) -> list[Place]:
         params = {"q": query, "format": "jsonv2", "limit": limit, "accept-language": "fr"}
         if country:
             params["countrycodes"] = country
+        if near:
+            # Préférence (non exclusive) pour les résultats à ~20 km du point donné.
+            lat, lon = near
+            params["viewbox"] = f"{lon - 0.25:.4f},{lat + 0.18:.4f},{lon + 0.25:.4f},{lat - 0.18:.4f}"
         res = self.http.request_json("GET", self.url, params=params, ttl_s=90 * DAY, service="Nominatim")
         return [
             Place(
@@ -52,6 +67,12 @@ class Overpass:
 
     def query(self, ql: str) -> list[dict]:
         res = self.http.request_json(
-            "POST", self.urls, data={"data": ql}, ttl_s=30 * DAY, service="Overpass (OpenStreetMap)"
+            "POST",
+            self.urls,
+            data={"data": ql},
+            ttl_s=30 * DAY,
+            service="Overpass (OpenStreetMap)",
+            hedge_after_s=HEDGE_AFTER_S,
+            accept=overpass_problem,
         )
         return res.get("elements", [])

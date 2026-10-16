@@ -50,7 +50,7 @@ class FakeElevation:
 
 
 class FakeNominatim:
-    def geocode(self, query, limit, country):
+    def geocode(self, query, limit, country, near=None):
         return [Place(name=query, display_name=f"{query}, France", lat=45.1279, lon=5.5885, type="village")]
 
 
@@ -112,6 +112,26 @@ class FakeWeather:
                            "wind_gusts_10m": [30] * 24, "snow_depth": [0] * 24, "cape": [100] * 24}}  # fmt: skip
 
 
+class FakeGeotrek:
+    """Catalogue officiel : une rando dont le tracé est la vraie géométrie BRouter enregistrée."""
+
+    def search(self, instance, query=None, bbox=None, limit=20):
+        from randoforge.engines.geotrek import OfficialTrek
+
+        if instance != "ecrins":
+            return []
+        return [OfficialTrek(parc="ecrins", trek_id=1, nom="Montée au Moucherotte", depart="Lans-en-Vercors",
+                             arrivee="Moucherotte", type="Aller-retour", distance_km=7.6, d_plus_m=700,
+                             resume="Rando de test", depart_lat=45.1279, depart_lon=5.5885)]  # fmt: skip
+
+    def trek(self, instance, trek_id):
+        from randoforge.engines.geotrek import ReferenceTrek
+
+        return ReferenceTrek(source=instance, id=trek_id, name="Montée au Moucherotte", ascent_m=700, descent_m=0,
+                             length_km=7.585, min_elevation_m=None, max_elevation_m=None,
+                             coords=[(p["lat"], p["lon"], None) for p in route_geometry()])  # fmt: skip
+
+
 class FakeWikidata:
     def describe(self, ids, lang="fr"):
         return {
@@ -132,7 +152,7 @@ def store(tmp_path):
 @pytest.fixture
 def services():
     return Services(router=FakeRouter(), elevation=FakeElevation(), nominatim=FakeNominatim(), overpass=FakeOverpass(),
-                    refuges=FakeRefuges(), weather=FakeWeather(), wikidata=FakeWikidata())  # fmt: skip
+                    refuges=FakeRefuges(), weather=FakeWeather(), wikidata=FakeWikidata(), geotrek=FakeGeotrek())  # fmt: skip
 
 
 @pytest.fixture

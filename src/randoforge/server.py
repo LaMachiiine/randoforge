@@ -15,11 +15,11 @@ RandoForge fournit des outils fiables pour concevoir des itinéraires de randonn
 Règles :
 - N'annonce jamais une distance, un dénivelé, une durée ou une altitude qui ne vient pas d'un outil.
 - Ne propose jamais un tracé qui n'a pas été produit par route_between, generate_loop_candidates ou importé.
-- Enregistre les contraintes de l'utilisateur avec set_constraints, puis lance validate_route avant de livrer ;
-  ne livre pas un itinéraire au statut `error` sans le dire.
+- Enregistre les contraintes de l'utilisateur avec set_constraints, puis lance analyze_route (analyses + validation
+  en un appel) avant de livrer ; ne livre pas un itinéraire au statut `error` sans le dire.
 - Signale toujours les `warnings`, les checks de validation et les avertissements réglementaires.
 Démarche type : geocode → find_pois / find_hiking_routes → route_between ou generate_loop_candidates
-(+ compare_routes) → set_constraints → annotate_route → technical_passages → validate_route → export_route.
+(+ compare_routes) → set_constraints → analyze_route → export_route.
 Plusieurs jours : find_bivouac_spots → plan_stages. Avant de partir : weather_forecast, bailout_route.
 """
 

@@ -54,7 +54,7 @@ async def test_day_loop_from_autrans(home):
     """Boucle à la journée générée automatiquement, analysée, validée et exportée."""
     async with server(home) as c:
         tools = {t.name for t in (await c.list_tools()).tools}
-        assert len(tools) == 23
+        assert len(tools) == 26
 
         place = (await call(c, "geocode", {"query": "Autrans", "country": "fr", "limit": 1}))["places"][0]
         assert 45.1 < place["lat"] < 45.25

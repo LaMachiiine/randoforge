@@ -89,3 +89,113 @@ def test_chain_falls_back_per_point():
 )
 def test_copernicus_tile_names(lat, lon, tile):
     assert CopernicusElevation.tile_name(lat, lon) == tile
+
+
+def test_hedged_request_takes_first_valid_answer_without_waiting_for_slow_server():
+    import time as _time
+
+    def handler(request):
+        if request.url.host == "slow.example":
+            _time.sleep(2)
+            return httpx.Response(200, json={"elements": [1]})
+        return httpx.Response(200, json={"elements": [2]})
+
+    http = http_with(handler)
+    t0 = _time.time()
+    res = http.request_json(
+        "POST", ["https://slow.example/i", "https://fast.example/i"], data={"q": 1}, hedge_after_s=0.2
+    )
+    assert res == {"elements": [2]} and _time.time() - t0 < 1.5
+
+
+def test_overpass_runtime_error_in_200_is_not_an_empty_result():
+    from randoforge.engines.osm import Overpass
+
+    def handler(request):
+        if request.url.host == "broken.example":
+            return httpx.Response(200, json={"elements": [], "remark": "runtime error: Query timed out"})
+        return httpx.Response(200, json={"elements": [{"id": 1}]})
+
+    over = Overpass(http_with(handler), ["https://broken.example/i", "https://ok.example/i"])
+    assert over.query("q") == [{"id": 1}]
+
+
+def test_unreachable_server_is_set_aside():
+    calls = []
+
+    def handler(request):
+        calls.append(request.url.host)
+        if request.url.host == "dead.example":
+            raise httpx.ConnectTimeout("timeout")
+        return httpx.Response(200, json={"ok": 1})
+
+    http = http_with(handler)
+    for i in range(3):
+        http.request_json("GET", ["https://dead.example/a", "https://up.example/a"], params={"i": i})
+    assert calls.count("dead.example") == 1  # essayé une fois, puis écarté
+
+
+def test_too_slow_brouter_is_retried_once_then_explained():
+    calls = []
+
+    def handler(request):
+        calls.append(1)
+        return httpx.Response(400, text="operation killed by thread-priority-watchdog after 2 seconds")
+
+    with pytest.raises(HttpError, match="rapprocher les points"):
+        http_with(handler).request_json("GET", "https://brouter.example", service="BRouter")
+    assert len(calls) == 2  # une nouvelle chance (surcharge passagère), pas trois
+
+
+def test_single_server_is_not_set_aside_after_connect_error():
+    answers = iter([httpx.ConnectTimeout("t"), httpx.Response(200, json={"ok": 1})])
+
+    def handler(request):
+        a = next(answers)
+        if isinstance(a, Exception):
+            raise a
+        return a
+
+    assert http_with(handler).request_json("GET", "https://ign.example") == {"ok": 1}
+
+
+def test_overloaded_brouter_400_is_retried():
+    answers = iter([httpx.Response(400, text="operation killed by thread-priority-watchdog after 2 seconds"),
+                    httpx.Response(200, json={"ok": 1})])  # fmt: skip
+    assert http_with(lambda r: next(answers)).request_json("GET", "https://brouter.example") == {"ok": 1}
+
+
+def test_per_host_concurrency_limit_is_respected():
+    import threading
+    import time as _time
+    from concurrent.futures import ThreadPoolExecutor
+
+    active, peak, lock = [0], [0], threading.Lock()
+
+    def handler(request):
+        with lock:
+            active[0] += 1
+            peak[0] = max(peak[0], active[0])
+        _time.sleep(0.05)
+        with lock:
+            active[0] -= 1
+        return httpx.Response(200, json={"ok": 1})
+
+    http = CachedHttp(
+        None, transport=httpx.MockTransport(handler), sleep=lambda s: None, host_limits={"api.example": (2, 0)}
+    )
+    with ThreadPoolExecutor(8) as pool:
+        list(pool.map(lambda i: http.request_json("GET", "https://api.example/x", params={"i": i}), range(8)))
+    assert peak[0] <= 2
+
+
+def test_retry_after_is_honoured_and_brouter_403_retried():
+    slept = []
+    answers = iter([httpx.Response(429, headers={"Retry-After": "3"}), httpx.Response(200, json={"ok": 1})])
+    http = CachedHttp(None, transport=httpx.MockTransport(lambda r: next(answers)), sleep=slept.append)
+    assert http.request_json("GET", "https://data.geopf.fr/x") == {"ok": 1}
+    assert 3.0 in slept
+
+    answers2 = iter([httpx.Response(403, text="Forbidden"), httpx.Response(200, json={"ok": 2})])
+    http2 = CachedHttp(None, transport=httpx.MockTransport(lambda r: next(answers2)), sleep=lambda s: None)
+    assert http2.request_json("GET", "https://brouter.de/brouter") == {"ok": 2}

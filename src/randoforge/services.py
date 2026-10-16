@@ -9,6 +9,7 @@ from pathlib import Path
 from .engines.brouter import BRouterEngine
 from .engines.elevation import CopernicusElevation, ElevationChain, IgnElevation, LocalDemElevation
 from .engines.extra import OpenMeteo, RefugesInfo, Wikidata
+from .engines.geotrek import GeotrekReference
 from .engines.osm import Nominatim, Overpass
 from .http import CachedHttp
 
@@ -22,6 +23,7 @@ class Services:
     refuges: object | None = None
     weather: object | None = None
     wikidata: object | None = None
+    geotrek: object | None = None
 
     @classmethod
     def from_env(cls, home: Path) -> Services:
@@ -41,4 +43,5 @@ class Services:
             refuges=RefugesInfo(http),
             weather=OpenMeteo(http),
             wikidata=Wikidata(http),
+            geotrek=GeotrekReference(http),
         )

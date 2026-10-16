@@ -6,13 +6,13 @@ Serveur [MCP](https://modelcontextprotocol.io) et plugin **Claude Code** qui don
 
 Exemples de demandes : *« une boucle de 12 km depuis Autrans qui passe par une cascade, niveau T2 max »*, *« 3 jours sur les Hauts-Plateaux du Vercors en dormant en cabane »*, *« analyse ma trace montre.gpx »*.
 
-## Outils (23)
+## Outils (26)
 
 | Thème | Outils |
 |---|---|
-| Recherche | `geocode`, `find_pois` (cascades, points de vue, lacs, sommets, patrimoine, eau, refuges, transports), `find_hiking_routes` (GR, PR) |
-| Construction | `route_between` (points imposés, boucle), `generate_loop_candidates` (boucles automatiques), `import_gpx`, `bailout_route` (repli) |
-| Analyse | `set_constraints`, `compute_stats` (profils famille/moyen/sportif), `annotate_route` (points notables au km, gués, Wikidata), `technical_passages`, `route_areas` (parcs, réserves, militaire), `data_quality` (confiance, % sur chemin), `weather_forecast`, `compare_routes`, `compare_with_reference`, `validate_route` (~35 règles) |
+| Recherche | `find_official_treks` (randos officielles des parcs nationaux), `geocode`, `find_pois` (cascades, points de vue, lacs, sommets, patrimoine, eau, refuges, transports), `find_hiking_routes` (GR, PR) |
+| Construction | `import_official_trek`, `route_between` (points imposés, boucle), `generate_loop_candidates` (boucles automatiques), `import_gpx`, `bailout_route` (repli) |
+| Analyse | `analyze_route` (tout en un appel), `set_constraints`, `compute_stats` (profils famille/moyen/sportif), `annotate_route` (points notables au km, gués, Wikidata), `technical_passages`, `route_areas` (parcs, réserves, militaire), `data_quality` (confiance, % sur chemin), `weather_forecast`, `compare_routes`, `compare_with_reference`, `validate_route` (~35 règles) |
 | Itinérance | `find_bivouac_spots` (refuges, cabanes, abris, grottes, emplacements calculés ; option « abrité seulement »), `plan_stages` (découpage en jours, nuits à l'abri possibles) |
 | Sortie | `export_route` (GPX complet + un GPX par jour, fiche Obsidian, carte HTML, roadbook imprimable), `mark_done`, `get_route`, `list_routes` |
 
@@ -91,6 +91,23 @@ uv run python scripts/demo_itinerance.py
 ```
 
 Démonstration complète commentée. `scripts/calibrate_reference.py --report` refait la calibration sur les références officielles ; `scripts/calibrate.py` compare le D+ à vos propres traces.
+
+## Évals avec de vrais agents
+
+`evals/` lance de vrais agents Claude Code, limités aux outils RandoForge, sur 20 demandes types et sur des randos
+réelles des parcs nationaux qu'ils doivent reconstruire ; tout est noté automatiquement (chiffres traçables jusqu'aux
+outils, avertissements, écart au tracé officiel). Voir [`evals/README.md`](evals/README.md).
+
+```bash
+uv run python evals/run.py --model sonnet
+```
+
+## Sobriété en jetons
+
+Les réponses d'outils sont conçues pour coûter peu au modèle : JSON compact (sans indentation), champs vides omis,
+statistiques sans paramètres de calcul, listes plafonnées (`limit`) avec le total, avertissements communs donnés une
+seule fois. Mesuré sur un itinéraire réel : −34 % à −75 % selon l'outil (`find_bivouac_spots` : 10 100 → 2 500
+caractères). Les listes complètes restent disponibles dans les exports.
 
 ## Documentation
 

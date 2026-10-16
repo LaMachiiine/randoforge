@@ -18,3 +18,4 @@ routes/
 .dev-home/
 .cache-dev.sqlite
 .claude/
+evals/runs/

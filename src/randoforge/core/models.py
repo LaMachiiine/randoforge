@@ -6,7 +6,25 @@ from datetime import UTC, datetime
 from datetime import date as Date
 from datetime import time as Time
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_serializer
+
+NOT_VALIDATED = "Lancer analyze_route (ou validate_route) avant de présenter cet itinéraire."
+
+
+class Compact(BaseModel):
+    """Modèle renvoyé à Claude : les champs vides (None, False, listes vides) sont omis pour économiser
+    des jetons. Les zéros sont conservés (km 0, D+ 0 sont des informations)."""
+
+    @model_serializer(mode="wrap")
+    def _drop_empty(self, handler):
+        data = handler(self)
+        fields = type(self).model_fields
+        # Seuls les champs facultatifs peuvent disparaître : le schéma de sortie exige les autres.
+        return {
+            k: v
+            for k, v in data.items()
+            if (k in fields and fields[k].is_required()) or (v is not None and v is not False and v != [] and v != {})
+        }
 
 
 class TrackPoint(BaseModel):
@@ -64,7 +82,7 @@ class WaySegment(BaseModel):
     tags: dict[str, str]
 
 
-class Poi(BaseModel):
+class Poi(Compact):
     """Point notable situé sur le tracé ou à proximité."""
 
     km: float = Field(description="Position le long du tracé")
@@ -86,7 +104,7 @@ class Poi(BaseModel):
     osm_id: str
 
 
-class TechnicalPassage(BaseModel):
+class TechnicalPassage(Compact):
     km: float
     longueur_m: float
     niveau: str | None = Field(description="Niveau max sur l'échelle T1–T6 si renseigné dans OSM")
@@ -112,7 +130,7 @@ class RouteRequest(BaseModel):
     stroller: bool = False
 
 
-class AreaCrossing(BaseModel):
+class AreaCrossing(Compact):
     """Zone réglementée traversée (parc national, réserve, terrain militaire…)."""
 
     nom: str | None
@@ -128,7 +146,7 @@ class AreaCrossing(BaseModel):
     osm_id: str
 
 
-class BivouacSpot(BaseModel):
+class BivouacSpot(Compact):
     km: float
     abrite: bool = Field(False, description="Toit ou paroi : refuge, cabane, abri, grotte, abri sous roche")
     lat: float
@@ -146,7 +164,7 @@ class BivouacSpot(BaseModel):
     avertissements: list[str] = Field(default_factory=list)
 
 
-class Stage(BaseModel):
+class Stage(Compact):
     jour: int
     km_debut: float
     km_fin: float
@@ -178,6 +196,12 @@ class WeatherReport(BaseModel):
     points: list[WeatherWindow]
     alertes: list[str]
     source: str = "Open-Meteo"
+    validation_status: str | None = Field(
+        None, description="Statut de la validation de l'itinéraire (faite automatiquement)"
+    )
+    alertes_itineraire: list[str] = Field(
+        default_factory=list, description="Erreurs et avertissements de la validation"
+    )
 
 
 class Quality(BaseModel):
@@ -189,7 +213,7 @@ class Quality(BaseModel):
     annee_mediane_edition: int | None = None
 
 
-class Check(BaseModel):
+class Check(Compact):
     id: str
     level: str = Field(description="error, warning ou info")
     message: str
@@ -228,17 +252,35 @@ class Route(BaseModel):
     done_notes: str | None = None
 
 
-class RouteSummary(BaseModel):
+class StatsSummary(Compact):
+    """Statistiques utiles à Claude (sans les paramètres de calcul, disponibles dans les exports)."""
+
+    distance_km: float
+    d_plus_m: int | None
+    d_minus_m: int | None
+    alt_min_m: int | None
+    alt_max_m: int | None
+    duration_min: int | None
+    duration_label: str | None
+    is_loop: bool
+    elevation_source: str
+
+    @classmethod
+    def of(cls, s: RouteStats | None) -> StatsSummary | None:
+        return cls(**s.model_dump(exclude={"params", "profile"})) if s else None
+
+
+class RouteSummary(Compact):
     """Vue compacte d'un itinéraire, renvoyée à Claude (sans la géométrie)."""
 
     route_id: str
     name: str
     source: str
-    n_points: int
-    stats: RouteStats | None
-    warnings: list[str]
+    stats: StatsSummary | None
+    warnings: list[str] = Field(default_factory=list)
     validation_status: str | None = None
     n_pois: int | None = None
+    prochaine_etape: str | None = Field(None, description="Rappel tant que l'itinéraire n'est pas validé")
 
     @classmethod
     def of(cls, route: Route) -> RouteSummary:
@@ -246,9 +288,9 @@ class RouteSummary(BaseModel):
             route_id=route.route_id,
             name=route.name,
             source=route.source,
-            n_points=len(route.points),
-            stats=route.stats,
+            stats=StatsSummary.of(route.stats),
             warnings=route.warnings,
             validation_status=route.validation.status if route.validation else None,
+            prochaine_etape=None if route.validation else NOT_VALIDATED,
             n_pois=len(route.pois) if route.pois is not None else None,
         )
