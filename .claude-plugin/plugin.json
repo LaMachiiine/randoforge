@@ -1,6 +1,6 @@
 {
   "name": "randoforge",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Outils fiables pour concevoir des itinéraires de randonnée avec Claude : tracés sur vrais chemins, distance et dénivelé précis, points notables, passages techniques, bivouacs, étapes, validation.",
   "author": { "name": "LaMachiiiine" },
   "homepage": "https://github.com/LaMachiiine/randoforge",
