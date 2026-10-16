@@ -88,7 +88,13 @@ def register(mcp: MCPServer, app: App) -> None:
                 route.bivouacs = None
             app.save(route)
         rappels = REMINDERS + [f"Source indisponible : {f}" for f in failures]
-        spots = [b for b in all_spots if b.abrite] if abrite_seulement else all_spots
+        total_km = route.stats.distance_km if route.stats else max((b.km for b in all_spots), default=0)
+        logical = bivouac_lib.useful_for_night(all_spots, total_km, route.stages)
+        if skipped := len(all_spots) - len(logical):
+            lo, hi = bivouac_lib.night_window(total_km)
+            where = "loin des nuits prévues" if route.stages else f"hors des km {lo:.0f}–{hi:.0f}"
+            rappels.append(f"{skipped} emplacement(s) écarté(s), mal placés pour une nuit ({where}).")
+        spots = [b for b in logical if b.abrite] if abrite_seulement else logical
         if abrite_seulement and not spots:
             rappels.append("Aucun abri cartographié le long du tracé : prévoir une tente.")
         best = sorted(sorted(spots, key=lambda b: -b.score)[:limit], key=lambda b: b.km)

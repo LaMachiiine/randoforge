@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from ..core.bivouac import useful_for_night
 from ..core.models import Route
 from .gpx import POI_LABELS
 
@@ -134,9 +135,11 @@ def areas(route: Route) -> Section | None:
 
 
 def bivouacs(route: Route, limit: int = 12) -> Section | None:
-    if not route.bivouacs:
+    total_km = route.stats.distance_km if route.stats else max((b.km for b in route.bivouacs or []), default=0)
+    logical = useful_for_night(route.bivouacs or [], total_km, route.stages)
+    if not logical:
         return None
-    best = sorted(route.bivouacs, key=lambda b: -b.score)[:limit]
+    best = sorted(logical, key=lambda b: -b.score)[:limit]
     rows = []
     for b in sorted(best, key=lambda b: b.km):
         detail = [

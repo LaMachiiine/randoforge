@@ -7,6 +7,7 @@ import json
 
 import numpy as np
 
+from ..core.bivouac import useful_for_night
 from ..core.geo import cumulative_distance, interp_lon
 from ..core.models import Route
 from .gpx import POI_LABELS
@@ -92,9 +93,10 @@ def write_map(route: Route) -> str:
         }
         for st in (route.stages or [])[:-1]
     ]
+    total_km = float(cum[-1]) / 1000
     camps = [
         {"lat": b.lat, "lon": b.lon, "label": f"{b.type}{' — ' + b.nom if b.nom else ''} (km {b.km:.1f}, {b.source})"}
-        for b in sorted(route.bivouacs or [], key=lambda b: -b.score)[:15]
+        for b in sorted(useful_for_night(route.bivouacs or [], total_km, route.stages), key=lambda b: -b.score)[:15]
     ]
     payload = {"coords": coords, "pois": pois, "tech": tech, "nights": nights, "camps": camps}
     # Tout « < » est encodé : ni « </script> » ni « <!-- » ne peuvent perturber l'analyse du bloc <script>.

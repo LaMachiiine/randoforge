@@ -487,9 +487,9 @@ async def test_bivouac_ban_stays_on_the_spots_it_concerns(server, monkeypatch):
 
     def fake(app, route):
         route.bivouacs = [
-            BivouacSpot(km=k, lat=45.1, lon=5.6, source="calculé", type="emplacement possible", score=0.5,
+            BivouacSpot(km=2 + k / 2, lat=45.1, lon=5.6, source="calculé", type="emplacement possible", score=0.5,
                         avertissements=["À vérifier sur place"] + ([ban] if k < 3 else []))
-            for k in range(6)
+            for k in range(6)  # km 2 à 4,5 : au milieu du tracé de ~7,6 km, là où une nuit a du sens
         ]  # fmt: skip
         return []
 
@@ -498,7 +498,7 @@ async def test_bivouac_ban_stays_on_the_spots_it_concerns(server, monkeypatch):
         rid = (await call(client, "route_between", {"waypoints": [LANS, MOUCHEROTTE]}))["route_id"]
         res = await call(client, "find_bivouac_spots", {"route_id": rid})
     banned = [s["km"] for s in res["emplacements"] if ban in s.get("avertissements", [])]
-    assert banned == [0, 1, 2] and ban not in res["rappels"] and "À vérifier sur place" in res["rappels"]
+    assert banned == [2.0, 2.5, 3.0] and ban not in res["rappels"] and "À vérifier sur place" in res["rappels"]
 
 
 # --- Randos reconstruites et catalogues officiels -----------------------------------------------
@@ -596,3 +596,20 @@ def test_spur_to_an_attraction_point_is_removed_but_a_wanted_one_is_kept():
     # Même épingle, mais vers un point imposé (sommet choisi) : conservée.
     kept, _, cut = remove_spurs(pts, segs, [(44.999, 6.0), (45.0015, 6.0)])
     assert kept == pts and cut == 0
+
+
+def test_only_spots_placed_logically_for_a_night_are_offered():
+    from randoforge.core.bivouac import night_window, useful_for_night
+    from randoforge.core.models import BivouacSpot, Stage
+
+    def spot(km):
+        return BivouacSpot(km=km, lat=45.0, lon=6.0, source="OSM", type="camping")
+
+    spots = [spot(k) for k in (2, 5.5, 11.4, 15, 21.7, 26.4, 30)]
+    assert night_window(30.9) == (7.725, 23.174999999999997)
+    assert [b.km for b in useful_for_night(spots, 30.9)] == [11.4, 15, 21.7]  # ni km 2-5 ni km 26-30
+    nights = [Stage(jour=1, km_debut=0, km_fin=14, distance_km=14, d_plus_m=0, d_minus_m=0, duree_min=0, duree="",
+                    arrivee="x", arrivee_type="bivouac"),
+              Stage(jour=2, km_debut=14, km_fin=30.9, distance_km=16.9, d_plus_m=0, d_minus_m=0, duree_min=0,
+                    duree="", arrivee="y", arrivee_type="arrivée")]  # fmt: skip
+    assert [b.km for b in useful_for_night(spots, 30.9, nights)] == [11.4, 15]  # près de la nuit prévue (km 14)

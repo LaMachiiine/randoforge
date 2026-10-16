@@ -23,6 +23,9 @@ FLAT_PCT = 8.0
 WATER_MAX_M = 500.0
 ROAD_MIN_M = 300.0
 MAX_DETOUR_M = 500.0
+AREA_DETOUR_M = 800.0  # camping ou aire décrits par leur surface : mesurés depuis le centre (~500 m du bord)
+NIGHT_MARGIN_KM = (4.0, 10.0)  # bornes de la portion de début et de fin de parcours où l'on ne dort pas
+NIGHT_NEAR_KM = 3.0  # étapes planifiées : emplacements utiles à moins de 3 km d'une nuit prévue
 ROADS = {"primary", "secondary", "tertiary", "unclassified", "residential", "trunk", "service"}
 REFUGES_TYPES = {
     "cabane non gardée": "cabane",
@@ -158,7 +161,8 @@ def find_spots(
         if c.get("lat") is None:
             continue
         m, d = place(c["lat"], c["lon"])
-        if el.get("type") == "node" and d > MAX_DETOUR_M:  # la requête OSM peut déborder (simplification du tracé)
+        # La requête OSM peut déborder (simplification du tracé) ; une surface est mesurée depuis son centre.
+        if d > (MAX_DETOUR_M if el.get("type") == "node" else AREA_DETOUR_M):
             continue
         kind = (
             tags.get("tourism")
@@ -269,3 +273,23 @@ def find_spots(
             best_by_km[key] = spot
     spots.extend(best_by_km.values())
     return sorted(spots, key=lambda s: s.km)
+
+
+def night_window(total_km: float) -> tuple[float, float]:
+    """Portion du parcours où une nuit a du sens : ni juste après le départ ni juste avant l'arrivée
+    (un quart de la distance de chaque côté, entre 4 et 10 km)."""
+    margin = min(NIGHT_MARGIN_KM[1], max(NIGHT_MARGIN_KM[0], 0.25 * total_km))
+    if total_km - margin < margin:  # parcours court : la moitié centrale
+        return 0.25 * total_km, 0.75 * total_km
+    return margin, total_km - margin
+
+
+def useful_for_night(spots: list[BivouacSpot], total_km: float, stages: list | None = None) -> list[BivouacSpot]:
+    """Emplacements placés logiquement pour une nuit ; si des étapes sont planifiées, ceux proches d'une nuit
+    prévue. Les autres restent connus (plan_stages peut s'en servir) mais ne sont ni proposés ni affichés."""
+    lo, hi = night_window(total_km)
+    keep = [b for b in spots if lo <= b.km <= hi]
+    nights = [s.km_fin for s in (stages or [])[:-1]]
+    if nights:
+        keep = [b for b in keep if any(abs(b.km - n) <= NIGHT_NEAR_KM for n in nights)]
+    return keep
