@@ -1,12 +1,15 @@
 ---
 tags: [architecture, validation]
-maj: 2026-10-15
+maj: 2026-10-16
 ---
 # Validation & cohérence
 
 > `validate_route` exécute toutes ces règles (`src/randoforge/validation.py`). Chaque règle renvoie `ok`,
 > `info`, `warning` ou `error`, avec la position (km) et souvent une suggestion. **Claude ne présente jamais
 > un itinéraire avec une `error` sans le dire.** Une règle qui ne peut pas être vérifiée le dit en `info`.
+> Un même message à plusieurs endroits (gués sans nom…) devient une seule ligne avec la liste des km, et tous les
+> passages raides tiennent dans une seule ligne D2 : moins de jetons, et les autres alertes ne sont pas noyées.
+> Les listes d'alertes renvoyées par `weather_forecast` et `prepare_dossier` placent les erreurs en premier.
 
 ## Géométrie
 | ID | Règle | Niveau |

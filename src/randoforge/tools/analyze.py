@@ -29,7 +29,7 @@ from ..core.osmgeom import RouteFrame
 from ..core.similarity import ReferenceComparison, deviation, pct
 from ..core.sun import timezone_at
 from ..core.terrain import retraced_sections
-from ..validation import tarmac_length
+from ..validation import alert_lines, tarmac_length
 from .build import done_overlap, done_routes
 from .schemas import (
     WALKERS,
@@ -247,9 +247,7 @@ def register(mcp: MCPServer, app: App) -> None:
         # sans dépendre de l'agent. Les analyses manquantes tournent en parallèle.
         route.weather.analyses_indisponibles = app.validate_full(route)
         route.weather.validation_status = route.validation.status
-        route.weather.alertes_itineraire = [
-            f"{c.id} : {c.message}" for c in route.validation.checks if c.level in {"error", "warning"}
-        ][:8]
+        route.weather.alertes_itineraire = alert_lines(route.validation, 8)
         app.save(route)
         return route.weather
 

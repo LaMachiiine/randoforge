@@ -628,3 +628,41 @@ def test_out_and_back_to_an_imposed_point_is_reported():
            p(44.99, 6.01), p(44.99, 6.0)]  # fmt: skip
     notes = spur_notes(pts, [(44.99, 6.0), summit])
     assert len(notes) == 1 and "1.3 km" in notes[0] and "point de passage n°2" in notes[0]
+
+
+def test_repeated_checks_are_merged_and_errors_listed_first():
+    from randoforge.core.models import Check, ValidationReport
+    from randoforge.validation import alert_lines, merge_repeats
+
+    ford = "Gué : vérifier le niveau d'eau"
+    merged = merge_repeats([Check(id="D7", level="warning", km=7.4, message=ford),
+                            Check(id="D7", level="warning", km=3.1, message=ford),
+                            Check(id="D7", level="warning", km=5.0, message="Gué sur le Furon : vérifier")])  # fmt: skip
+    assert len(merged) == 2 and merged[0].km == 3.1 and merged[0].message.endswith("2 fois : km 3.1, 7.4")
+    checks = [Check(id=f"W{i}", level="warning", message="w") for i in range(12)] + [
+        Check(id="C1", level="error", message="chien interdit")
+    ]
+    assert alert_lines(ValidationReport(status="error", checks=checks), 8)[0] == "C1 : chien interdit"
+
+
+def test_steep_passages_fit_in_one_line(monkeypatch):
+    from types import SimpleNamespace
+
+    from randoforge import validation
+    from randoforge.core.terrain import Section as Sec
+
+    secs = [Sec(start_m=1000 * k, end_m=1000 * k + 150, value=v) for k, v in enumerate((37, 71, 40))]
+    monkeypatch.setattr(validation, "steep_sections", lambda *a: secs)
+    (check,) = validation.check_slopes(SimpleNamespace(points=[]))
+    assert (
+        check.message.startswith("3 passages raides, le plus raide : jusqu'à 71 %") and "km 2.0 (40 %)" in check.message
+    )
+
+
+def test_same_place_seen_twice_is_listed_once():
+    from randoforge.core.models import Check
+    from randoforge.validation import merge_repeats
+
+    (only,) = merge_repeats([Check(id="D7", level="warning", km=7.61, message="Gué"),
+                             Check(id="D7", level="warning", km=7.64, message="Gué")])  # fmt: skip
+    assert only.message == "Gué"

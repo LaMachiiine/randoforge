@@ -317,14 +317,21 @@ def check_numbers(route: Route) -> list[Check]:
 
 
 def check_slopes(route: Route) -> list[Check]:
+    # Une seule ligne pour tous les passages raides : une ligne chacun coûte des jetons et noie les autres alertes.
+    sections = steep_sections(route.points, STEEP_PCT, STEEP_LEN_M)
+    if not sections:
+        return []
+    top = max(sections, key=lambda sec: sec.value)
+    where = ", ".join(f"km {_km(sec.start_m):.1f} ({sec.value:.0f} %)" for sec in sections[:8])
+    more = f" et {len(sections) - 8} autre(s)" if len(sections) > 8 else ""
+    head = "Passage raide" if len(sections) == 1 else f"{len(sections)} passages raides, le plus raide"
     return [
         Check(
             id="D2",
             level="warning",
-            km=_km(sec.start_m),
-            message=f"Passage raide : jusqu'à {sec.value:.0f} % sur ~{sec.end_m - sec.start_m:.0f} m",
+            km=_km(sections[0].start_m),
+            message=f"{head} : jusqu'à {top.value:.0f} % sur ~{top.end_m - top.start_m:.0f} m — {where}{more}",
         )
-        for sec in steep_sections(route.points, STEEP_PCT, STEEP_LEN_M)[:8]
     ]
 
 
@@ -690,4 +697,31 @@ def validate(route: Route) -> ValidationReport:
     )
     levels = {c.level for c in checks}
     status = "error" if "error" in levels else "warning" if "warning" in levels else "ok"
-    return ValidationReport(status=status, checks=sorted(checks, key=lambda c: (c.km is None, c.km or 0)))
+    return ValidationReport(
+        status=status, checks=sorted(merge_repeats(checks), key=lambda c: (c.km is None, c.km or 0))
+    )
+
+
+def merge_repeats(checks: list[Check]) -> list[Check]:
+    """Un même message à plusieurs endroits (gués sans nom…) → une ligne avec la liste des km. Le même endroit
+    retrouvé deux fois (aller-retour) ne compte qu'une fois."""
+    groups: dict[tuple, list[Check]] = {}
+    for c in checks:
+        groups.setdefault((c.id, c.level, c.message, c.suggestion), []).append(c)
+    out = []
+    for same in groups.values():
+        first = same[0]
+        kms = sorted({f"{c.km:.1f}" for c in same if c.km is not None}, key=float)
+        if len(kms) > 1:
+            first = first.model_copy(
+                update={"km": float(kms[0]), "message": f"{first.message} — {len(kms)} fois : km {', '.join(kms)}"}
+            )
+        out.append(first)
+    return out
+
+
+def alert_lines(report: ValidationReport | None, limit: int = 10) -> list[str]:
+    """Erreurs puis avertissements, en lignes courtes : une liste tronquée ne perd jamais une erreur."""
+    checks = report.checks if report else []
+    ranked = [c for c in checks if c.level == "error"] + [c for c in checks if c.level == "warning"]
+    return [f"{c.id} : {c.message}" for c in ranked[:limit]]
