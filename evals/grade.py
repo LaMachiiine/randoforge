@@ -225,7 +225,9 @@ def grade_reference(scenario: dict, run_dir: Path, official: list[tuple[float, f
     exported = [
         c["args"].get("route_id")
         for c in calls
-        if c["outil"] == "export_route" and not c.get("erreur") and c["args"].get("route_id") not in bailouts
+        if c["outil"] in {"export_route", "prepare_dossier"}
+        and not c.get("erreur")
+        and c["args"].get("route_id") not in bailouts
     ]
     ids = created_routes(calls, exclude=frozenset({"bailout_route"})) + [r for r in exported if r]
     routes_dir = run_dir / "home" / "routes"

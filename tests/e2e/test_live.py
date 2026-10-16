@@ -62,7 +62,7 @@ async def test_day_loop_from_autrans(home):
     """Boucle à la journée générée automatiquement, analysée, validée et exportée."""
     async with server(home) as c:
         tools = {t.name for t in (await c.list_tools()).tools}
-        assert len(tools) == 34
+        assert len(tools) == 35
 
         place = (await call(c, "geocode", {"query": "Autrans", "country": "fr", "limit": 1}))["places"][0]
         assert 45.1 < place["lat"] < 45.25
@@ -131,6 +131,10 @@ async def test_multi_day_trek_hauts_plateaux(home):
         full = gpxpy.parse(Path(files["gpx"]).read_text(encoding="utf-8"))
         assert len(full.tracks) == 1  # GPX complet en une seule trace
 
+        dossier = await call(c, "prepare_dossier", {"route_id": rid})
+        assert "eau et refuges" in dossier["sections"]  # itinérance : eau et cabanes d'office
+        assert len([k for k in dossier["files"] if k.startswith("gpx_jour_")]) == len(plan["etapes"])
+
 
 async def test_abroad_uses_copernicus(home):
     """Hors de France, l'altitude vient de Copernicus et l'utilisateur en est averti."""
@@ -189,3 +193,6 @@ async def test_access_water_and_network_in_the_vercors(home):
         assert net["reseau_pct"] is not None and "Arcep" in net["source"]
         fauna = await call(c, "wildlife", {"route_id": route["route_id"], "date": "2026-07-15"})
         assert fauna["groupes"].get("mammifères") and "GBIF" in fauna["source"]
+        dossier = await call(c, "prepare_dossier", {"route_id": route["route_id"], "date": monday.isoformat()})
+        assert {"météo", "faune", "réseau mobile"} <= set(dossier["sections"]) and not dossier.get("indisponibles")
+        assert "leaflet" in Path(dossier["files"]["dossier"]).read_text(encoding="utf-8")

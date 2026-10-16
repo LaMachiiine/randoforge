@@ -83,9 +83,14 @@ possible). Le présenter comme du terrain, pas comme un niveau de risque, et ren
   dans le secteur à cette saison », jamais comme une rencontre certaine ; citer les espèces à connaître et GBIF.
 
 ## 6. Valider, sécuriser, livrer
-- `validate_route` ; corrige ou explique chaque `error`.
+- Livraison par défaut : **`prepare_dossier`** (date de la sortie). En un appel : météo (à moins de 15 jours),
+  enneigement et terrain avalancheux selon la saison, faune, couverture mobile, eau et refuges en itinérance,
+  validation ; écrit la trace GPX (+ un fichier par jour) et une page unique `dossier.html` (carte, profil, toutes
+  les sections, imprimable en PDF). `transport=true` seulement si l'utilisateur a parlé de bus, de train ou d'y
+  aller sans voiture. Pas besoin de relancer les outils séparés ensuite : ils servent aux questions précises.
+- Corrige ou explique chaque `error` de la validation (`alertes`) ; annonce les `indisponibles`.
 - `bailout_route` pour un repli depuis le passage le plus exposé ou le point le plus éloigné.
-- `export_route` (gpx, md, html, roadbook ; `vault_dir` pour Obsidian). Donne les chemins des fichiers.
+- `export_route` seulement pour d'autres formats (fiche Obsidian `md`, carte seule) ; `vault_dir` pour Obsidian.
 
 ## Précision à annoncer
 Le D+ est à ~5 % des topo-guides officiels en médiane. Donne aussi la fourchette `d_plus_fourchette_m`
@@ -98,5 +103,5 @@ annonce que le D+ réel est probablement plus élevé de l'écart indiqué.
 1. Résumé : distance, D+/D-, durée (et par jour), difficulté, statut de validation.
 2. Les 3 points forts (points notables les mieux notés).
 3. Vigilance : passages techniques, gués, eau, zones réglementées, météo, horaires.
-4. Fichiers produits.
+4. Fichiers produits : la trace GPX et la page `dossier.html`, avec leurs chemins.
 Après la rando, propose `mark_done` : les prochaines boucles éviteront les chemins déjà faits.

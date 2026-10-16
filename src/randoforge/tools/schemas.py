@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from ..core.models import (
     AreaCrossing,
     BivouacSpot,
+    Compact,
     Poi,
     Quality,
     RouteSummary,
@@ -198,3 +199,15 @@ class RouteList(BaseModel):
 class ExportResult(BaseModel):
     route_id: str
     files: dict[str, str]
+
+
+class DossierResult(Compact):
+    """Dossier de sortie : fichiers écrits et une ligne par analyse."""
+
+    route_id: str
+    files: dict[str, str] = Field(description="Chemins à communiquer : trace GPX (et par jour), page dossier.html")
+    sections: dict[str, str] = Field(description="Résumé de chaque analyse incluse")
+    non_inclus: dict[str, str] = Field(default_factory=dict, description="Analyses écartées et pourquoi")
+    indisponibles: list[str] = Field(default_factory=list, description="Analyses impossibles (service en panne)")
+    validation_status: str | None = None
+    alertes: list[str] = Field(default_factory=list, description="Erreurs et avertissements de la validation")

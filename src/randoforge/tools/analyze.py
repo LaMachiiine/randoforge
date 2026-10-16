@@ -19,6 +19,7 @@ from ..core import weather as weather_lib
 from ..core.models import (
     Check,
     ElevationParams,
+    Route,
     RouteSummary,
     ValidationReport,
     WalkerProfile,
@@ -46,6 +47,41 @@ from .schemas import (
 )
 
 FORECAST_DAYS = 15
+
+
+def compute_weather(app: App, route: Route, date: Date | None = None, start_time: Time | None = None) -> WeatherReport:
+    """Calcul de l'outil `weather_forecast` sur un itinéraire chargé (ne l'enregistre pas, ne valide pas)."""
+    if not app.services.weather:
+        raise ToolError("Service météo non configuré.")
+    day = date or route.request.date
+    if day is None:
+        raise ToolError("Préciser la date (ici ou via set_constraints).")
+    start = route.points[0]
+    today = datetime.now(timezone_at(start.lat, start.lon)).date()
+    if not 0 <= (day - today).days <= FORECAST_DAYS:
+        raise ToolError(
+            f"Prévisions disponibles du {today:%d/%m} au {today + timedelta(days=FORECAST_DAYS):%d/%m} "
+            "seulement. Au-delà, se fier à la règle saisonnière (D5) et revenir plus tard."
+        )
+    t0 = start_time or route.request.start_time or Time(9, 0)
+    if route.stages:
+        minutes = max(s.duree_min for s in route.stages)  # plage horaire d'une journée de marche
+    else:
+        minutes = route.stats.duration_min if route.stats and route.stats.duration_min else 240
+    hours = range(t0.hour, min(24, t0.hour + int(np.ceil(minutes * 7 / 6 / 60)) + 1))
+    eles = [-np.inf if p.ele is None else p.ele for p in route.points]
+    top = route.points[int(np.argmax(eles))]
+    places = [("départ", route.points[0]), ("point culminant", top)]
+    if not route.request.loop and not (route.stats and route.stats.is_loop):
+        places.append(("arrivée", route.points[-1]))
+    windows = []
+    for label, p in places:
+        data = app.external(lambda p=p: app.services.weather.hourly(p.lat, p.lon, p.ele, day))
+        alt = p.ele if p.ele is not None else data.get("elevation", 0)  # sinon : altitude du MNT d'Open-Meteo
+        windows.append(weather_lib.summarize(data, label, alt, hours))
+    return WeatherReport(
+        date=day, heures=f"{hours.start}h–{hours.stop}h", points=windows, alertes=weather_lib.alerts(windows)
+    )
 
 
 def register(mcp: MCPServer, app: App) -> None:
@@ -206,37 +242,7 @@ def register(mcp: MCPServer, app: App) -> None:
         l'arrivée : températures, pluie, rafales, orage, neige au sol. Jusqu'à 15 jours à l'avance.
         Utilise la date/heure de set_constraints si elles ne sont pas fournies (départ 9 h par défaut)."""
         route = app.load(route_id)
-        if not app.services.weather:
-            raise ToolError("Service météo non configuré.")
-        day = date or route.request.date
-        if day is None:
-            raise ToolError("Préciser la date (ici ou via set_constraints).")
-        start = route.points[0]
-        today = datetime.now(timezone_at(start.lat, start.lon)).date()
-        if not 0 <= (day - today).days <= FORECAST_DAYS:
-            raise ToolError(
-                f"Prévisions disponibles du {today:%d/%m} au {today + timedelta(days=FORECAST_DAYS):%d/%m} "
-                "seulement. Au-delà, se fier à la règle saisonnière (D5) et revenir plus tard."
-            )
-        t0 = start_time or route.request.start_time or Time(9, 0)
-        if route.stages:
-            minutes = max(s.duree_min for s in route.stages)  # plage horaire d'une journée de marche
-        else:
-            minutes = route.stats.duration_min if route.stats and route.stats.duration_min else 240
-        hours = range(t0.hour, min(24, t0.hour + int(np.ceil(minutes * 7 / 6 / 60)) + 1))
-        eles = [-np.inf if p.ele is None else p.ele for p in route.points]
-        top = route.points[int(np.argmax(eles))]
-        places = [("départ", route.points[0]), ("point culminant", top)]
-        if not route.request.loop and not (route.stats and route.stats.is_loop):
-            places.append(("arrivée", route.points[-1]))
-        windows = []
-        for label, p in places:
-            data = app.external(lambda p=p: app.services.weather.hourly(p.lat, p.lon, p.ele, day))
-            alt = p.ele if p.ele is not None else data.get("elevation", 0)  # sinon : altitude du MNT d'Open-Meteo
-            windows.append(weather_lib.summarize(data, label, alt, hours))
-        route.weather = WeatherReport(
-            date=day, heures=f"{hours.start}h–{hours.stop}h", points=windows, alertes=weather_lib.alerts(windows)
-        )
+        route.weather = compute_weather(app, route, date, start_time)
         # Demander la météo, c'est préparer le départ : on valide l'itinéraire (météo comprise) dans la foulée,
         # sans dépendre de l'agent. Les analyses manquantes tournent en parallèle.
         route.weather.analyses_indisponibles = app.validate_full(route)

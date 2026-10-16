@@ -4,7 +4,7 @@ maj: 2026-10-15
 ---
 # Serveur MCP — Catalogue d'outils
 
-> 34 outils, regroupés par module dans `src/randoforge/tools/`. Chaque outil renvoie un résumé compact
+> 35 outils, regroupés par module dans `src/randoforge/tools/`. Chaque outil renvoie un résumé compact
 > (jamais la géométrie complète) ; un `route_id` désigne l'itinéraire stocké côté serveur.
 
 ## Règles de design
@@ -65,6 +65,26 @@ maj: 2026-10-15
 | `get_route`, `list_routes` | Consultation (filtre randos faites / projets) |
 | `mark_done` | Historique ; évité ensuite par les boucles générées |
 | `export_route` | `gpx` (complet + un fichier par jour), `md`, `html`, `roadbook` ; copie dans un vault |
+
+## Dossier de sortie — `tools/dossier.py`
+| Outil | Rôle |
+|---|---|
+| `prepare_dossier` | Livraison en un appel : analyses en parallèle puis trace GPX + page unique `dossier.html` |
+
+Analyses retenues :
+
+| Analyse | Quand |
+|---|---|
+| Faune, couverture mobile, points notables, passages, zones | toujours (couverture : France) |
+| Météo | date dans les 15 jours ; sinon la date à partir de laquelle relancer |
+| Enneigement | saison froide ou altitude (règle de `snow_conditions`) |
+| Terrain avalancheux | si de la neige est trouvée sur le tracé |
+| Eau et refuges | itinérance (plusieurs étapes) ou bivouacs |
+| Transports | seulement avec `transport=True` |
+
+Les calculs (`compute_*` des modules d'outils) tournent sur le même objet `Route`, qui n'est enregistré qu'une fois
+à la fin : pas d'écritures concurrentes. Une source en panne n'empêche pas le dossier (liste `indisponibles`).
+La page unique est le roadbook avec la carte Leaflet (`write_roadbook(route, with_map=True)`).
 
 ## Objet central : `Route` (`core/models.py`)
 Points densifiés à 10 m avec altitudes MNT, segments et tags OSM du moteur, contraintes (`RouteRequest`),

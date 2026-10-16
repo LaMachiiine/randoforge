@@ -21,9 +21,9 @@ Règles :
 Rando nommée : find_official_treks → import_official_trek, sinon find_hiking_routes → import_hiking_route,
 sinon route_via_places (lieux cités par le descriptif).
 Démarche type : geocode → find_pois / find_hiking_routes → route_between ou generate_loop_candidates
-(+ compare_routes) → set_constraints → analyze_route → export_route.
-Plusieurs jours : find_bivouac_spots → plan_stages. Avant de partir : weather_forecast, bailout_route ;
-en saison froide ou en altitude : snow_conditions (limite de la neige, durée ajustée).
+(+ compare_routes) → set_constraints → analyze_route → prepare_dossier (trace GPX + page unique : météo, neige,
+faune, réseau, eau en itinérance ; transport=true seulement sur demande).
+Plusieurs jours : find_bivouac_spots → plan_stages avant prepare_dossier. Repli : bailout_route.
 """
 
 

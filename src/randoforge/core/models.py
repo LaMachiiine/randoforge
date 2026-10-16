@@ -359,6 +359,10 @@ class Route(BaseModel):
     weather: WeatherReport | None = None
     snow: SnowReport | None = None
     avalanche: AvalancheReport | None = None
+    transit: TransitReport | None = None
+    water: WaterHutsReport | None = None
+    coverage: MobileCoverageReport | None = None
+    wildlife: WildlifeReport | None = None
     quality: Quality | None = None
     done_on: Date | None = None
     done_notes: str | None = None

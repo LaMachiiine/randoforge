@@ -15,7 +15,7 @@ Conception détaillée : vault Obsidian dans `docs/` (point d'entrée `docs/00 -
 - `src/randoforge/engines/` : clients externes — BRouter, altimétrie (IGN → Copernicus, MNT local), Nominatim/Overpass, refuges.info / Open-Meteo / Wikidata (`extra.py`), neige observée par satellite (`snow.py`), horaires Transitous (`transit.py`), couverture mobile Arcep (`coverage.py`), faune observée GBIF (`wildlife.py`), itinéraires officiels de 44 catalogues Geotrek (`geotrek.py` + registre `geotrek_catalogs.json`, régénéré par `scripts/build_geotrek_catalogs.py`) — outils `find_official_treks` / `import_official_trek` et calibration.
 - `src/randoforge/http.py` : client HTTP commun (cache SQLite, réessais, bascule entre serveurs, User-Agent).
 - `src/randoforge/services.py` : assemblage des services (variables `RANDOFORGE_*`) ; `app.py` : contexte partagé des outils.
-- `src/randoforge/tools/` : outils MCP par thème (`search`, `build`, `analyze`, `snow`, `access`, `nature`, `trek`, `output`) ; `schemas.py` pour les types.
+- `src/randoforge/tools/` : outils MCP par thème (`search`, `build`, `analyze`, `snow`, `access`, `nature`, `trek`, `output`, `dossier`) ; `schemas.py` pour les types. Chaque analyse a une fonction `compute_*` (calcul sans enregistrement) réutilisée par `prepare_dossier`.
 - `src/randoforge/validation.py` : règles, identifiants = ceux de `docs/10 - Architecture/Validation & cohérence.md`.
 - `src/randoforge/formats/` : GPX, fiche Markdown, carte HTML, roadbook ; `sections.py` = contenu commun fiche/roadbook.
 - `.claude-plugin/`, `skills/planifier-rando/`, `.mcp.json` : plugin Claude Code.

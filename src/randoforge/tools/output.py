@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import shutil
+from collections.abc import Callable
 from datetime import date as Date
 from pathlib import Path
 from typing import Literal
@@ -12,7 +13,7 @@ from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 
 from ..app import App
-from ..core.models import RouteSummary
+from ..core.models import Route, RouteSummary
 from ..formats.gpx import write_gpx
 from ..formats.html import write_map
 from ..formats.markdown import write_fiche
@@ -34,6 +35,48 @@ def _exported_from(folder: Path, route_id: str) -> bool:
         return fiche.is_file() and f"\nroute_id: {route_id}\n" in fiche.read_text(encoding="utf-8")[:2000]
     except (OSError, ValueError):  # illisible ou pas en UTF-8 : pas un export reconnu
         return False
+
+
+def write_outputs(
+    app: App, route: Route, outputs: dict[str, tuple[str, Callable[[Route], str]]], vault_dir: str | None
+) -> dict[str, str]:
+    """Écrit les fichiers demandés ({format: (nom, rédacteur)}) dans le dossier de l'itinéraire, plus un GPX par
+    étape si le GPX est demandé, et les copie dans le vault ; renvoie {format: chemin}."""
+    route_id = route.route_id
+    d = app.store.dir_for(route_id)
+    files: dict[str, str] = {}
+    for fmt, (name, writer) in outputs.items():
+        (d / name).write_text(writer(route), encoding="utf-8")
+        files[fmt] = str(d / name)
+    if "gpx" in outputs:
+        # Itinérance : en plus du GPX complet, un fichier par jour (pratique sur une montre).
+        for old in d.glob("jour-*.gpx"):
+            old.unlink()
+        for stage in route.stages or []:
+            path = d / f"jour-{stage.jour}.gpx"
+            path.write_text(write_gpx(route, day=stage.jour), encoding="utf-8")
+            files[f"gpx_jour_{stage.jour}"] = str(path)
+    if vault_dir:
+        vault = Path(vault_dir).expanduser()
+        if not vault.is_dir():
+            raise ToolError(f"Dossier du vault introuvable : {vault}")
+        # Identifiant dans le nom : deux randos homonymes (« Boucle 1 (N) »…) ne s'écrasent pas.
+        target = vault / "Randos" / f"{slug(route.name)}-{route_id.rsplit('_', 1)[-1]}"
+        legacy = vault / "Randos" / slug(route.name)  # ancien nommage, sans identifiant
+        if not target.exists() and _exported_from(legacy, route_id):
+            try:
+                legacy.rename(target)  # même itinéraire : dossier renommé (notes de l'utilisateur comprises)
+            except OSError:
+                pass  # dossier ouvert ailleurs (Obsidian…) : l'ancien reste en place, le nouveau est créé
+        target.mkdir(parents=True, exist_ok=True)
+        if "gpx" in outputs:
+            for old in target.glob("jour-*.gpx"):  # étapes d'un ancien découpage
+                old.unlink()
+        for fmt, path in list(files.items()):
+            dest = target / Path(path).name
+            shutil.copyfile(path, dest)
+            files[f"vault_{fmt}"] = str(dest)
+    return files
 
 
 def register(mcp: MCPServer, app: App) -> None:
@@ -76,44 +119,11 @@ def register(mcp: MCPServer, app: App) -> None:
         `vault_dir` : copie aussi la fiche, le GPX et la carte dans `<vault_dir>/Randos/<nom>-<identifiant>/`.
         """
         route = app.load(route_id)
-        d = app.store.dir_for(route_id)
         writers = {
             "gpx": ("route.gpx", write_gpx),
             "md": ("fiche.md", write_fiche),
             "html": ("carte.html", write_map),
             "roadbook": ("roadbook.html", write_roadbook),
         }
-        files: dict[str, str] = {}
-        for fmt in formats:
-            name, writer = writers[fmt]
-            (d / name).write_text(writer(route), encoding="utf-8")
-            files[fmt] = str(d / name)
-        if "gpx" in formats:
-            # Itinérance : en plus du GPX complet, un fichier par jour (pratique sur une montre).
-            for old in d.glob("jour-*.gpx"):
-                old.unlink()
-            for stage in route.stages or []:
-                path = d / f"jour-{stage.jour}.gpx"
-                path.write_text(write_gpx(route, day=stage.jour), encoding="utf-8")
-                files[f"gpx_jour_{stage.jour}"] = str(path)
-        if vault_dir:
-            vault = Path(vault_dir).expanduser()
-            if not vault.is_dir():
-                raise ToolError(f"Dossier du vault introuvable : {vault}")
-            # Identifiant dans le nom : deux randos homonymes (« Boucle 1 (N) »…) ne s'écrasent pas.
-            target = vault / "Randos" / f"{slug(route.name)}-{route_id.rsplit('_', 1)[-1]}"
-            legacy = vault / "Randos" / slug(route.name)  # ancien nommage, sans identifiant
-            if not target.exists() and _exported_from(legacy, route_id):
-                try:
-                    legacy.rename(target)  # même itinéraire : dossier renommé (notes de l'utilisateur comprises)
-                except OSError:
-                    pass  # dossier ouvert ailleurs (Obsidian…) : l'ancien reste en place, le nouveau est créé
-            target.mkdir(parents=True, exist_ok=True)
-            if "gpx" in formats:
-                for old in target.glob("jour-*.gpx"):  # étapes d'un ancien découpage
-                    old.unlink()
-            for fmt, path in list(files.items()):
-                dest = target / Path(path).name
-                shutil.copyfile(path, dest)
-                files[f"vault_{fmt}"] = str(dest)
+        files = write_outputs(app, route, {fmt: writers[fmt] for fmt in formats}, vault_dir)
         return ExportResult(route_id=route_id, files=files)

@@ -203,6 +203,59 @@ def snow(route: Route) -> Section | None:
     return Section(f"Neige ({r.date:%d/%m/%Y})", ["Tronçons enneigés"] if rows else [], rows, notes)
 
 
+def avalanche(route: Route) -> Section | None:
+    r = route.avalanche
+    if not r:
+        return None
+    return Section("Terrain avalancheux (relief)", ["Tronçons exposés"] if r.troncons else [],
+                   [[t] for t in r.troncons], [r.message, *r.avertissements, f"Source : {r.source}"])  # fmt: skip
+
+
+def water(route: Route) -> Section | None:
+    r = route.water
+    if not r or not r.points:
+        return None
+    rows = [[f"{p.km:.1f}", p.nom + (f" ({p.etat})" if p.etat else ""), f"{p.distance_m:.0f} m",
+             p.equipement or "", " / ".join(p.derniers_avis[:2])] for p in r.points]  # fmt: skip
+    return Section("Eau, cabanes et refuges", ["km", "Lieu", "Écart", "Équipement", "Derniers avis"], rows,
+                   [r.message, *r.avertissements, f"Source : {r.source}"])  # fmt: skip
+
+
+def coverage(route: Route) -> Section | None:
+    r = route.coverage
+    if not r:
+        return None
+    rows = [[op, f"{v:g} %"] for op, v in r.par_operateur.items()]
+    return Section("Réseau mobile", ["Opérateur (voix 2G/3G)", "Part du tracé"] if rows else [], rows,
+                   [r.message, *r.avertissements, f"Source : {r.source}"])  # fmt: skip
+
+
+def transit(route: Route) -> Section | None:
+    r = route.transit
+    if not r:
+        return None
+    rows = []
+    for label, side in (("Départ", r.depart), ("Arrivée", r.arrivee)):
+        for li in side.lignes if side else []:
+            rows.append([label, f"{li.ligne} → {li.direction}", " ".join(li.horaires)])
+    notes = [r.message]
+    for label, side in (("départ", r.depart), ("arrivée", r.arrivee)):
+        if side and side.arrets:
+            notes.append(f"Arrêts au {label} : {', '.join(side.arrets)}")
+    return Section(f"Transports en commun ({r.date:%d/%m/%Y})", ["", "Ligne", "Passages"] if rows else [], rows,
+                   [*notes, f"Source : {r.source}"])  # fmt: skip
+
+
+def wildlife(route: Route) -> Section | None:
+    r = route.wildlife
+    if not r:
+        return None
+    rows = [[group, " · ".join(lines)] for group, lines in r.groupes.items()]
+    notes = [r.message] + [f"À connaître : {n}" for n in r.a_connaitre] + r.avertissements + [f"Source : {r.source}"]
+    return Section(f"Faune observée ({r.periode})", ["Groupe", "Espèces les plus observées"] if rows else [], rows,
+                   notes)  # fmt: skip
+
+
 def validation(route: Route) -> Section | None:
     v = route.validation
     if not v:
@@ -229,5 +282,20 @@ def quality(route: Route) -> Section | None:
 
 
 def all_sections(route: Route) -> list[Section]:
-    builders = (stages, pois, technical, areas, bivouacs, weather, snow, validation, quality)
+    builders = (
+        stages,
+        pois,
+        technical,
+        areas,
+        water,
+        bivouacs,
+        weather,
+        snow,
+        avalanche,
+        coverage,
+        transit,
+        wildlife,
+        validation,
+        quality,
+    )
     return [s for b in builders if (s := b(route))]

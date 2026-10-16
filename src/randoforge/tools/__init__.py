@@ -10,7 +10,7 @@ from mcp.types import CallToolResult, TextContent
 from pydantic import BaseModel
 
 from ..app import App
-from . import access, analyze, build, nature, output, search, snow, trek
+from . import access, analyze, build, dossier, nature, output, search, snow, trek
 
 
 class CompactServer:
@@ -45,5 +45,5 @@ class CompactServer:
 
 def register_all(mcp: MCPServer, app: App) -> None:
     compact = CompactServer(mcp)
-    for module in (search, build, analyze, snow, access, nature, trek, output):
+    for module in (search, build, analyze, snow, access, nature, trek, output, dossier):
         module.register(compact, app)

@@ -6,7 +6,7 @@ import html
 
 from ..core.models import Route
 from .gpx import ATTRIBUTION
-from .html import _profile_svg
+from .html import _profile_svg, map_parts
 from .sections import all_sections, highlights, key_facts
 
 
@@ -14,7 +14,8 @@ def _e(text: object) -> str:
     return html.escape(str(text))
 
 
-def write_roadbook(route: Route) -> str:
+def write_roadbook(route: Route, with_map: bool = False) -> str:
+    """Roadbook imprimable ; `with_map` : carte interactive en tête (dossier complet, en ligne pour le fond)."""
     facts = key_facts(route)
     body = [f"<h1>{_e(route.name)}</h1>"]
     body.append(
@@ -22,6 +23,9 @@ def write_roadbook(route: Route) -> str:
     )
     if best := highlights(route):
         body.append("<p><b>À ne pas manquer :</b> " + " · ".join(_e(h) for h in best) + "</p>")
+    map_head, map_body = map_parts(route) if with_map else ("", "")
+    if with_map:
+        body.append(f'<section class="map">{map_body}</section>')
     body.append(f'<section class="profile">{_profile_svg(route)}</section>')
     for sec in all_sections(route):
         part = [f"<section><h2>{_e(sec.title)}</h2>"]
@@ -48,6 +52,7 @@ def write_roadbook(route: Route) -> str:
     return f"""<!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Roadbook — {_e(route.name)}</title>
+{map_head}
 <style>
 :root {{ --fg:#1d2321; --muted:#5d6865; --line:#c2410c; --area:#fed7aa; --tech:#dc262633; --rule:#d9dedc; }}
 body {{ margin:0 auto; max-width:900px; padding:16px; font:13px/1.45 system-ui, sans-serif; color:var(--fg); background:#fff; }}
@@ -59,6 +64,7 @@ th {{ font-size:11px; color:var(--muted); }} section {{ break-inside:avoid; }}
 .profile svg {{ width:100%; height:auto; }} .profile text {{ fill:var(--muted); font-size:11px; }}
 .profile .line {{ fill:none; stroke:var(--line); stroke-width:2; }} .profile .area {{ fill:var(--area); }} .profile .tech {{ fill:var(--tech); }}
 footer {{ margin-top:20px; color:var(--muted); font-size:11px; }}
+#map {{ height:420px; margin:8px 0; }} .map {{ break-inside:avoid; }}
 @media print {{ body {{ padding:0; }} @page {{ margin:12mm; }} }}
 </style></head><body>
 {"".join(body)}

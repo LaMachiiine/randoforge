@@ -17,7 +17,8 @@ Claude ne calcule rien lui-même : il appelle les outils RandoForge et explique 
 - **Accès et sécurité** : bus et trains au départ et au retour, état des sources et des cabanes (avis récents),
   couverture mobile le long du tracé (France).
 - **Faune** : espèces observées autour du tracé à la même saison, dont vipères et grands prédateurs.
-- **Exporter** : GPX (complet et par jour), fiche Obsidian, carte HTML, roadbook imprimable.
+- **Livrer** : la trace GPX (complète et par jour) et une page unique avec carte, profil, météo, neige, faune,
+  réseau et eau, imprimable en PDF. Aussi : fiche Obsidian, carte seule.
 
 Exemples : *« prépare-moi le Chemin des fileuses au départ de L'Estréchure »*, *« une boucle de 12 km depuis Autrans
 par une cascade »*, *« 3 jours sur les Hauts-Plateaux du Vercors en dormant en cabane »*.

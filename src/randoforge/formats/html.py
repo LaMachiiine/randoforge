@@ -57,7 +57,9 @@ def _profile_svg(route: Route) -> str:
     )
 
 
-def write_map(route: Route) -> str:
+def map_parts(route: Route) -> tuple[str, str]:
+    """Carte interactive (Leaflet) : (balise <head>, bloc à placer dans <body>). Les noms viennent d'OSM :
+    données JSON sans aucun « < » brut, textes échappés côté navigateur."""
     coords = [[p.lat, p.lon] for p in route.points]
     pois = [
         {
@@ -79,11 +81,6 @@ def write_map(route: Route) -> str:
         seg = coords[int(i0) : max(int(i1), int(i0) + 2)]
         tech.append({"coords": seg, "label": f"km {t.km:.1f} — " + " ; ".join(t.details)})
 
-    summary = " · ".join(
-        f"{html.escape(k)} : <b>{html.escape(v)}</b>" for k, v in key_facts(route) if k != "Validation"
-    )
-    status = route.validation.status if route.validation else "non validé"
-    title = html.escape(route.name)
     # Les noms viennent d'OSM (modifiables par tous) : on empêche toute sortie du bloc <script>.
     nights = [
         {
@@ -101,25 +98,8 @@ def write_map(route: Route) -> str:
     payload = {"coords": coords, "pois": pois, "tech": tech, "nights": nights, "camps": camps}
     # Tout « < » est encodé : ni « </script> » ni « <!-- » ne peuvent perturber l'analyse du bloc <script>.
     data = json.dumps(payload, ensure_ascii=False).replace("<", "\\u003c")
-    return f"""<!doctype html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{title}</title>
-<link rel="stylesheet" href="{LEAFLET}/leaflet.css">
-<style>
-:root {{ --bg:#fff; --fg:#1d2321; --muted:#5d6865; --line:#c2410c; --area:#fed7aa; --tech:#dc262633; }}
-@media (prefers-color-scheme: dark) {{ :root {{ --bg:#141816; --fg:#e7ece9; --muted:#9aa5a1; --area:#7c2d1288; }} }}
-body {{ margin:0; font:15px/1.45 system-ui, sans-serif; background:var(--bg); color:var(--fg); }}
-header {{ padding:12px 16px; }} h1 {{ margin:0 0 4px; font-size:20px; }}
-.meta {{ color:var(--muted); }} #map {{ height:62vh; }}
-/* Styles limités au profil : un sélecteur « svg » global écraserait le SVG du tracé Leaflet. */
-.profile {{ padding:8px 16px 16px; }} .profile svg {{ width:100%; height:auto; }}
-.profile text {{ fill:var(--muted); font-size:11px; }} .profile .line {{ fill:none; stroke:var(--line); stroke-width:2; }}
-.profile .area {{ fill:var(--area); }} .profile .tech {{ fill:var(--tech); }}
-</style></head><body>
-<header><h1>{title}</h1><div>{summary}</div>
-<div class="meta">Validation : {html.escape(status)} · rouge = passage technique · violet = où dormir · © OpenStreetMap, OpenTopoMap, IGN</div></header>
-<div id="map"></div>
-<div class="profile">{_profile_svg(route)}</div>
+    head = f'<link rel="stylesheet" href="{LEAFLET}/leaflet.css">'
+    body = f"""<div id="map"></div>
 <script src="{LEAFLET}/leaflet.js"></script>
 <script>
 const d = {data};
@@ -144,5 +124,35 @@ map.getContainer().addEventListener('wheel', () => {{ userMoved = true; }}, {{pa
 new ResizeObserver(() => {{
   map.invalidateSize({{animate: false}});
   if (!userMoved) map.fitBounds(bounds, {{padding: [20, 20], animate: false}});}}).observe(map.getContainer());
-</script></body></html>
+</script>"""
+    return head, body
+
+
+def write_map(route: Route) -> str:
+    summary = " · ".join(
+        f"{html.escape(k)} : <b>{html.escape(v)}</b>" for k, v in key_facts(route) if k != "Validation"
+    )
+    status = route.validation.status if route.validation else "non validé"
+    title = html.escape(route.name)
+    map_head, map_body = map_parts(route)
+    return f"""<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{title}</title>
+{map_head}
+<style>
+:root {{ --bg:#fff; --fg:#1d2321; --muted:#5d6865; --line:#c2410c; --area:#fed7aa; --tech:#dc262633; }}
+@media (prefers-color-scheme: dark) {{ :root {{ --bg:#141816; --fg:#e7ece9; --muted:#9aa5a1; --area:#7c2d1288; }} }}
+body {{ margin:0; font:15px/1.45 system-ui, sans-serif; background:var(--bg); color:var(--fg); }}
+header {{ padding:12px 16px; }} h1 {{ margin:0 0 4px; font-size:20px; }}
+.meta {{ color:var(--muted); }} #map {{ height:62vh; }}
+/* Styles limités au profil : un sélecteur « svg » global écraserait le SVG du tracé Leaflet. */
+.profile {{ padding:8px 16px 16px; }} .profile svg {{ width:100%; height:auto; }}
+.profile text {{ fill:var(--muted); font-size:11px; }} .profile .line {{ fill:none; stroke:var(--line); stroke-width:2; }}
+.profile .area {{ fill:var(--area); }} .profile .tech {{ fill:var(--tech); }}
+</style></head><body>
+<header><h1>{title}</h1><div>{summary}</div>
+<div class="meta">Validation : {html.escape(status)} · rouge = passage technique · violet = où dormir · © OpenStreetMap, OpenTopoMap, IGN</div></header>
+{map_body}
+<div class="profile">{_profile_svg(route)}</div>
+</body></html>
 """

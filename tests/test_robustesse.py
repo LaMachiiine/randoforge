@@ -113,7 +113,8 @@ def test_osm_names_cannot_break_the_map_or_the_fiche():
                 stages.Stage(jour=2, km_debut=1, km_fin=3, distance_km=2, d_plus_m=0, d_minus_m=0, duree_min=30,
                              duree="0h30", arrivee="Fin", arrivee_type="arrivée")]  # fmt: skip
     page = write_map(r)
-    data = page[page.index("const d = ") : page.index("</script></body>")]
+    start = page.index("const d = ")
+    data = page[start : page.index("</script>", start)]
     assert "Nuit 1" in data and "<" not in data.split(";")[0]
     r.name = "<iframe src=x>"
     assert "<iframe" not in write_fiche(r)
