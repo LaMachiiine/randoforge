@@ -9,22 +9,43 @@ Deux usages :
 
 from __future__ import annotations
 
+import json
 import re
+from pathlib import Path
 
 from pydantic import BaseModel
 
 from ..http import DAY, CachedHttp
 
-INSTANCES = {
-    "ecrins": "https://geotrek-admin.ecrins-parcnational.fr/api/v2/trek/",
-    "cevennes": "https://geotrek-admin.cevennes-parcnational.net/api/v2/trek/",
-    "portcros": "https://geotrek-admin.portcros-parcnational.fr/api/v2/trek/",
+# Registre des catalogues Geotrek publics (parcs nationaux et régionaux, départements, intercommunalités),
+# généré par scripts/build_geotrek_catalogs.py : nom, API, nombre de randos pédestres, emprise des départs.
+CATALOGS: dict[str, dict] = {
+    c["id"]: c for c in json.loads((Path(__file__).with_name("geotrek_catalogs.json")).read_text(encoding="utf-8"))
 }
-PARKS = {
-    "ecrins": "Parc national des Écrins",
-    "cevennes": "Parc national des Cévennes",
-    "portcros": "Parc national de Port-Cros",
-}
+INSTANCES = {cid: f"{c['api']}trek/" for cid, c in CATALOGS.items()}
+PARKS = {cid: c["nom"] for cid, c in CATALOGS.items()}  # nom affiché de chaque catalogue
+
+WALKING_WORDS = ("pied", "pédestre", "pedestre", "marche", "rando", "promenade", "balade", "découverte")
+NOT_WALKING_WORDS = ("vtt", "vélo", "velo", "cyclo", "cheval", "équestre", "equestre", "trail", "raquette", "ski",
+                     "canoë", "canoe", "gravel", "nordique", "attelage")  # fmt: skip
+
+
+def is_walking(name) -> bool:
+    """Pratique de randonnée pédestre (« A pied », « Pédestre », « Randonnée »…), hors VTT, trail, raquette…"""
+    n = _name(name).lower()
+    return any(w in n for w in WALKING_WORDS) and not any(w in n for w in NOT_WALKING_WORDS)
+
+
+def catalogs_near(lat: float, lon: float, margin_deg: float = 0.0) -> list[str]:
+    """Catalogues dont l'emprise contient le point (à `margin_deg` près)."""
+    return [
+        cid
+        for cid, c in CATALOGS.items()
+        if c["bbox"][0] - margin_deg <= lat <= c["bbox"][2] + margin_deg
+        and c["bbox"][1] - margin_deg <= lon <= c["bbox"][3] + margin_deg
+    ]
+
+
 FIELDS = "id,name,ascent,descent,length_2d,min_elevation,max_elevation,geometry"
 SEARCH_FIELDS = "id,name,departure,arrival,ascent,length_2d,route,description_teaser,departure_geom"
 
@@ -44,7 +65,7 @@ class ReferenceTrek(BaseModel):
 class OfficialTrek(BaseModel):
     """Rando officielle trouvée par `search` (sans géométrie : à importer avec `trek`)."""
 
-    parc: str
+    catalogue: str
     trek_id: int
     nom: str
     depart: str | None
@@ -82,14 +103,10 @@ class GeotrekReference:
         return self.http.request_json("GET", url, params=params, ttl_s=30 * DAY, service=f"Geotrek {instance}")
 
     def walking_practices(self, instance: str) -> list[int]:
-        """Identifiants des pratiques pédestres (« A pied », « Rando à pied », « Sentiers de découverte »)."""
+        """Identifiants des pratiques pédestres (voir `is_walking`)."""
         res = self._get(instance, INSTANCES[instance].replace("/trek/", "/trek_practice/"),
                         {"format": "json", "language": "fr"})  # fmt: skip
-        ids = [
-            p["id"]
-            for p in res.get("results", [])
-            if any(k in _name(p.get("name")).lower() for k in ("pied", "découverte"))
-        ]
+        ids = [p["id"] for p in res.get("results", []) if is_walking(p.get("name"))]
         if not ids:  # sans filtre, Geotrek renverrait aussi VTT, trail, etc.
             raise ValueError(f"Geotrek {instance} : aucune pratique pédestre reconnue dans le catalogue")
         return ids
@@ -131,7 +148,7 @@ class GeotrekReference:
             dep = (geom.get("coordinates") if isinstance(geom, dict) else geom) or [None, None]
             teaser = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", _name(t.get("description_teaser")))).strip()
             out.append(OfficialTrek(
-                parc=instance, trek_id=t["id"], nom=_name(t.get("name")), depart=t.get("departure") or None,
+                catalogue=instance, trek_id=t["id"], nom=_name(t.get("name")), depart=t.get("departure") or None,
                 arrivee=t.get("arrival") or None, type=types.get(t.get("route")),
                 distance_km=round(t["length_2d"] / 1000, 2) if t.get("length_2d") else None,
                 d_plus_m=t.get("ascent"), resume=teaser[:240] or None, depart_lat=dep[1], depart_lon=dep[0],

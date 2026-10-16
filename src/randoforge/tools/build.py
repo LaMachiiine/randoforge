@@ -16,19 +16,31 @@ from pydantic import Field
 
 from ..app import App
 from ..core import loops
-from ..core.geo import cumulative_distance, interp_lon
+from ..core.geo import cumulative_distance, distance_m, interp_lon
 from ..core.models import Route, RouteRequest, RouteSummary, TrackPoint
 from ..core.osmgeom import chain_route_relation, declared_values
+from ..core.places import best_sequence, normalize, outliers
 from ..core.quality import marked_share
 from ..core.similarity import overlap_fraction
 from ..core.terrain import retraced_sections
+from ..engines.geotrek import INSTANCES
 from ..formats.gpx import read_gpx
 from ..http import HOST_LIMITS
 from ..storage import new_route_id
 from ..validation import tarmac_length
-from .schemas import LatLon, LoopCandidate, LoopCandidates, Park, Profile, SacScale
+from .schemas import (
+    Catalogue,
+    LatLon,
+    LoopCandidate,
+    LoopCandidates,
+    PlacesRoute,
+    Profile,
+    ResolvedPlace,
+    SacScale,
+)
 
 # Brouillons en parallèle : autant que le serveur BRouter accepte de requêtes simultanées (au-delà, ils attendraient).
+MAX_PLACE_DETOUR_KM = 3.0  # lieu à plus de 3 km de tous ses voisins (et 3× l'écart habituel) : douteux
 MAX_IMPORT_KM = 300  # au-delà : ~30 000 altitudes à demander et un stockage lourd ; importer par étapes
 PARALLEL_ROUTES = 4  # serveur sans limite connue (ex. BRouter local)
 
@@ -78,6 +90,87 @@ def register(mcp: MCPServer, app: App) -> None:
         )
         app.save(route)
         return RouteSummary.of(route)
+
+    def local_candidates(places: list[str], origin: tuple[float, float], max_km: float) -> dict[str, list]:
+        """Candidats (lat, lon, nom) de chaque lieu autour du départ : recherche de lieux bornée à la zone, plus
+        tout objet OSM portant exactement ce nom (lieu-dit, ruine, source, croix…), en une seule requête."""
+        out: dict[str, list[tuple[float, float, str]]] = {p: [] for p in places}
+        for place in dict.fromkeys(places):
+            try:
+                hits = app.external(
+                    lambda p=place: app.services.nominatim.geocode(p, 10, None, origin, within_km=max_km)
+                )
+            except ToolError:
+                hits = []
+            out[place] += [(h.lat, h.lon, h.display_name.split(",")[0]) for h in hits]
+        wanted = {normalize(p): p for p in places}
+        pattern = "|".join(re.sub(r"[^\w\s-]", ".", p.strip()) for p in dict.fromkeys(places))
+        q = (f'[out:json][timeout:25];nwr["name"~"^({pattern})$",i]'
+             f"(around:{max_km * 1000:.0f},{origin[0]},{origin[1]});out center 50;")  # fmt: skip
+        try:
+            for el in app.overpass(q):
+                c, name = el.get("center") or el, el.get("tags", {}).get("name", "")
+                if c.get("lat") is not None and normalize(name) in wanted:
+                    out[wanted[normalize(name)]].append((c["lat"], c["lon"], name))
+        except ToolError:
+            pass  # la recherche de lieux suffit souvent
+        return {p: [c for c in cands if distance_m(origin, c[:2]) <= max_km * 1000] for p, cands in out.items()}
+
+    @mcp.tool()
+    def route_via_places(
+        start: LatLon,
+        places: Annotated[list[str], Field(min_length=1, max_length=20)],
+        loop: bool = True,
+        end: LatLon | None = None,
+        max_km_from_start: Annotated[float, Field(gt=0, le=40)] = 12.0,
+        profile: Profile = "hiking-mountain",
+        name: str | None = None,
+        max_sac_scale: SacScale | None = None,
+    ) -> PlacesRoute:
+        """Reconstruit une rando **décrite par ses lieux de passage** (descriptif de topo, récit, souvenir) quand
+        son tracé n'existe nulle part : `places` = hameaux, cols, sommets, ponts, lacs… dans l'ordre de marche.
+        Chaque lieu est cherché près du départ (à moins de `max_km_from_start`, lieux-dits OSM compris) ; entre
+        homonymes, la suite de lieux la plus courte dans l'ordre de marche est retenue. L'itinéraire est ensuite
+        tracé par ces lieux sur de vrais chemins. Les lieux introuvables sont listés (`non_trouves`), jamais devinés.
+        Donner les lieux tels que cités, un par étape (hameau, col, sommet), sans les rues ni les directions.
+        Préférer d'abord find_official_treks puis find_hiking_routes : un tracé officiel ou balisé est plus sûr.
+        """
+        origin = (start.lat, start.lon)
+        by_place = local_candidates(places, origin, max_km_from_start)
+        options = [(p, by_place[p]) for p in places if by_place[p]]  # (lieu cité, candidats), ordre de marche
+        missing = [p for p in places if not by_place[p]]
+        # Parmi les homonymes, la suite de lieux la plus courte dans l'ordre de marche (un homonyme lointain
+        # allongerait le parcours) ; arrivée = départ pour une boucle.
+        finish = (end.lat, end.lon) if end else (origin if loop else None)
+        picks = best_sequence(origin, [[(la, lo) for la, lo, _ in c] for _, c in options], finish)
+        chosen = [cands[k] for (_, cands), k in zip(options, picks, strict=True)]
+        # Un lieu qui impose un grand détour (seul homonyme connu, loin de ses voisins) n'est pas suivi.
+        far = set(outliers(origin, [c[:2] for c in chosen], finish, MAX_PLACE_DETOUR_KM))
+        doubtful = [options[i][0] for i in sorted(far)]
+        found = [
+            ResolvedPlace(lieu=place, trouve=c[2], lat=c[0], lon=c[1],
+                          km_du_depart=round(distance_m(origin, c[:2]) / 1000, 1))
+            for i, ((place, _), c) in enumerate(zip(options, chosen, strict=True)) if i not in far
+        ]  # fmt: skip
+        if not found:
+            raise ToolError(
+                f"Aucun lieu trouvé à moins de {max_km_from_start:g} km du départ : {', '.join(places)}. "
+                "Vérifier l'orthographe, élargir max_km_from_start ou donner des coordonnées à route_between."
+            )
+        required = [origin, *((p.lat, p.lon) for p in found)] + ([(end.lat, end.lon)] if end else [])
+        wps = required + [origin] if loop and not end else list(required)
+        route = app.make_route(
+            wps, required, profile, RouteRequest(loop=loop and not end, max_sac_scale=max_sac_scale),
+            name or "Rando reconstruite d'après ses lieux de passage",
+        )  # fmt: skip
+        notes = [f"Lieu introuvable près du départ, ignoré : {m}" for m in missing] + [
+            f"Lieu trouvé seulement loin du parcours (homonyme ?), ignoré : {d}" for d in doubtful
+        ]
+        if notes:
+            route.elevation_notes = route.elevation_notes + notes  # notes de source : gardées à chaque recalcul
+            route.warnings = route.warnings + notes
+        app.save(route)
+        return PlacesRoute(route=RouteSummary.of(route), lieux=found, non_trouves=missing, douteux=doubtful)
 
     @mcp.tool()
     def generate_loop_candidates(
@@ -223,18 +316,20 @@ def register(mcp: MCPServer, app: App) -> None:
         return RouteSummary.of(route)
 
     @mcp.tool()
-    def import_official_trek(parc: Park, trek_id: int, name: str | None = None) -> RouteSummary:
-        """Importe le tracé officiel d'une rando de parc national (trouvée avec find_official_treks), puis
-        recalcule distance, D+ et durée sur le MNT. Le D+ publié par le parc est comparé au nôtre (règle N5).
+    def import_official_trek(catalogue: Catalogue, trek_id: int, name: str | None = None) -> RouteSummary:
+        """Importe le tracé officiel d'une rando (trouvée avec find_official_treks), puis recalcule distance,
+        D+ et durée sur le MNT. Le D+ publié par le catalogue est comparé au nôtre (règle N5).
         Ensuite : set_constraints, analyze_route, export_route comme pour tout itinéraire.
         """
         if not app.services.geotrek:
-            raise ToolError("Catalogue des parcs non configuré.")
-        trek = app.external(lambda: app.services.geotrek.trek(parc, trek_id))
+            raise ToolError("Catalogues officiels non configurés.")
+        if catalogue not in INSTANCES:
+            raise ToolError(f"Catalogue inconnu : {catalogue} (champ `catalogue` de find_official_treks).")
+        trek = app.external(lambda: app.services.geotrek.trek(catalogue, trek_id))
         route = Route(
             route_id=new_route_id(),
             name=name or trek.name,
-            source=f"officiel:{parc}:{trek_id}",
+            source=f"officiel:{catalogue}:{trek_id}",
             points=[TrackPoint(lat=la, lon=lo) for la, lo, _ in trek.coords],
             engine_stats={"distance_m": trek.length_km * 1000, "d_plus_m": trek.ascent_m},
         )

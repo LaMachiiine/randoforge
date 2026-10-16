@@ -89,6 +89,15 @@ def to_calls(transcript: Path) -> tuple[list[dict], str, float, int, dict]:
     return calls, answer.strip(), cost, turns, tokens
 
 
+# Randos réelles : outils interdits selon ce que le scénario mesure (le tracé officiel noté ne doit pas être importé,
+# sauf en mode « catalogue » où c'est justement ce qu'on mesure).
+FORBIDDEN_BY_MODE = {
+    "reconstruction": ["import_official_trek", "find_official_treks"],
+    "descriptif": ["import_official_trek", "find_official_treks", "import_hiking_route"],
+    "catalogue": [],
+}
+
+
 async def kill_tree(proc: asyncio.subprocess.Process) -> None:
     """Arrête l'agent et ses sous-processus (sous Windows, `claude.cmd` lance node, qui survivrait à cmd.exe)."""
     if sys.platform == "win32":
@@ -121,9 +130,12 @@ async def run_agent(
                 "--append-system-prompt", system_prompt()]  # fmt: skip
         if model:
             base += ["--model", model]
-        if scenario.get("official"):
-            # Rando de référence : l'agent doit reconstruire l'itinéraire, pas importer le tracé officiel noté.
-            base += ["--disallowedTools", "mcp__randoforge__import_official_trek,mcp__randoforge__find_official_treks"]
+        if (
+            forbidden := FORBIDDEN_BY_MODE.get(scenario.get("mode", "reconstruction"))
+            if scenario.get("official")
+            else None
+        ):
+            base += ["--disallowedTools", ",".join(f"mcp__randoforge__{t}" for t in forbidden)]
         turns = scenario.get("turns") or [scenario["prompt"]]
         fill = {"fixtures": str(EVALS / "fixtures").replace("\\", "/"), "run_dir": str(run_dir).replace("\\", "/")}
         transcript = run_dir / "transcript.jsonl"

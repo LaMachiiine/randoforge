@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field
 
@@ -21,7 +21,9 @@ from ..core.similarity import ReferenceComparison
 from ..engines.geotrek import OfficialTrek
 from ..engines.osm import Place
 
-Park = Literal["ecrins", "cevennes", "portcros"]
+Catalogue = Annotated[
+    str, Field(description="Identifiant de catalogue officiel (champ `catalogue` de find_official_treks)")
+]
 CategoryName = Literal[
     "cascade", "point_de_vue", "lac", "sommet", "curiosite", "riviere", "patrimoine", "eau", "pause", "transport"
 ]
@@ -67,7 +69,8 @@ class HikingRoute(BaseModel):
 
 class OfficialTrekList(BaseModel):
     treks: list[OfficialTrek]
-    source: str = "Parcs nationaux (Geotrek) : itinéraires officiels des topo-guides"
+    catalogues: dict[str, str] = Field(default_factory=dict, description="Nom de chaque catalogue cité")
+    source: str = "Catalogues officiels Geotrek (parcs, départements, intercommunalités) : tracés des topo-guides"
 
 
 class HikingRouteList(BaseModel):
@@ -122,6 +125,23 @@ class LoopCandidate(BaseModel):
     balise_pct: float | None = Field(None, description="Part sur sentiers balisés (GR, PR…)")
     deja_fait_pct: float = Field(0, description="Part commune avec des randos déjà faites")
     score: float = Field(description="Plus petit = plus proche de la demande")
+
+
+class ResolvedPlace(BaseModel):
+    lieu: str = Field(description="Lieu tel que cité")
+    trouve: str = Field(description="Lieu retenu sur la carte (nom OSM)")
+    lat: float
+    lon: float
+    km_du_depart: float = Field(description="Distance à vol d'oiseau depuis le départ")
+
+
+class PlacesRoute(BaseModel):
+    route: RouteSummary
+    lieux: list[ResolvedPlace]
+    non_trouves: list[str] = Field(default_factory=list, description="Lieux introuvables près du départ, ignorés")
+    douteux: list[str] = Field(
+        default_factory=list, description="Lieux trouvés seulement loin du parcours (homonymes ?), ignorés"
+    )
 
 
 class LoopCandidates(BaseModel):

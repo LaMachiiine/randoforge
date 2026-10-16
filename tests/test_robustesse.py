@@ -499,3 +499,66 @@ async def test_bivouac_ban_stays_on_the_spots_it_concerns(server, monkeypatch):
         res = await call(client, "find_bivouac_spots", {"route_id": rid})
     banned = [s["km"] for s in res["emplacements"] if ban in s.get("avertissements", [])]
     assert banned == [0, 1, 2] and ban not in res["rappels"] and "À vérifier sur place" in res["rappels"]
+
+
+# --- Randos reconstruites et catalogues officiels -----------------------------------------------
+
+
+@pytest.mark.anyio
+async def test_route_via_places_never_guesses_far_places(server):
+    from .test_server import LANS, call
+
+    async with Client(server) as client:
+        res = await call(client, "route_via_places", {"start": LANS, "places": ["Moucherotte", "Lyon"], "loop": True})
+        assert [p["lieu"] for p in res["lieux"]] == ["Moucherotte"] and res["non_trouves"] == ["Lyon"]
+        assert res["route"]["stats"]["distance_km"] > 0
+        assert any("Lyon" in w for w in res["route"]["warnings"])
+        err = await client.call_tool("route_via_places", {"start": LANS, "places": ["Lyon"]})
+        assert err.is_error and "Aucun lieu trouvé" in err.content[0].text
+
+
+def test_catalog_registry_covers_many_official_catalogues():
+    from randoforge.engines.geotrek import CATALOGS, catalogs_near, is_walking
+
+    assert len(CATALOGS) >= 40 and {"ecrins", "cevennes", "portcros"} <= set(CATALOGS)
+    assert "vercors" in catalogs_near(45.07, 5.55) and "ecrins" not in catalogs_near(45.07, 5.55)
+    assert is_walking("A pied") and is_walking("Pédestre") and is_walking("Randonnée")
+    assert not is_walking("VTT") and not is_walking("Trail") and not is_walking("Raquette")
+
+
+def test_polyline_filter_terminates_on_a_self_crossing_route():
+    """Tracé réel d'un agent (22,9 km, recoupements) : la simplification topologique plafonnait à 263 sommets et
+    la boucle « tant que > 150 sommets » ne finissait jamais (serveur bloqué en plein validate_route)."""
+    import json
+    import time
+    from pathlib import Path
+
+    from randoforge.core.models import TrackPoint
+
+    coords = json.loads((Path(__file__).parent / "fixtures" / "route_recoupee.json").read_text(encoding="utf-8"))
+    frame = RouteFrame([TrackPoint(lat=a, lon=b) for a, b in coords])
+    t0 = time.perf_counter()
+    q = frame.polyline_filter(100)
+    assert time.perf_counter() - t0 < 2 and q.count(",") // 2 <= 150
+    radius = float(q.split(",")[0].removeprefix("around:"))
+    assert radius >= 100 + frame.line.hausdorff_distance(frame.line.simplify(5, preserve_topology=False)) - 1
+
+
+def test_best_sequence_prefers_coherent_homonyms():
+    from randoforge.core.places import best_sequence
+
+    start = (44.10, 3.78)
+    # « Saint-Roman » : un hameau voisin et un village homonyme à 10 km ; « Cabrijoule » entre les deux étapes.
+    saint_roman = [(44.19, 3.78), (44.12, 3.79)]
+    cabrijoule = [(44.115, 3.80)]
+    assert best_sequence(start, [saint_roman, cabrijoule], start) == [1, 0]
+    assert best_sequence(start, [], None) == []
+
+
+def test_isolated_place_is_flagged_but_a_single_summit_is_not():
+    from randoforge.core.places import outliers
+
+    start = (44.108, 3.783)
+    route = [(44.12, 3.79), (44.197, 3.78), (44.115, 3.80), (44.110, 3.785)]  # le 2e : homonyme à ~10 km
+    assert outliers(start, route, start, 3.0) == [1]
+    assert outliers(start, [(44.15, 3.83)], start, 3.0) == []  # boucle vers un seul sommet : légitime

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 from pydantic import BaseModel
 
 from ..http import DAY, CachedHttp
@@ -40,15 +42,25 @@ class Nominatim:
         self.url = url or self.URL
 
     def geocode(
-        self, query: str, limit: int = 5, country: str | None = None, near: tuple[float, float] | None = None
+        self,
+        query: str,
+        limit: int = 5,
+        country: str | None = None,
+        near: tuple[float, float] | None = None,
+        within_km: float | None = None,
     ) -> list[Place]:
+        """`near` : préférence (non exclusive) pour les résultats à ~20 km du point ; avec `within_km`, seuls les
+        résultats de la zone (carré de ±`within_km` autour de `near`) sont renvoyés."""
         params = {"q": query, "format": "jsonv2", "limit": limit, "accept-language": "fr"}
         if country:
             params["countrycodes"] = country
         if near:
-            # Préférence (non exclusive) pour les résultats à ~20 km du point donné.
             lat, lon = near
-            params["viewbox"] = f"{lon - 0.25:.4f},{lat + 0.18:.4f},{lon + 0.25:.4f},{lat - 0.18:.4f}"
+            dlat = (within_km or 20) / 111
+            dlon = dlat / max(0.1, math.cos(math.radians(lat)))
+            params["viewbox"] = f"{lon - dlon:.4f},{lat + dlat:.4f},{lon + dlon:.4f},{lat - dlat:.4f}"
+            if within_km:
+                params["bounded"] = 1
         res = self.http.request_json("GET", self.url, params=params, ttl_s=90 * DAY, service="Nominatim")
         return [
             Place(

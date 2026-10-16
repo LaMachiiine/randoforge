@@ -26,6 +26,7 @@ ROUTE_TOOLS = {
     "bailout_route",
     "import_official_trek",
     "import_hiking_route",
+    "route_via_places",
 }
 # Espaces de séparation des milliers : ASCII, insécable (U+00A0) et fine insécable (U+202F).
 SPACES = " \u00a0\u202f"
@@ -92,6 +93,8 @@ def created_routes(calls: list[dict], exclude: frozenset[str] = frozenset()) -> 
         res = c.get("resultat") or {}
         if "route_id" in res:
             ids.append(res["route_id"])
+        if "route_id" in (res.get("route") or {}):  # route_via_places
+            ids.append(res["route"]["route_id"])
         for cand in res.get("candidates", []):
             ids.append(cand["route"]["route_id"])
     return ids
@@ -210,7 +213,12 @@ def grade_behaviour(scenario: dict, run_dir: Path) -> Grade:
 def grade_reference(scenario: dict, run_dir: Path, official: list[tuple[float, float, float | None]]) -> Grade:
     """Rando réelle : le tracé final de l'agent est comparé au tracé officiel du parc."""
     calls, answer = load_run(run_dir)
-    g = grade_behaviour({**scenario, "tools": ["route_between|generate_loop_candidates|import_hiking_route"]}, run_dir)
+    builders = {
+        "reconstruction": "route_between|generate_loop_candidates|import_hiking_route|route_via_places",
+        "descriptif": "route_via_places|route_between",
+        "catalogue": "import_official_trek|import_hiking_route|route_via_places|route_between",
+    }
+    g = grade_behaviour({**scenario, "tools": [builders[scenario.get("mode", "reconstruction")]]}, run_dir)
     # Le tracé présenté : celui exporté en dernier ; à défaut, le dernier construit, hors itinéraire de repli
     # (demandé en fin de démarche par le skill). Les tracés construits pour comparer ne comptent pas.
     bailouts = set(created_routes([c for c in calls if c["outil"] == "bailout_route"]))

@@ -94,5 +94,109 @@
    "ascent_m": 469
   },
   "has_geometry": true
+ },
+ {
+  "id": "cat-vercors-28321",
+  "prompt": "Je voudrais faire la randonnée « Le Col de Neurre » (boucle), départ Malleval-en-Vercors. Prépare-moi l'itinéraire.",
+  "park": "vercors",
+  "geotrek_id": 28321,
+  "kind": "boucle",
+  "mode": "catalogue",
+  "official": {
+   "length_km": 11.22,
+   "ascent_m": 747
+  },
+  "has_geometry": true
+ },
+ {
+  "id": "cat-pyrenees-atlantiques-16765",
+  "prompt": "Je voudrais faire la randonnée « Halzamendi » (aller-retour), départ Osses. Prépare-moi l'itinéraire.",
+  "park": "pyrenees-atlantiques",
+  "geotrek_id": 16765,
+  "kind": "aller-retour",
+  "mode": "catalogue",
+  "official": {
+   "length_km": 12.39,
+   "ascent_m": 718
+  },
+  "has_geometry": true
+ },
+ {
+  "id": "cat-pnr-paca-57760",
+  "prompt": "Je voudrais faire la randonnée « ESPARRON-DE-VERDON - Le sentier botanique » (boucle), départ Centre du village, Esparron-de-Verdon. Prépare-moi l'itinéraire.",
+  "park": "pnr-paca",
+  "geotrek_id": 57760,
+  "kind": "boucle",
+  "mode": "catalogue",
+  "official": {
+   "length_km": 6.03,
+   "ascent_m": 204
+  },
+  "has_geometry": true
+ },
+ {
+  "id": "cat-doubs-143",
+  "prompt": "Je voudrais faire la randonnée « Grotte du Bisontin » (boucle), départ Office de Tourisme, place du village, Saint-Hippolyte. Prépare-moi l'itinéraire.",
+  "park": "doubs",
+  "geotrek_id": 143,
+  "kind": "boucle",
+  "mode": "catalogue",
+  "official": {
+   "length_km": 9.61,
+   "ascent_m": 387
+  },
+  "has_geometry": true
+ },
+ {
+  "id": "desc-cevennes-98959",
+  "prompt": "Je voudrais refaire la randonnée « Chemin des fileuses » (boucle) au départ de L'Estréchure. Voici son descriptif : Le long de l'itinéraire, des poteaux directionnels vous guident. Les lieux-dits et/ou les directions à suivre sont indiqué(e)s en italique gras et entre guillemets dans le descriptif ci-dessous: À la place du village, depuis le poteau « L’Estréchure » prendre la direction \" Bec de Jeu \", puis \" Saint-Roman \". Descendre ensuite sur \" Cabrijoule \", prendre ensuite à gauche direction \" Château de l'Hom \", continuer sur \" Boisserolle \", \" L'Aubarède \" et retour à \" L'Estréchure \". Balade extraite du cartoguide Les Vallées Cévenoles en Terre d’Aigoual , réalisé par la Communauté de communes Causses Aigoual Cévennes dans le cadre de la Collection Espaces Naturels Gardois et du label Gard Pleine Nature. Prépare-moi l'itinéraire.",
+  "park": "cevennes",
+  "geotrek_id": 98959,
+  "kind": "boucle",
+  "mode": "descriptif",
+  "official": {
+   "length_km": 12.52,
+   "ascent_m": 625
+  },
+  "has_geometry": true
+ },
+ {
+  "id": "desc-vercors-34030",
+  "prompt": "Je voudrais refaire la randonnée « La Dent de Moirans » (boucle) au départ de Montaud (parking au village). Voici son descriptif : Départ de Montaud (parking village), prendre la direction de la Dent de Moirans . Toujours bien suivre le balisage jaune et vert entre chaque panneau directionnel. Passez à Côte Maillet et à La Combe. Partez sur la droite pour rejoindre Beugnet . Le chemin agréable continue vers le nord avec un arrêt incontournable au point de vue du Bois Vert (table de lecture paysagère). Arrivé Sous la Dent , prendre à droite le sentier qui débouche à la Dent de Moirans et son belvédère exceptionnel (attention prudence à l'approche de la falaise, surtout avec les enfants ! ). Pour le retour au village de Montaud , depuis Sous la Dent prendre la direction intermédiaire de Saint-Quentin . Le chemin serpente au milieu des hêtres et épicéas avant de retrouver un milieu ouvert et atteindre Les Maîtres . De là, rallier Montaud en passant par Chausson , le hameau du Fayard, avant de revenir à La Combe puis Côte Maillet . Le village n'est alors plus très loin. Prépare-moi l'itinéraire.",
+  "park": "vercors",
+  "geotrek_id": 34030,
+  "kind": "boucle",
+  "mode": "descriptif",
+  "official": {
+   "length_km": 11.25,
+   "ascent_m": 417
+  },
+  "has_geometry": true
+ },
+ {
+  "id": "desc-hautes-pyrenees-25793",
+  "prompt": "Je voudrais refaire la randonnée « La Cabane de Bouleste » (aller-retour) au départ de Lac du Tech, Arrens-Marsous. Voici son descriptif : Du parking du lac du Tech (…), revenir … en arrière en bord de route pour trouver le départ d'un sentier balisé sur la gauche, en direction de la cabane de Bouleste (panneau). Il monte immédiatement de manière soutenue sous les noisetiers ; modérer votre allure. Après quelques lacets serrés sur votre droite, le sentier quitte progressivement les bosquets et découvre une zone de lande. Plus sage, il traverse désormais à flanc de montagne, nettement au-dessus du gave de Labas. Le sentier rejoint un ruisseau (…), le traverser à gué et gravir de l'autre côté un petit ressaut rocheux pour prendre pied sur le plateau verdoyant de Labas, où gambadent les premières marmottes. Le sentier (discret à cet endroit) continue à monter vers l'ouest dans l'axe de la vallée principale, en pente douce. Passer à proximité d'une prise d'eau (située en contrebas du chemin, sur le torrent) et continuer tout droit dans l'herbe, en dominant le plateau pastoral des Artigues (troupeaux). Le sentier progresse entre un mamelon herbeux et une avancée rocheuse, toujours en parallèle avec le torrent de Labas. Après la traversée d'un ruisselet affluent (…), le sentier gravit ensuite deux ressauts successifs. Plateau de Bouleste (…) et sa cabane , dans un beau paysage pastoral. > Le retour s'effectue par le même itinéraire. Variante-retour (non balisée nécessitant un bon sens de l'orientation) : On peut aussi descendre par la rive droite du gave à partir de la prise d'eau (point n°2 ) : si le niveau d'eau le  Prépare-moi l'itinéraire.",
+  "park": "hautes-pyrenees",
+  "geotrek_id": 25793,
+  "kind": "aller-retour",
+  "mode": "descriptif",
+  "official": {
+   "length_km": 7.12,
+   "ascent_m": 520
+  },
+  "has_geometry": true
+ },
+ {
+  "id": "desc-haut-jura-331162",
+  "prompt": "Je voudrais refaire la randonnée « La Franco - Suisse, à travers les vignes » (boucle) au départ de Challex - Mairie. Voici son descriptif : (1) Point de départ : Se garer le long du stade. (2) Suivre le balisage jaune (PR) Dans le village, rejoindre la rue de la Mairie et tourner à gauche sur la rue Montbrison. Continuer tout droit sur la rue des Champs Novat. (3) Sortie du village. Emprunter le chemin des Carrés . Suivre ce chemin et prendre le deuxième chemin à gauche. Celui-ci traverse un champ, entre en sous-bois et descend légèrement. Le Rhône devient visible. Poursuivre jusqu’au Moulin ; le sentier remonte et bifurque à gauche pour rejoindre de nouveau Challex. (4) Récupérer la rue du Château et la suivre jusqu’à l’intersection avec la route de la Plaine . Cette rue remonte progressivement vers le centre, en passant devant une fontaine. Au croisement avec la rue des Fontanettes , tourner à droite. Continuer jusqu’au bout de celle-ci, jusqu’à ce qu’elle rejoigne la route de la Plaine à la sortie du village. Prendre à gauche et rejoindre le chemin des Charmilles , qui permet de changer de pays. (5) Passage en Suisse : traverser la frontière, longer le champ, puis poursuivre tout droit sur le chemin de Brive. Celui-ci traverse le ruisseau des Charmilles avant de remonter vers le village de Dardagny . (6) Dans le village, suivre la route principale sur …. Tourner à gauche pour rejoindre les vignes. (7) À hauteur des vignes, prendre à droite sur le chemin Bertolier , puis encore à droite sur le chemin Chalamont . Suivre la direction de Tuilière, traverser les habitations et prendre la première à droite sur le ch Prépare-moi l'itinéraire.",
+  "park": "haut-jura",
+  "geotrek_id": 331162,
+  "kind": "boucle",
+  "mode": "descriptif",
+  "official": {
+   "length_km": 9.16,
+   "ascent_m": 256
+  },
+  "has_geometry": true
  }
 ]

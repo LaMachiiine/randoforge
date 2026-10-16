@@ -30,12 +30,15 @@ chien, enfants, poussette. Valeurs par défaut raisonnables sinon, en le disant.
 - `geocode` pour les lieux nommés ; pour un sommet, un col ou une cascade, passe `near` (le village de départ)
   ou cherche-le avec `find_pois` : un nom de sommet désigne souvent aussi une rue ou un bâtiment.
 - `find_pois` pour les envies (cascade, lac, point de vue, sommet, refuge ; `transport` pour un départ sans voiture).
-- **Rando de parc national** (Écrins, Cévennes, Port-Cros) nommée ou souhaitée « officielle / balisée » :
-  `find_official_treks` (par nom ou autour du départ) puis `import_official_trek` : le tracé officiel du parc,
-  recalculé par RandoForge, vaut mieux qu'une reconstruction.
-- **Rando balisée nommée** (ou souhaitée « balisée ») : `find_hiking_routes` autour du départ ; si un sentier
-  porte le nom demandé, `import_hiking_route(osm_id)` suit son tracé exact plutôt qu'une reconstruction
-  approximative. Signaler ses `warnings` (relation OSM incomplète).
+- **Rando nommée** (ou souhaitée « officielle / balisée »), dans cet ordre — s'arrêter au premier tracé trouvé :
+  1. `find_official_treks` (nom + lieu du départ) : 44 catalogues officiels (parcs nationaux et régionaux,
+     départements, intercommunalités, surtout en France). Trouvée → `import_official_trek(catalogue, trek_id)`.
+  2. `find_hiking_routes` autour du départ : si un sentier balisé OSM porte ce nom → `import_hiking_route(osm_id)`.
+     Signaler ses `warnings` (relation OSM incomplète).
+  3. Sinon, **reconstruire d'après le descriptif** : relever dans l'ordre de marche les lieux cités (hameaux,
+     cols, sommets, ponts, lacs, chapelles) et appeler `route_via_places(start, places, loop)`. Annoncer que
+     le tracé est reconstruit, citer les lieux `non_trouves`, et vérifier que distance et D+ collent au
+     descriptif s'il en donne (sinon le dire).
 
 ## 3. Construire
 - Boucle sans lieu imposé : `generate_loop_candidates` (puis `compare_routes`).

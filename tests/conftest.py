@@ -50,8 +50,12 @@ class FakeElevation:
 
 
 class FakeNominatim:
-    def geocode(self, query, limit, country, near=None):
-        return [Place(name=query, display_name=f"{query}, France", lat=45.1279, lon=5.5885, type="village")]
+    # Lieux connus de la doublure ; tout le reste est placé à Lans-en-Vercors, sauf « Lyon » (loin du Vercors).
+    KNOWN = {"Moucherotte": (45.1503, 5.6303), "Lyon": (45.7640, 4.8357)}
+
+    def geocode(self, query, limit, country, near=None, within_km=None):
+        lat, lon = self.KNOWN.get(query, (45.1279, 5.5885))
+        return [Place(name=query, display_name=f"{query}, France", lat=lat, lon=lon, type="village")]
 
 
 class FakeOverpass:
@@ -72,6 +76,8 @@ class FakeOverpass:
         if "way(around" in ql and '["highway"];out meta geom' in ql:
             return [{"type": "way", "id": 901, "tags": {"highway": "path"}, "timestamp": "2024-05-01T00:00:00Z",
                      "geometry": geom}]  # fmt: skip
+        if '"name"~' in ql:  # recherche d'un lieu-dit par son nom : aucun dans la doublure
+            return []
         if ql.endswith("out geom;") and "relation(" in ql and "around" not in ql:
             # Sentier balisé importé : trois chemins dans l'ordre, le deuxième à l'envers, plus une variante.
             n = len(geom)
@@ -126,9 +132,9 @@ class FakeGeotrek:
     def search(self, instance, query=None, bbox=None, limit=20):
         from randoforge.engines.geotrek import OfficialTrek
 
-        if instance != "ecrins":
+        if instance != "vercors":
             return []
-        return [OfficialTrek(parc="ecrins", trek_id=1, nom="Montée au Moucherotte", depart="Lans-en-Vercors",
+        return [OfficialTrek(catalogue="vercors", trek_id=1, nom="Montée au Moucherotte", depart="Lans-en-Vercors",
                              arrivee="Moucherotte", type="Aller-retour", distance_km=7.6, d_plus_m=700,
                              resume="Rando de test", depart_lat=45.1279, depart_lon=5.5885)]  # fmt: skip
 

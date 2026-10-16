@@ -13,14 +13,13 @@ from ..core import pois as poi_lib
 from ..core.geo import distance_m
 from ..core.models import TrackPoint
 from ..core.osmgeom import declared_values
-from ..engines.geotrek import INSTANCES
+from ..engines.geotrek import INSTANCES, PARKS, catalogs_near
 from .schemas import (
     CategoryName,
     HikingRoute,
     HikingRouteList,
     LatLon,
     OfficialTrekList,
-    Park,
     PlaceList,
     PoiNearby,
     PoiSearchResult,
@@ -76,29 +75,45 @@ def register(mcp: MCPServer, app: App) -> None:
         lat: float | None = None,
         lon: float | None = None,
         radius_km: Annotated[float, Field(gt=0, le=30)] = 10.0,
-        parc: Park | None = None,
+        catalogue: str | None = None,
         limit: Annotated[int, Field(ge=1, le=30)] = 10,
     ) -> OfficialTrekList:
-        """Randos **officielles** des parcs nationaux (Écrins, Cévennes, Port-Cros) : par nom (`query`) et/ou
-        autour d'un lieu. Si l'utilisateur nomme une rando de parc ou veut une rando « balisée et décrite » dans
-        un de ces parcs, chercher ici d'abord puis l'importer avec import_official_trek plutôt que la reconstruire.
+        """Randos **officielles** publiées par 44 catalogues (parcs nationaux et régionaux, départements,
+        intercommunalités — surtout en France), avec leur tracé exact : par nom (`query`) et/ou autour d'un lieu.
+        Si l'utilisateur nomme une rando ou veut une rando « balisée et décrite », chercher ici d'abord (autour du
+        départ de préférence) puis l'importer avec import_official_trek plutôt que la reconstruire.
         """
         if not app.services.geotrek:
-            raise ToolError("Catalogue des parcs non configuré.")
+            raise ToolError("Catalogues officiels non configurés.")
         if not query and (lat is None or lon is None):
             raise ToolError("Donner un nom (query) et/ou un lieu (lat, lon).")
+        if catalogue and catalogue not in INSTANCES:
+            raise ToolError(f"Catalogue inconnu : {catalogue}.")
         bbox = None
         if lat is not None and lon is not None:
             bbox = poi_lib.bbox_around([TrackPoint(lat=lat, lon=lon)], radius_km * 1000)
-        parks = [parc] if parc else list(INSTANCES)
+            # Seuls les catalogues qui couvrent le lieu sont interrogés.
+            parks = [catalogue] if catalogue else catalogs_near(lat, lon, radius_km / 111)
+            if not parks:
+                return OfficialTrekList(treks=[])
+        else:
+            parks = [catalogue] if catalogue else list(INSTANCES)
         res = app.parallel({p: (lambda p=p: app.external(lambda: app.services.geotrek.search(p, query, bbox, limit)))
                             for p in parks})  # fmt: skip
         treks = [t for r in res.values() if isinstance(r, list) for t in r]
         if lat is not None and lon is not None:
             treks.sort(key=lambda t: distance_m((lat, lon), (t.depart_lat, t.depart_lon)) if t.depart_lat else 1e9)
         if not treks and all(isinstance(r, ToolError) for r in res.values()):
-            raise ToolError("Catalogues des parcs indisponibles : " + " ; ".join(str(r) for r in res.values()))
-        return OfficialTrekList(treks=treks[:limit])
+            raise ToolError("Catalogues officiels indisponibles : " + " ; ".join(str(r) for r in res.values()))
+        # Un catalogue peut reprendre les randos d'un autre (ex. Gard et Cévennes) : un seul exemplaire.
+        unique, seen = [], set()
+        for t in treks:
+            key = (t.nom.strip().lower(), t.distance_km)
+            if key not in seen:
+                seen.add(key)
+                unique.append(t)
+        treks = unique[:limit]
+        return OfficialTrekList(treks=treks, catalogues={t.catalogue: PARKS[t.catalogue] for t in treks})
 
     @mcp.tool()
     def find_hiking_routes(

@@ -122,11 +122,20 @@ class RouteFrame:
 
     def polyline_filter(self, around_m: float, max_coords: int = 150) -> str:
         """Filtre Overpass `around:` sur une polyligne simplifiée du tracé."""
+        # Douglas-Peucker sans préservation de topologie : un tracé qui se recoupe (allers-retours, boucles
+        # imbriquées) ne pourrait sinon jamais descendre sous `max_coords` sommets, et la boucle ne finirait pas.
         tol = 5.0
-        simple = self.line.simplify(tol)
-        while len(simple.coords) > max_coords:
+        simple = self.line.simplify(tol, preserve_topology=False)
+        for _ in range(30):
+            if len(simple.coords) <= max_coords:
+                break
             tol *= 2
-            simple = self.line.simplify(tol)
+            simple = self.line.simplify(tol, preserve_topology=False)
+        if len(simple.coords) > max_coords:  # filet de sécurité : sous-échantillonnage régulier
+            coords = np.asarray(self.line.coords)
+            simple = LineString(coords[np.linspace(0, len(coords) - 1, max_coords).round().astype(int)])
+        # Rayon élargi de l'écart réel entre le tracé et sa version simplifiée : rien n'échappe au filtre.
+        tol = max(tol, self.line.hausdorff_distance(simple)) if len(simple.coords) >= 2 else tol
         xs, ys = zip(*simple.coords, strict=True)
         lats, lons = self.proj.to_latlon(np.array(xs), np.array(ys))
         coords = ",".join(f"{la:.6f},{lo:.6f}" for la, lo in zip(lats, lons, strict=True))

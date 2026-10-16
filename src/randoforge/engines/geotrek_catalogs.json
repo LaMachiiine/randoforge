@@ -1,0 +1,574 @@
+[
+ {
+  "id": "ecrins",
+  "nom": "Parc national des Écrins",
+  "api": "https://geotrek-admin.ecrins-parcnational.fr/api/v2/",
+  "portail": "https://destination.ecrins-parcnational.fr/",
+  "randos": 407,
+  "bbox": [
+   44.428,
+   5.807,
+   45.15,
+   6.866
+  ]
+ },
+ {
+  "id": "cevennes",
+  "nom": "Parc national des Cévennes",
+  "api": "https://geotrek-admin.cevennes-parcnational.net/api/v2/",
+  "portail": "https://destination.cevennes-parcnational.fr/",
+  "randos": 350,
+  "bbox": [
+   43.904,
+   3.158,
+   44.777,
+   4.25
+  ]
+ },
+ {
+  "id": "portcros",
+  "nom": "Parc national de Port-Cros",
+  "api": "https://geotrek-admin.portcros-parcnational.fr/api/v2/",
+  "portail": "https://destination.portcros-parcnational.fr/",
+  "randos": 14,
+  "bbox": [
+   42.951,
+   6.054,
+   43.234,
+   6.651
+  ]
+ },
+ {
+  "id": "vanoise",
+  "nom": "Parc national de la Vanoise",
+  "api": "https://adminrando.vanoise.com/api/v2/",
+  "portail": "https://rando.vanoise.com/",
+  "randos": 194,
+  "bbox": [
+   45.04,
+   6.153,
+   45.747,
+   7.193
+  ]
+ },
+ {
+  "id": "mercantour",
+  "nom": "Parc national du Mercantour (Marittime-Mercantour)",
+  "api": "https://adminrando.marittimemercantour.eu/api/v2/",
+  "portail": "https://destination.marittimemercantour.eu/",
+  "randos": 160,
+  "bbox": [
+   43.729,
+   6.546,
+   44.526,
+   8.145
+  ]
+ },
+ {
+  "id": "forets",
+  "nom": "Parc national de Forêts",
+  "api": "https://admin-geotrek.forets-parcnational.fr/api/v2/",
+  "portail": "https://rando.forets-parcnational.fr/",
+  "randos": 46,
+  "bbox": [
+   47.593,
+   4.495,
+   48.242,
+   5.381
+  ]
+ },
+ {
+  "id": "guadeloupe",
+  "nom": "Parc national de la Guadeloupe",
+  "api": "https://geotrek.guadeloupe-parcnational.fr/api/v2/",
+  "portail": "https://www.randoguadeloupe.gp/",
+  "randos": 94,
+  "bbox": [
+   15.823,
+   -61.844,
+   16.536,
+   -60.967
+  ]
+ },
+ {
+  "id": "pnr-paca",
+  "nom": "Parcs naturels régionaux de PACA (Chemins des parcs)",
+  "api": "https://admin.cheminsdesparcs.fr/api/v2/",
+  "portail": "https://www.cheminsdesparcs.fr/",
+  "randos": 443,
+  "bbox": [
+   43.145,
+   4.378,
+   44.905,
+   7.213
+  ]
+ },
+ {
+  "id": "grands-causses-aubrac",
+  "nom": "Parcs naturels régionaux des Grands Causses et de l'Aubrac",
+  "api": "https://admin-pnrgca.openig.org/api/v2/",
+  "portail": "https://rando.parc-grands-causses.fr/",
+  "randos": 867,
+  "bbox": [
+   43.62,
+   1.874,
+   45.083,
+   3.974
+  ]
+ },
+ {
+  "id": "vercors",
+  "nom": "Parc naturel régional du Vercors",
+  "api": "https://geo.pnr-vercors.fr/api/v2/",
+  "portail": "https://rando.parc-du-vercors.fr/",
+  "randos": 212,
+  "bbox": [
+   44.552,
+   4.724,
+   45.314,
+   5.818
+  ]
+ },
+ {
+  "id": "haut-jura",
+  "nom": "Parc naturel régional du Haut-Jura",
+  "api": "https://randoadmin.parc-haut-jura.fr/api/v2/",
+  "portail": "https://randonature.parc-haut-jura.fr/",
+  "randos": 165,
+  "bbox": [
+   46.07,
+   5.608,
+   46.9,
+   6.351
+  ]
+ },
+ {
+  "id": "bauges",
+  "nom": "Parc naturel régional du Massif des Bauges",
+  "api": "https://geotrek.parcdesbauges.com/api/v2/",
+  "portail": "https://rando.parcdesbauges.com/",
+  "randos": 83,
+  "bbox": [
+   45.457,
+   5.885,
+   45.943,
+   6.468
+  ]
+ },
+ {
+  "id": "vosges-nord",
+  "nom": "Parc naturel régional des Vosges du Nord",
+  "api": "https://geotrek.parc-vosges-nord.fr/api/v2/",
+  "portail": "https://www.randovosgesdunord.fr/",
+  "randos": 64,
+  "bbox": [
+   48.691,
+   7.096,
+   49.195,
+   7.999
+  ]
+ },
+ {
+  "id": "morvan",
+  "nom": "Parc naturel régional du Morvan",
+  "api": "https://geotrek.parcdumorvan.org/api/v2/",
+  "portail": "https://rando.parcdumorvan.org/",
+  "randos": 39,
+  "bbox": [
+   46.739,
+   3.605,
+   47.548,
+   4.381
+  ]
+ },
+ {
+  "id": "pilat",
+  "nom": "Parc naturel régional du Pilat",
+  "api": "https://admin.pilat-rando.fr/api/v2/",
+  "portail": "https://pilat-rando.fr/",
+  "randos": 175,
+  "bbox": [
+   45.192,
+   4.275,
+   45.634,
+   4.851
+  ]
+ },
+ {
+  "id": "perche",
+  "nom": "Parc naturel régional du Perche",
+  "api": "https://geotrek-perche.makina-corpus.net/api/v2/",
+  "portail": "https://rando-perche.fr/",
+  "randos": 200,
+  "bbox": [
+   48.088,
+   0.375,
+   48.728,
+   1.148
+  ]
+ },
+ {
+  "id": "millevaches",
+  "nom": "Parc naturel régional de Millevaches en Limousin",
+  "api": "https://rando-millevaches-admin.fr/api/v2/",
+  "portail": "https://rando-millevaches.fr/",
+  "randos": 328,
+  "bbox": [
+   45.172,
+   1.236,
+   46.044,
+   2.555
+  ]
+ },
+ {
+  "id": "loire-anjou-touraine",
+  "nom": "Parc naturel régional Loire-Anjou-Touraine",
+  "api": "https://admin.rando-loireanjoutouraine.fr/api/v2/",
+  "portail": "https://rando-loireanjoutouraine.fr/",
+  "randos": 215,
+  "bbox": [
+   46.907,
+   -0.914,
+   47.62,
+   0.898
+  ]
+ },
+ {
+  "id": "pnr-idf",
+  "nom": "Parcs naturels régionaux d'Île-de-France",
+  "api": "https://geotrek-admin.pnr-idf.fr/api/v2/",
+  "portail": "https://rando.pnr-idf.fr/",
+  "randos": 273,
+  "bbox": [
+   48.234,
+   1.551,
+   49.36,
+   2.86
+  ]
+ },
+ {
+  "id": "hautes-alpes",
+  "nom": "Hautes-Alpes (Alpes Rando)",
+  "api": "https://geotrek-cd05-aggregator.makina-corpus.net/api/v2/",
+  "portail": "https://alpesrando.net/",
+  "randos": 536,
+  "bbox": [
+   43.911,
+   5.225,
+   45.17,
+   7.099
+  ]
+ },
+ {
+  "id": "doubs",
+  "nom": "Doubs (Explore Doubs)",
+  "api": "https://explore-admin.doubs.fr/api/v2/",
+  "portail": "https://explore.doubs.fr/",
+  "randos": 321,
+  "bbox": [
+   46.545,
+   5.682,
+   47.578,
+   7.0
+  ]
+ },
+ {
+  "id": "gard",
+  "nom": "Gard (Rando Gard)",
+  "api": "https://geotrek-aggr.gard.fr/api/v2/",
+  "portail": "https://rando.gard.fr/",
+  "randos": 290,
+  "bbox": [
+   43.434,
+   3.247,
+   44.49,
+   4.773
+  ]
+ },
+ {
+  "id": "jura",
+  "nom": "Jura (Jura Outdoor)",
+  "api": "https://geotrek-cd39-aggregator.makina-corpus.net/api/v2/",
+  "portail": "https://www.jura-outdoor.com/",
+  "randos": 222,
+  "bbox": [
+   46.216,
+   5.285,
+   47.5,
+   6.99
+  ]
+ },
+ {
+  "id": "haute-loire",
+  "nom": "Haute-Loire (sports nature)",
+  "api": "https://admin.sportsnature.hauteloire.fr/api/v2/",
+  "portail": "https://sportsnature.hauteloire.fr/",
+  "randos": 520,
+  "bbox": [
+   44.598,
+   3.082,
+   45.455,
+   4.586
+  ]
+ },
+ {
+  "id": "loire-atlantique",
+  "nom": "Loire-Atlantique",
+  "api": "https://admin-rando.loire-atlantique.fr/api/v2/",
+  "portail": "https://rando.loire-atlantique.fr/",
+  "randos": 362,
+  "bbox": [
+   46.878,
+   -2.599,
+   47.845,
+   -0.881
+  ]
+ },
+ {
+  "id": "orne",
+  "nom": "Orne (Randonnée Normandie)",
+  "api": "https://admin-rando-orne.com/api/v2/",
+  "portail": "https://www.randonnee-normandie.com/",
+  "randos": 158,
+  "bbox": [
+   48.175,
+   -0.803,
+   49.006,
+   0.952
+  ]
+ },
+ {
+  "id": "pas-de-calais",
+  "nom": "Pas-de-Calais (Escapade 62)",
+  "api": "https://admin.escapade62.fr/api/v2/",
+  "portail": "https://www.escapade62.fr/",
+  "randos": 122,
+  "bbox": [
+   50.035,
+   1.548,
+   51.054,
+   3.188
+  ]
+ },
+ {
+  "id": "pyrenees-atlantiques",
+  "nom": "Pyrénées-Atlantiques (Nature 64)",
+  "api": "https://geotrek-admin.le64.fr/api/v2/",
+  "portail": "https://nature64.fr/",
+  "randos": 382,
+  "bbox": [
+   42.746,
+   -1.826,
+   43.706,
+   0.033
+  ]
+ },
+ {
+  "id": "hautes-pyrenees",
+  "nom": "Hautes-Pyrénées (Vallées de Gavarnie)",
+  "api": "https://geotrek65admin.openig.org/api/v2/",
+  "portail": "https://rando.valleesdegavarnie.com/",
+  "randos": 343,
+  "bbox": [
+   42.663,
+   -0.333,
+   43.317,
+   0.684
+  ]
+ },
+ {
+  "id": "pyrenees-orientales",
+  "nom": "Pyrénées-Orientales (Conflent-Canigó)",
+  "api": "https://admin-pyrenees-orientales.fr/api/v2/",
+  "portail": "https://rando.tourisme-canigo.com/",
+  "randos": 99,
+  "bbox": [
+   42.337,
+   1.686,
+   42.863,
+   3.176
+  ]
+ },
+ {
+  "id": "tarn",
+  "nom": "Tarn (Rando pleine nature)",
+  "api": "https://geotrekadmin.tarn.fr/api/v2/",
+  "portail": "https://randopleinenature.tarn.fr/",
+  "randos": 340,
+  "bbox": [
+   43.386,
+   1.636,
+   44.242,
+   3.057
+  ]
+ },
+ {
+  "id": "var",
+  "nom": "Var (sport nature)",
+  "api": "https://gestion-sportnature.var.fr/api/v2/",
+  "portail": "https://sportnature.var.fr/",
+  "randos": 54,
+  "bbox": [
+   43.097,
+   5.673,
+   43.825,
+   6.741
+  ]
+ },
+ {
+  "id": "cote-vermeille",
+  "nom": "Albères - Côte Vermeille",
+  "api": "https://geotrek.tourisme-pyrenees-mediterranee.fr/api/v2/",
+  "portail": "https://rando.tourisme-pyrenees-mediterranee.fr/",
+  "randos": 130,
+  "bbox": [
+   42.214,
+   2.818,
+   42.631,
+   3.327
+  ]
+ },
+ {
+  "id": "ales",
+  "nom": "Alès Agglomération",
+  "api": "https://admin.alesagglo-evasion.fr/api/v2/",
+  "portail": "https://alesagglo-evasion.fr/",
+  "randos": 69,
+  "bbox": [
+   43.937,
+   3.815,
+   44.43,
+   4.334
+  ]
+ },
+ {
+  "id": "comminges",
+  "nom": "Cœur et Coteaux du Comminges",
+  "api": "https://adminrando.coeurcoteaux-comminges.fr/api/v2/",
+  "portail": "https://rando.coeurcoteaux-comminges.fr/",
+  "randos": 123,
+  "bbox": [
+   42.809,
+   0.447,
+   43.658,
+   1.493
+  ]
+ },
+ {
+  "id": "pyrenees-haut-garonnaises",
+  "nom": "Pyrénées Haut-Garonnaises",
+  "api": "https://admin-ccphg.openig.org/api/v2/",
+  "portail": "https://rando.cc-pyreneeshautgaronnaises.fr/",
+  "randos": 52,
+  "bbox": [
+   42.671,
+   0.451,
+   43.12,
+   0.816
+  ]
+ },
+ {
+  "id": "caux-vexin",
+  "nom": "Inter Caux Vexin",
+  "api": "https://rando.admin.intercauxvexin.fr/api/v2/",
+  "portail": "https://rando.intercauxvexin.fr/",
+  "randos": 20,
+  "bbox": [
+   49.383,
+   0.945,
+   49.678,
+   1.459
+  ]
+ },
+ {
+  "id": "ardeche-hermitage",
+  "nom": "Ardèche en Hermitage",
+  "api": "https://geotrek-ardeche-hermitage.fr/api/v2/",
+  "portail": "https://trahce.com/",
+  "randos": 65,
+  "bbox": [
+   44.951,
+   4.516,
+   45.245,
+   5.105
+  ]
+ },
+ {
+  "id": "sisteronais",
+  "nom": "Sisteronais-Buëch",
+  "api": "https://admin.sisteron-buech.fr/api/v2/",
+  "portail": "https://rando.sisteron-alpesprovencales.fr/",
+  "randos": 115,
+  "bbox": [
+   44.128,
+   5.393,
+   44.535,
+   6.293
+  ]
+ },
+ {
+  "id": "compiegne",
+  "nom": "Compiègne-Pierrefonds",
+  "api": "https://geotrekadmin.compiegne-pierrefonds.fr/api/v2/",
+  "portail": "https://itineraires.compiegne-pierrefonds.fr/",
+  "randos": 28,
+  "bbox": [
+   49.294,
+   2.705,
+   49.536,
+   3.176
+  ]
+ },
+ {
+  "id": "carcassonne",
+  "nom": "Grand Carcassonne",
+  "api": "https://rando-admin.grand-carcassonne-tourisme.fr/api/v2/",
+  "portail": "https://rando.grand-carcassonne-tourisme.fr/",
+  "randos": 66,
+  "bbox": [
+   43.008,
+   2.092,
+   43.489,
+   2.742
+  ]
+ },
+ {
+  "id": "sud-vienne",
+  "nom": "Sud Vienne Poitou",
+  "api": "https://geotrek.sudviennepoitou.com/api/v2/",
+  "portail": "https://rando.sudviennepoitou.com/",
+  "randos": 80,
+  "bbox": [
+   46.066,
+   0.467,
+   46.73,
+   1.241
+  ]
+ },
+ {
+  "id": "haute-savoie-nature",
+  "nom": "Conservatoire d'espaces naturels de Haute-Savoie",
+  "api": "https://geotrek.nature-haute-savoie.fr/api/v2/",
+  "portail": "https://rando.nature-haute-savoie.fr/",
+  "randos": 89,
+  "bbox": [
+   45.707,
+   6.142,
+   46.45,
+   6.967
+  ]
+ },
+ {
+  "id": "via-columbani",
+  "nom": "Via Columbani",
+  "api": "https://admin.viacolumbani.com/api/v2/",
+  "portail": "https://viacolumbani.com/",
+  "randos": 32,
+  "bbox": [
+   46.283,
+   -6.83,
+   52.668,
+   9.731
+  ]
+ }
+]

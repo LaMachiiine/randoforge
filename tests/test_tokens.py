@@ -79,9 +79,10 @@ async def test_find_and_import_official_trek(server):
     async with Client(server) as client:
         found = await call(client, "find_official_treks", {"query": "Moucherotte", **LANS})
         trek = found["treks"][0]
-        assert trek["nom"] == "Montée au Moucherotte" and trek["parc"] == "ecrins"
-        route = await call(client, "import_official_trek", {"parc": trek["parc"], "trek_id": trek["trek_id"]})
-        assert route["source"] == "officiel:ecrins:1"
+        assert trek["nom"] == "Montée au Moucherotte" and trek["catalogue"] == "vercors"
+        route = await call(client, "import_official_trek", {"catalogue": trek["catalogue"], "trek_id": trek["trek_id"]})
+        assert route["source"] == "officiel:vercors:1"
+        assert found["catalogues"] == {"vercors": "Parc naturel régional du Vercors"}
         assert route["stats"]["distance_km"] == pytest.approx(7.585, rel=0.02)
         res = await client.call_tool("find_official_treks", {})
         assert res.is_error  # ni nom ni lieu
