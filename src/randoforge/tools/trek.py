@@ -63,7 +63,10 @@ def compute_bivouacs(app: App, route: Route) -> list[str]:
 def register(mcp: MCPServer, app: App) -> None:
     @mcp.tool()
     def find_bivouac_spots(
-        route_id: str, abrite_seulement: bool = False, limit: Annotated[int, Field(ge=1, le=100)] = 12
+        route_id: str,
+        abrite_seulement: bool = False,
+        limit: Annotated[int, Field(ge=1, le=100)] = 12,
+        refresh: bool = False,
     ) -> BivouacResult:
         """Emplacements pour dormir le long du tracé : refuges, cabanes et gîtes (refuges.info, OSM),
         aires de bivouac, et emplacements *calculés* (terrain plat < 8 %, eau à moins de 500 m si
@@ -72,11 +75,15 @@ def register(mcp: MCPServer, app: App) -> None:
         Chaque emplacement indique sa source, le détour, la distance à l'eau et les avertissements
         réglementaires. Les emplacements calculés sont des pistes à vérifier sur place.
         `abrite_seulement` : uniquement refuges, cabanes, abris, grottes et abris sous roche
-        (bivouac à l'abri de la pluie et du vent).
+        (bivouac à l'abri de la pluie et du vent). Les emplacements sont calculés une fois puis réutilisés
+        (`refresh=True` pour recalculer).
         """
         route = app.load(route_id)
-        failures = compute_bivouacs(app, route)
-        app.save(route)
+        failures: list[str] = []
+        if route.bivouacs is None or refresh:
+            failures = compute_bivouacs(app, route)
+            if not failures:  # résultat incomplet (source en panne) : non conservé, recalculé au prochain appel
+                app.save(route)
         rappels = REMINDERS + [f"Source indisponible : {f}" for f in failures]
         spots = [b for b in route.bivouacs if b.abrite] if abrite_seulement else route.bivouacs
         if abrite_seulement and not spots:
@@ -116,8 +123,7 @@ def register(mcp: MCPServer, app: App) -> None:
             raise ToolError("Indiquer `days` ou `max_hours_per_day` (ou une durée max via set_constraints).")
         if route.stats is None or route.stats.d_plus_m is None:
             raise ToolError("Statistiques indisponibles : lancer compute_stats d'abord.")
-        if route.bivouacs is None:
-            compute_bivouacs(app, route)
+        failures = compute_bivouacs(app, route) if route.bivouacs is None else []
         kinds = OVERNIGHT_KINDS[overnight]
         cuts = [
             stages_lib.Cut(m=b.km * 1000, label=b.nom or b.type, kind=b.type)
@@ -139,6 +145,9 @@ def register(mcp: MCPServer, app: App) -> None:
             )
         except ValueError as exc:
             raise ToolError(str(exc)) from exc
+        notes = notes + [f"Hébergements possiblement incomplets, source indisponible : {f}" for f in failures]
+        if failures:
+            route.bivouacs = None  # incomplet : recalculé au prochain appel
         route.stages = stages
         route.validation = None
         app.save(route)

@@ -19,11 +19,13 @@ from ..core.quality import marked_share
 from ..core.similarity import overlap_fraction
 from ..core.terrain import retraced_sections
 from ..formats.gpx import read_gpx
+from ..http import HOST_LIMITS
 from ..storage import new_route_id
 from ..validation import tarmac_length
 from .schemas import LatLon, LoopCandidate, LoopCandidates, Park, Profile, SacScale
 
-PARALLEL_ROUTES = 4  # requêtes simultanées au moteur de routage public : rester raisonnable
+# Autant de brouillons en parallèle que BRouter accepte de requêtes simultanées (au-delà, ils attendraient).
+PARALLEL_ROUTES = HOST_LIMITS["brouter.de"][0]
 COMPASS = ["N", "NE", "E", "SE", "S", "SO", "O", "NO"]
 
 

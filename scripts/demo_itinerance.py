@@ -50,17 +50,13 @@ async def main(out: Path) -> None:
         await call("set_constraints", {"route_id": rid, "with_dog": True, "date": day.isoformat(), "start_time": "08:00",
                                        "max_duration_h": 7})  # fmt: skip
 
-        res = await call("annotate_route", {"route_id": rid})
-        print(
-            f"   {len(res['pois'])} points notables ; décrits : {sum(1 for p in res['pois'] if p.get('description'))}"
-        )
-        res = await call("technical_passages", {"route_id": rid})
-        print(f"   {len(res['passages'])} passages techniques, niveau max {res['niveau_max']}")
-        res = await call("route_areas", {"route_id": rid})
-        for z in res["zones"]:
-            print(
-                f"   zone : {z['kind']} « {z['nom']} » km {z['km_debut']}–{z['km_fin']}, chiens {z['chiens']}, bivouac {z['bivouac']}"
-            )
+        # Démarche recommandée : analyses (points notables, passages, zones) + validation en un appel
+        res = await call("analyze_route", {"route_id": rid})
+        print(f"   {res['pois_total']} points notables, {len(res.get('passages_techniques', []))} passages techniques, "
+              f"validation {res['validation']['status']}")  # fmt: skip
+        for z in res.get("zones", []):
+            print(f"   zone : {z['kind']} « {z.get('nom')} » km {z['km_debut']}–{z['km_fin']}, chiens {z.get('chiens')}, "
+                  f"bivouac {z.get('bivouac')}")  # fmt: skip
         res = await call("data_quality", {"route_id": rid})
         if res:
             q = res["qualite"]

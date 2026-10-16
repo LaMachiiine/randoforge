@@ -232,7 +232,7 @@ def register(mcp: MCPServer, app: App) -> None:
         )
         # Demander la météo, c'est préparer le départ : on valide l'itinéraire (météo comprise) dans la foulée,
         # sans dépendre de l'agent. Les analyses manquantes tournent en parallèle.
-        app.validate_full(route)
+        route.weather.analyses_indisponibles = app.validate_full(route)
         route.weather.validation_status = route.validation.status
         route.weather.alertes_itineraire = [
             f"{c.id} : {c.message}" for c in route.validation.checks if c.level in {"error", "warning"}

@@ -234,7 +234,7 @@ def test_gpx_per_day_contains_only_that_stage():
 
 
 @pytest.mark.anyio
-async def test_trek_workflow(server, tmp_path, soon):
+async def test_trek_workflow(server, tmp_path, soon, monkeypatch):
     async with Client(server) as client:
         rid = (await call(client, "route_between", {"waypoints": [LANS, MOUCHEROTTE], "name": "Itinérance"}))[
             "route_id"
@@ -257,6 +257,11 @@ async def test_trek_workflow(server, tmp_path, soon):
         spots = await call(client, "find_bivouac_spots", {"route_id": rid})
         sources = {s["source"] for s in spots["emplacements"]}
         assert {"OSM", "refuges.info"} <= sources
+        # Deuxième appel (ex. filtre « abrité ») : résultats réutilisés, pas de nouvel appel aux services.
+        monkeypatch.setattr("randoforge.tools.trek.compute_bivouacs", lambda app, route: pytest.fail("recalcul"))
+        again = await call(client, "find_bivouac_spots", {"route_id": rid, "limit": 1})
+        assert len(again["emplacements"]) == 1 and again["total"] == spots["total"]
+        monkeypatch.undo()
 
         plan = await call(client, "plan_stages", {"route_id": rid, "days": 2})
         assert len(plan["etapes"]) == 2

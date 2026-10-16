@@ -82,6 +82,8 @@ def register(mcp: MCPServer, app: App) -> None:
         autour d'un lieu. Si l'utilisateur nomme une rando de parc ou veut une rando « balisée et décrite » dans
         un de ces parcs, chercher ici d'abord puis l'importer avec import_official_trek plutôt que la reconstruire.
         """
+        if not app.services.geotrek:
+            raise ToolError("Catalogue des parcs non configuré.")
         if not query and (lat is None or lon is None):
             raise ToolError("Donner un nom (query) et/ou un lieu (lat, lon).")
         bbox = None

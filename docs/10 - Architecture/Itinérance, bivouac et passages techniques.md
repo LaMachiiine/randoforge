@@ -43,6 +43,8 @@ Implémentation : `src/randoforge/core/bivouac.py`. Testé sur la traversée des
 
 **Bivouac abrité** : chaque emplacement porte `abrite` (refuge, cabane, abri, grotte, abri sous roche, « abri naturel » de refuges.info). `find_bivouac_spots(abrite_seulement=True)` et `plan_stages(overnight="abri")` ne retiennent que ceux-là. Grottes : avertissements crue, chutes de pierres, faune protégée.
 
+**Réutilisation** : les emplacements sont calculés une fois par itinéraire puis réutilisés (filtres, `plan_stages`) ; `refresh=True` force un nouveau calcul. Un résultat incomplet (source en panne) n'est pas conservé : il est recalculé au prochain appel, et `plan_stages` le signale dans ses notes.
+
 ### La réglementation d'abord
 Le bivouac est **réglementé différemment selon les pays et les zones** (cœurs de parcs nationaux, réserves naturelles, arrêtés municipaux, sites classés ; règles variables en Suisse, Italie, Espagne…). RandoForge **ne dira jamais « bivouac autorisé »** :
 - il détecte les zones protégées traversées (`boundary=national_park|protected_area`, réserves) et l'indique ;

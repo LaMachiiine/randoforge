@@ -202,6 +202,9 @@ class WeatherReport(BaseModel):
     alertes_itineraire: list[str] = Field(
         default_factory=list, description="Erreurs et avertissements de la validation"
     )
+    analyses_indisponibles: list[str] = Field(
+        default_factory=list, description="Vérifications impossibles (service indisponible) : statut incomplet"
+    )
 
 
 class Quality(BaseModel):

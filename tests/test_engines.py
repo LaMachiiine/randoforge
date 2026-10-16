@@ -218,3 +218,22 @@ def test_overpass_keeps_trying_flapping_mirrors():
     over = Overpass(http, ["https://a.example/i", "https://b.example/i"])
     assert over.query("q") == [{"id": 7}]
     assert OVERPASS_ATTEMPTS >= 5 and max(slept) <= 8
+
+
+def test_mirrors_are_never_all_set_aside():
+    """Miroirs injoignables écartés 5 min, mais jamais tous à la fois : le service reste essayé."""
+    calls = []
+
+    def handler(request):
+        calls.append(request.url.host)
+        if len(calls) <= 2:
+            raise httpx.ConnectError("down")
+        return httpx.Response(200, json={"ok": 1})
+
+    http = CachedHttp(None, transport=httpx.MockTransport(handler), sleep=lambda s: None)
+    urls = ["https://a.example/i", "https://b.example/i"]
+    assert http.request_json("POST", urls, data={"q": "1"}, service="Overpass") == {"ok": 1}
+    assert {"a.example", "b.example"} <= set(calls)
+    # Les deux miroirs sont marqués injoignables : aucun n'est écarté, le suivant appel les essaie.
+    assert http.request_json("POST", urls, data={"q": "2"}, service="Overpass") == {"ok": 1}
+    assert not http._set_aside("a.example", ["a.example", "b.example"])

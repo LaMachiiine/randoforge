@@ -109,13 +109,21 @@ class CachedHttp:
         if (wait := start - time.time()) > 0:
             self.sleep(wait)
 
-    def _attempt(self, method, url, params, data, json_body, accept, service, has_mirrors) -> tuple[str, Any]:
+    def _set_aside(self, host: str, mirrors: list[str]) -> bool:
+        """Vrai si `host` est écarté et qu'au moins un autre miroir ne l'est pas : on ne met jamais tous les
+        miroirs de côté en même temps (sinon le service resterait muet 5 min même après son retour)."""
+        now = time.time()
+        if len(mirrors) < 2 or self._down_until.get(host, 0) <= now:
+            return False
+        return any(self._down_until.get(h, 0) <= now for h in mirrors if h != host)
+
+    def _attempt(self, method, url, params, data, json_body, accept, service, mirrors) -> tuple[str, Any]:
         """Un appel à un serveur : ("ok", valeur), ("retry", message), ("slow", message) ou ("fatal", message).
 
         Un serveur injoignable n'est écarté que s'il a des miroirs : un service à serveur unique doit pouvoir
         être réessayé tout de suite après une coupure passagère."""
         host = urlsplit(url).hostname or url
-        if has_mirrors and self._down_until.get(host, 0) > time.time():
+        if self._set_aside(host, mirrors):
             return "retry", f"{host} écarté (injoignable récemment)"
         slot = self._slots.get(host)
         if slot:
@@ -124,7 +132,7 @@ class CachedHttp:
             self._throttle(host)
             r = self.client.request(method, url, params=params, data=data, json=json_body)
         except (httpx.ConnectError, httpx.ConnectTimeout) as exc:
-            if has_mirrors:
+            if len(mirrors) > 1:
                 self._down_until[host] = time.time() + DOWN_S
             return "retry", f"{host} injoignable ({type(exc).__name__})"
         except httpx.TransportError as exc:
@@ -201,8 +209,10 @@ class CachedHttp:
         if cached is not None:
             return cached
 
+        hosts = [urlsplit(u).hostname or u for u in urls]
+
         def call(url: str) -> tuple[str, Any]:
-            return self._attempt(method, url, params, data, json_body, accept, service, len(urls) > 1)
+            return self._attempt(method, url, params, data, json_body, accept, service, hosts)
 
         last_error = ""
         attempts = attempts or self.retries
