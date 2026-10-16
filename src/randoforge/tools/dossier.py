@@ -6,13 +6,14 @@ from datetime import date as Date
 from datetime import time as Time
 from datetime import timedelta
 
-from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver import Context, MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 
-from ..app import App
+from ..app import App, Progress
 from ..core.models import Route
 from ..formats.gpx import write_gpx
 from ..formats.roadbook import write_roadbook
+from ..validation import alert_lines
 from .access import compute_coverage, compute_transit, compute_water
 from .analyze import FORECAST_DAYS, compute_weather
 from .nature import compute_wildlife
@@ -50,6 +51,7 @@ def register(mcp: MCPServer, app: App) -> None:
         transport: bool = False,
         en_raquettes: bool = False,
         vault_dir: str | None = None,
+        ctx: Context | None = None,
     ) -> DossierResult:
         """Prépare la sortie en un appel et écrit deux livrables : la trace GPX (+ un fichier par jour) et une page
         unique `dossier.html` (carte, profil, étapes, passages, météo, neige, faune, réseau… imprimable en PDF).
@@ -87,7 +89,8 @@ def register(mcp: MCPServer, app: App) -> None:
         # Les analyses de base (points notables, passages, zones) modifient l'itinéraire : un seul appel,
         # qui ne touche pas aux champs lus par les autres calculs.
         calls["base"] = lambda: app.run_missing_analyses(route)
-        res = app.parallel(calls)
+        progress = Progress(ctx, len(calls) + 2)  # + validation et fichiers
+        res = app.parallel(calls, on_done=lambda name: progress.step(f"{LABELS.get(name, 'analyses de base')} : fait"))
 
         res.pop("base")
         failures: list[str] = []
@@ -100,14 +103,16 @@ def register(mcp: MCPServer, app: App) -> None:
         snow = reports.get("snow")
         if snow and snow.applicable and (snow.part_enneigee_pct or 0) > 0:
             try:
-                reports["avalanche"] = compute_avalanche(app, route)
+                reports["avalanche"] = compute_avalanche(app, route, snow)
             except ToolError as exc:
                 failures.append(f"{LABELS['avalanche']} : {exc}")
         for name, report in reports.items():
             setattr(route, name, report)
+        progress.step("validation")
         failures[:0] = app.validate_full(route)  # ne relance que les analyses de base qui ont échoué
         app.save(route)
 
+        progress.step("écriture de la trace et du dossier")
         files = write_outputs(
             app,
             route,
@@ -121,7 +126,6 @@ def register(mcp: MCPServer, app: App) -> None:
             for name, report in reports.items()
             if name not in skipped
         }
-        checks = route.validation.checks if route.validation else []
         return DossierResult(
             route_id=route_id,
             files=files,
@@ -129,9 +133,5 @@ def register(mcp: MCPServer, app: App) -> None:
             non_inclus={LABELS[k]: v for k, v in skipped.items()},
             indisponibles=failures,
             validation_status=route.validation.status if route.validation else None,
-            alertes=[
-                f"{c.id} : {c.message}"
-                for c in sorted(checks, key=lambda c: c.level != "error")
-                if c.level in {"error", "warning"}
-            ][:10],  # erreurs d'abord
+            alertes=alert_lines(route.validation),
         )

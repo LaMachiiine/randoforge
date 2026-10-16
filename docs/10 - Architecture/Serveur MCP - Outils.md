@@ -12,6 +12,8 @@ maj: 2026-10-15
 - Entrées typées et bornées ; erreurs prévues levées en `ToolError` (seul message transmis au client).
 - Analyses coûteuses (Overpass) mises en cache ; `validate_route` lance celles qui manquent.
 - Les sources de données sont indiquées dans les sorties (provenance, licences).
+- Appels longs (`prepare_dossier`, `generate_loop_candidates`) : progression envoyée au client à chaque étape
+  (`Progress` dans `app.py`, paramètre `ctx: Context` caché du schéma) ; Claude Code l'affiche pendant l'attente.
 
 ## Recherche — `tools/search.py`
 | Outil | Rôle |

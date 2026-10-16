@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+import threading
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 
+import anyio
+import anyio.from_thread
+import anyio.lowlevel
 import numpy as np
+from mcp.server.mcpserver import Context
 from mcp.server.mcpserver.exceptions import ToolError
 
 from .core import areas as areas_lib
@@ -23,6 +28,35 @@ from .validation import validate
 
 DENSIFY_M = 10.0
 DEFAULT_CATEGORIES = [c for c in poi_lib.CATEGORIES if c != "transport"]
+
+
+class Progress:
+    """Progression d'un appel long, envoyée au client (Claude Code l'affiche) depuis n'importe quel fil de l'outil.
+
+    Les outils synchrones tournent dans un fil d'anyio : on y récupère la boucle du serveur pour lui transmettre
+    les notifications, y compris depuis les fils des calculs parallèles. Sans contexte (appel direct), ne fait rien.
+    """
+
+    def __init__(self, ctx: Context | None, total: int):
+        self.ctx, self.total, self.done = ctx, total, 0
+        self._lock = threading.Lock()
+        self._token = None
+        if ctx is not None:
+            try:
+                self._token = anyio.from_thread.run_sync(anyio.lowlevel.current_token)
+            except RuntimeError:  # pas dans un fil d'anyio
+                pass
+
+    def step(self, message: str) -> None:
+        with self._lock:
+            self.done = min(self.total, self.done + 1)
+            done = self.done
+        if self._token is None:
+            return
+        try:
+            anyio.from_thread.run(self.ctx.report_progress, done, self.total, message, token=self._token)
+        except Exception:  # noqa: BLE001 — la progression n'est qu'un confort : jamais d'échec de l'outil
+            pass
 
 
 class App:
@@ -160,11 +194,16 @@ class App:
         route.validation = None
 
     @staticmethod
-    def parallel(calls: dict[str, Callable[[], object]]) -> dict[str, object]:
+    def parallel(
+        calls: dict[str, Callable[[], object]], on_done: Callable[[str], None] | None = None
+    ) -> dict[str, object]:
         """Exécute des appels indépendants en parallèle (chacun attend surtout un service externe) ;
-        renvoie {nom: résultat, ou l'exception ToolError si l'appel a échoué}."""
+        renvoie {nom: résultat, ou l'exception ToolError si l'appel a échoué}. `on_done(nom)` : à chaque fin d'appel."""
         with ThreadPoolExecutor(max_workers=max(1, len(calls))) as pool:
             futures = {name: pool.submit(fn) for name, fn in calls.items()}
+            if on_done:
+                for name, f in futures.items():
+                    f.add_done_callback(lambda _f, name=name: on_done(name))
         out: dict[str, object] = {}
         for name, f in futures.items():
             try:

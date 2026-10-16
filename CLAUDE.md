@@ -28,6 +28,7 @@ Conception détaillée : vault Obsidian dans `docs/` (point d'entrée `docs/00 -
   `Compact` (champs vides facultatifs omis) et les outils s'enregistrent via `CompactServer` (JSON sans indentation) :
   surveiller la taille des réponses (section « Consommation » du rapport d'évals).
 - Une erreur prévue doit lever `ToolError` : c'est le seul message que le SDK transmet au client.
+- Un outil long signale sa progression : paramètre `ctx: Context | None = None` et `Progress` (`app.py`).
 - Pas de valeur silencieusement fausse : en cas de doute, `None` + un avertissement ; une règle non vérifiable le dit en `info`.
 - Ne jamais écrire qu'un bivouac ou un chien est « autorisé » : signaler la zone et renvoyer au règlement.
 - Les noms OSM sont modifiables par tous : toujours les échapper dans le HTML.

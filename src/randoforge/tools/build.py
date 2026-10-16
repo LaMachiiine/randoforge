@@ -10,11 +10,11 @@ from urllib.parse import urlsplit
 
 import numpy as np
 from gpxpy.gpx import GPXException
-from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver import Context, MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from pydantic import Field
 
-from ..app import App
+from ..app import App, Progress
 from ..core import loops
 from ..core.geo import cumulative_distance, distance_m, interp_lon
 from ..core.models import Route, RouteRequest, RouteSummary, TrackPoint
@@ -183,6 +183,7 @@ def register(mcp: MCPServer, app: App) -> None:
         max_sac_scale: SacScale | None = None,
         avoid_done: bool = True,
         name: str | None = None,
+        ctx: Context | None = None,
     ) -> LoopCandidates:
         """Génère automatiquement des boucles depuis un départ pour une distance (et un D+) cible,
         dans plusieurs directions, et renvoie les `n` meilleures, déjà mesurées sur le MNT.
@@ -226,8 +227,10 @@ def register(mcp: MCPServer, app: App) -> None:
                 if abs(actual - target_m) / target_m < 0.08:
                     break
                 radius = loops.corrected_radius(radius, target_m, actual)
+            progress.step(f"direction {bearing:.0f}° explorée")
             return bearing, best, tried, failed
 
+        progress = Progress(ctx, directions + 1)  # + mesure fine des meilleures
         # Toutes les directions en parallèle (le moteur de routage répond en 1–3 s par tracé).
         with ThreadPoolExecutor(max_workers=parallel_routes(app)) as pool:
             results = list(pool.map(draft_direction, loops.bearings(directions)))
@@ -256,6 +259,7 @@ def register(mcp: MCPServer, app: App) -> None:
         # Mesure fine (MNT) seulement pour les meilleurs brouillons : économise les appels d'altimétrie.
         scored = []
         shortlist = sorted(drafts, key=pre_score)[: n + 2]
+        progress.step(f"mesure des {len(shortlist)} meilleures sur le relief")
         with ThreadPoolExecutor(max_workers=len(shortlist) or 1) as pool:
             list(pool.map(lambda d: (app.apply_dem(d[1]), app.stats_into(d[1])), shortlist))
         for bearing, r, retrace, tarmac in shortlist:
