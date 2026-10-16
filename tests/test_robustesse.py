@@ -613,3 +613,17 @@ def test_only_spots_placed_logically_for_a_night_are_offered():
               Stage(jour=2, km_debut=14, km_fin=30.9, distance_km=16.9, d_plus_m=0, d_minus_m=0, duree_min=0,
                     duree="", arrivee="y", arrivee_type="arrivée")]  # fmt: skip
     assert [b.km for b in useful_for_night(spots, 30.9, nights)] == [11.4, 15]  # près de la nuit prévue (km 14)
+
+
+def test_out_and_back_to_an_imposed_point_is_reported():
+    from randoforge.core.loops import spur_notes
+    from randoforge.core.models import TrackPoint
+
+    def p(lat, lon):
+        return TrackPoint(lat=lat, lon=lon)
+
+    summit = (45.006, 6.0)  # sommet au bout d'une impasse de ~670 m
+    pts = [p(44.99, 6.0), p(45.0, 6.0), p(45.003, 6.0), p(*summit), p(45.003, 6.0), p(45.0, 6.0), p(45.0, 6.01),
+           p(44.99, 6.01), p(44.99, 6.0)]  # fmt: skip
+    notes = spur_notes(pts, [(44.99, 6.0), summit])
+    assert len(notes) == 1 and "1.3 km" in notes[0] and "point de passage n°2" in notes[0]

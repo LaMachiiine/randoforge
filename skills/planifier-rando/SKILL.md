@@ -44,6 +44,9 @@ chien, enfants, poussette. Valeurs par défaut raisonnables sinon, en le disant.
 - Boucle sans lieu imposé : `generate_loop_candidates` (puis `compare_routes`).
 - Lieux imposés : `route_between` (avec `loop=True` pour revenir au départ).
 - Trace existante : `import_gpx` puis `data_quality` (vérifie qu'elle suit des chemins).
+Un avertissement « Aller-retour de X km … vers le point de passage n°k » : le point est au bout d'une impasse.
+Le signaler à l'utilisateur et, si ce point n'est pas l'objectif (sommet voulu), recalculer sans lui ou avec un
+point sur un autre chemin, puis comparer.
 Si la validation révèle un point non atteint (G6), un aller-retour (G4) ou une difficulté trop haute (D1),
 déplace ou ajoute un point de passage et recalcule.
 

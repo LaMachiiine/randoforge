@@ -162,3 +162,33 @@ def remove_spurs(
             new_segments.append(WaySegment(start_m=s - shift, end_m=e - shift, tags=seg.tags))
     removed = float(sum(cum[b] - cum[a] for a, b in found))
     return [p for p, k in zip(points, keep, strict=True) if k], new_segments, removed
+
+
+SPUR_REPORT_M = 300.0  # aller-retour vers un point imposé : signalé au-delà de 300 m
+
+
+def spur_notes(points: list[TrackPoint], waypoints: list[tuple[float, float]]) -> list[str]:
+    """Allers-retours imposés par un point de passage au bout d'une impasse (sommet, belvédère…) : le moteur
+    doit y aller et revenir par le même chemin. Ils ne sont pas retirés (le point a été demandé) mais signalés,
+    avec le point en cause, pour proposer de le retirer ou de le remplacer."""
+    found = spurs(points, [])
+    if not found:
+        return []
+    lats, lons = np.array([p.lat for p in points]), np.array([p.lon for p in points])
+    cum = cumulative_distance(lats, lons)
+    notes = []
+    for a, b in found:
+        length = cum[b] - cum[a]
+        if length < SPUR_REPORT_M:
+            continue
+        tip = (a + b) // 2  # pointe : milieu de l'aller-retour (même nombre de points à l'aller et au retour)
+        near = [
+            (i, w) for i, w in enumerate(waypoints, 1)
+            if _close(points[tip], TrackPoint(lat=w[0], lon=w[1]), 150.0)
+        ]  # fmt: skip
+        target = f"vers le point de passage n°{near[0][0]}" if near else "vers une impasse"
+        notes.append(
+            f"Aller-retour de {length / 1000:.1f} km sur le même chemin au km {cum[a] / 1000:.1f} ({target}) : "
+            "pour l'éviter, retirer ce point ou en choisir un sur un autre chemin."
+        )
+    return notes

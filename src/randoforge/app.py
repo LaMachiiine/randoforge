@@ -9,6 +9,7 @@ import numpy as np
 from mcp.server.mcpserver.exceptions import ToolError
 
 from .core import areas as areas_lib
+from .core import loops
 from .core import pois as poi_lib
 from .core import technical as technical_lib
 from .core.geo import densify
@@ -123,6 +124,8 @@ class App:
         )
         if with_dem:
             self.apply_dem(route)
+            # Aller-retour imposé par un point au bout d'une impasse : signalé (notes gardées à chaque recalcul).
+            route.elevation_notes = route.elevation_notes + loops.spur_notes(route.points, required)
             self.stats_into(route)
         return route
 
