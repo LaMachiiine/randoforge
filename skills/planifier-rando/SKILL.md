@@ -79,6 +79,9 @@ possible). Le présenter comme du terrain, pas comme un niveau de risque, et ren
 - Sortie isolée, seul ou en hiver : `mobile_coverage` (France) ; annoncer les tronçons sans réseau, préciser que la
   couverture est théorique.
 
+- Faune (sur demande, ou balade nature / avec enfants) : `wildlife` ; présenter les espèces comme « observées
+  dans le secteur à cette saison », jamais comme une rencontre certaine ; citer les espèces à connaître et GBIF.
+
 ## 6. Valider, sécuriser, livrer
 - `validate_route` ; corrige ou explique chaque `error`.
 - `bailout_route` pour un repli depuis le passage le plus exposé ou le point le plus éloigné.

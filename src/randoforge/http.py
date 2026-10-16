@@ -31,6 +31,7 @@ HOST_LIMITS: dict[str, tuple[int, float]] = {
     "brouter.de": (2, 0.2),
     "gibs.earthdata.nasa.gov": (4, 0.05),
     "monreseaumobile.arcep.fr": (2, 0.1),
+    "api.gbif.org": (4, 0.05),
 }
 # Blocage temporaire signalé avec un code « définitif » par certains serveurs publics (BRouter : 403).
 RETRYABLE_BY_HOST = {"brouter.de": {403}}

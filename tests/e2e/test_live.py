@@ -62,7 +62,7 @@ async def test_day_loop_from_autrans(home):
     """Boucle à la journée générée automatiquement, analysée, validée et exportée."""
     async with server(home) as c:
         tools = {t.name for t in (await c.list_tools()).tools}
-        assert len(tools) == 33
+        assert len(tools) == 34
 
         place = (await call(c, "geocode", {"query": "Autrans", "country": "fr", "limit": 1}))["places"][0]
         assert 45.1 < place["lat"] < 45.25
@@ -187,3 +187,5 @@ async def test_access_water_and_network_in_the_vercors(home):
         assert any(p["type"] == "point d'eau" for p in water["points"])
         net = await call(c, "mobile_coverage", {"route_id": route["route_id"]})
         assert net["reseau_pct"] is not None and "Arcep" in net["source"]
+        fauna = await call(c, "wildlife", {"route_id": route["route_id"], "date": "2026-07-15"})
+        assert fauna["groupes"].get("mammifères") and "GBIF" in fauna["source"]

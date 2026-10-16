@@ -134,6 +134,21 @@ class FakeCoverage:
         return [(box(0, 0, 2048, 4096), {"operateur": 20810, "techno": "2G3G", "niveau": "BC", "date": "2026-06-30"})]
 
 
+class FakeWildlife:
+    """Observations : chamois et vipère aspic (clés GBIF fictives)."""
+
+    SPECIES = {1: ("Rupicapra rupicapra", "Chamois"), 2: ("Vipera aspis", "Vipère aspic")}
+
+    def species_counts(self, bbox, months, years, class_keys, limit):
+        return (120, [(1, 30)]) if 359 in class_keys else (5, [])
+
+    def notable_counts(self, bbox, months, years):
+        return [(2, 2)]
+
+    def names(self, key):
+        return self.SPECIES[key]
+
+
 class FakeNominatim:
     # Lieux connus de la doublure ; tout le reste est placé à Lans-en-Vercors, sauf « Lyon » (loin du Vercors).
     KNOWN = {"Moucherotte": (45.1503, 5.6303), "Lyon": (45.7640, 4.8357)}
@@ -261,7 +276,7 @@ def services():
                     refuges=FakeRefuges(), weather=FakeWeather(), wikidata=FakeWikidata(), geotrek=FakeGeotrek(),
                     snow_sat=FakeSnowSat(), snow_s2=FakeSnowS2(), snow_model=FakeSnowModel(),
                     dem_grid=FakeDemGrid(), transit=FakeTransit(),
-                    coverage=FakeCoverage())  # fmt: skip
+                    coverage=FakeCoverage(), wildlife=FakeWildlife())  # fmt: skip
 
 
 @pytest.fixture

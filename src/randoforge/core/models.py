@@ -303,6 +303,17 @@ class MobileCoverageReport(Compact):
     avertissements: list[str] = Field(default_factory=list)
 
 
+class WildlifeReport(Compact):
+    """Faune observée autour du tracé à la même saison (observations naturalistes, pas une garantie)."""
+
+    message: str
+    periode: str = Field(description="Mois et années des observations retenues")
+    groupes: dict[str, list[str]] = Field(default_factory=dict, description="Espèces les plus observées par groupe")
+    a_connaitre: list[str] = Field(default_factory=list, description="Espèces venimeuses ou grands prédateurs observés")
+    source: str
+    avertissements: list[str] = Field(default_factory=list)
+
+
 class Quality(BaseModel):
     score: float = Field(description="Confiance dans les données, de 0 à 1")
     niveau: str

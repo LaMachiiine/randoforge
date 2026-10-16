@@ -14,6 +14,7 @@ from .engines.geotrek import GeotrekReference
 from .engines.osm import Nominatim, Overpass
 from .engines.snow import GibsSnow, Sentinel2Snow
 from .engines.transit import Transitous
+from .engines.wildlife import GbifWildlife
 from .http import CachedHttp
 
 
@@ -33,6 +34,7 @@ class Services:
     dem_grid: object | None = None  # modèle de terrain en grille (pentes)
     transit: object | None = None  # horaires de transport en commun
     coverage: object | None = None  # couverture mobile (France)
+    wildlife: object | None = None  # observations naturalistes
 
     @classmethod
     def from_env(cls, home: Path) -> Services:
@@ -59,4 +61,5 @@ class Services:
             dem_grid=CopernicusElevation(),
             transit=Transitous(http),
             coverage=ArcepCoverage(http),
+            wildlife=GbifWildlife(http),
         )

@@ -16,6 +16,7 @@ Claude ne calcule rien lui-même : il appelle les outils RandoForge et explique 
 - **Neige** : enneigement observé par satellite, limite de la neige, durée ajustée et pentes avalancheuses.
 - **Accès et sécurité** : bus et trains au départ et au retour, état des sources et des cabanes (avis récents),
   couverture mobile le long du tracé (France).
+- **Faune** : espèces observées autour du tracé à la même saison, dont vipères et grands prédateurs.
 - **Exporter** : GPX (complet et par jour), fiche Obsidian, carte HTML, roadbook imprimable.
 
 Exemples : *« prépare-moi le Chemin des fileuses au départ de L'Estréchure »*, *« une boucle de 12 km depuis Autrans
@@ -92,6 +93,7 @@ si vous republiez un tracé, gardez-les.
 | Sentinel-2 (Copernicus, via [Earth Search](https://earth-search.aws.element84.com/v1)) | neige observée à 20 m | données Copernicus libres, citation de la source |
 | [Transitous](https://transitous.org) | horaires de transport | données des réseaux (ODbL) ; usage open source non commercial, attribution |
 | Arcep « Mon réseau mobile » | couverture mobile (France) | Licence Ouverte |
+| [GBIF](https://www.gbif.org) | faune observée | CC0 / CC BY selon les jeux, citer GBIF.org |
 | Catalogues [Geotrek](https://geotrek.fr) | randos officielles | celle de chaque organisme éditeur |
 | [BRouter](https://brouter.de) | calcul des tracés | service public, à ménager (cache intégré) |
 

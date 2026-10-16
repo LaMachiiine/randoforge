@@ -4,7 +4,7 @@ maj: 2026-10-15
 ---
 # Serveur MCP — Catalogue d'outils
 
-> 33 outils, regroupés par module dans `src/randoforge/tools/`. Chaque outil renvoie un résumé compact
+> 34 outils, regroupés par module dans `src/randoforge/tools/`. Chaque outil renvoie un résumé compact
 > (jamais la géométrie complète) ; un `route_id` désigne l'itinéraire stocké côté serveur.
 
 ## Règles de design
@@ -47,6 +47,7 @@ maj: 2026-10-15
 | `public_transport` | Arrêts et horaires du jour au départ et à l'arrivée, premier passage après l'arrivée estimée (Transitous) → [[Accès, eau et réseau]] |
 | `water_and_huts` | Points d'eau, cabanes, refuges : état (tari, fermée…), équipement, derniers avis datés (refuges.info) |
 | `mobile_coverage` | Couverture mobile théorique le long du tracé, tronçons sans réseau, par opérateur (Arcep, France) |
+| `wildlife` | Faune observée autour du tracé à la saison (GBIF) et espèces à connaître (vipères, grands prédateurs) → [[Faune]] |
 | `weather_forecast` | Prévisions Open-Meteo au départ / point culminant / arrivée sur la plage de marche |
 | `compare_routes` | Tableau comparatif (dont goudron, balisage, déjà fait) |
 | `compare_with_reference` | Écart à une trace de référence |
