@@ -33,7 +33,9 @@ chien, enfants, poussette. Valeurs par défaut raisonnables sinon, en le disant.
 - **Rando de parc national** (Écrins, Cévennes, Port-Cros) nommée ou souhaitée « officielle / balisée » :
   `find_official_treks` (par nom ou autour du départ) puis `import_official_trek` : le tracé officiel du parc,
   recalculé par RandoForge, vaut mieux qu'une reconstruction.
-- `find_hiking_routes` pour proposer un GR/PR existant.
+- **Rando balisée nommée** (ou souhaitée « balisée ») : `find_hiking_routes` autour du départ ; si un sentier
+  porte le nom demandé, `import_hiking_route(osm_id)` suit son tracé exact plutôt qu'une reconstruction
+  approximative. Signaler ses `warnings` (relation OSM incomplète).
 
 ## 3. Construire
 - Boucle sans lieu imposé : `generate_loop_candidates` (puis `compare_routes`).

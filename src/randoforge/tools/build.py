@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Annotated, Literal
@@ -17,6 +18,7 @@ from ..app import App
 from ..core import loops
 from ..core.geo import cumulative_distance, interp_lon
 from ..core.models import Route, RouteRequest, RouteSummary, TrackPoint
+from ..core.osmgeom import chain_route_relation
 from ..core.quality import marked_share
 from ..core.similarity import overlap_fraction
 from ..core.terrain import retraced_sections
@@ -237,6 +239,48 @@ def register(mcp: MCPServer, app: App) -> None:
         )
         app.apply_dem(route)
         app.stats_into(route)
+        app.save(route)
+        return RouteSummary.of(route)
+
+    @mcp.tool()
+    def import_hiking_route(osm_id: str, name: str | None = None) -> RouteSummary:
+        """Importe le tracé d'un **sentier balisé OpenStreetMap** (GR, PR, boucle locale…) trouvé avec
+        find_hiking_routes (`osm_id` = « relation/123 »), puis calcule distance, D+ et durée sur le MNT.
+        Si l'utilisateur nomme une rando balisée et qu'elle figure dans find_hiking_routes, l'importer ici plutôt
+        que la reconstruire point par point. Ensuite : set_constraints, analyze_route, export_route.
+        """
+        m = re.fullmatch(r"(?:relation/)?(\d+)", osm_id.strip())
+        if not m:
+            raise ToolError("osm_id attendu : « relation/123 » (champ osm_id de find_hiking_routes).")
+        rels = [
+            e for e in app.overpass(f"[out:json][timeout:90];relation({m[1]});out geom;") if e.get("type") == "relation"
+        ]
+        if not rels:
+            raise ToolError(f"Relation OSM {m[1]} introuvable.")
+        rel = rels[0]
+        try:
+            coords, warnings = chain_route_relation(rel)
+        except ValueError as exc:
+            raise ToolError(str(exc)) from exc
+        tags = rel.get("tags", {})
+        engine: dict[str, float] = {}
+        for key, field, factor in (("distance", "distance_m", 1000), ("ascent", "d_plus_m", 1)):
+            try:  # valeurs déclarées dans OSM (« 12.5 », « 12,5 km », « 650 m »), comparées aux nôtres (N5)
+                engine[field] = float(tags.get(key, "").replace(",", ".").split()[0]) * factor
+            except (ValueError, IndexError):
+                pass
+        route = Route(
+            route_id=new_route_id(),
+            name=name or tags.get("name") or tags.get("ref") or f"Sentier OSM {m[1]}",
+            source=f"osm:relation/{m[1]}",
+            points=[TrackPoint(lat=la, lon=lo) for la, lo in coords],
+            engine_stats=engine,
+        )
+        if len(route.points) < 2:
+            raise ToolError("Tracé trop court.")
+        app.apply_dem(route)
+        app.stats_into(route)
+        route.warnings += warnings
         app.save(route)
         return RouteSummary.of(route)
 

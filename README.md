@@ -10,7 +10,7 @@ Exemples de demandes : *« une boucle de 12 km depuis Autrans qui passe par une 
 
 | Thème | Outils |
 |---|---|
-| Recherche | `find_official_treks` (randos officielles des parcs nationaux), `geocode`, `find_pois` (cascades, points de vue, lacs, sommets, patrimoine, eau, refuges, transports), `find_hiking_routes` (GR, PR) |
+| Recherche | `find_official_treks` (randos officielles des parcs nationaux), `geocode`, `find_pois` (cascades, points de vue, lacs, sommets, patrimoine, eau, refuges, transports), `find_hiking_routes` (GR, PR), importables tels quels avec `import_hiking_route` |
 | Construction | `import_official_trek`, `route_between` (points imposés, boucle), `generate_loop_candidates` (boucles automatiques), `import_gpx`, `bailout_route` (repli) |
 | Analyse | `analyze_route` (tout en un appel), `set_constraints`, `compute_stats` (profils famille/moyen/sportif), `annotate_route` (points notables au km, gués, Wikidata), `technical_passages`, `route_areas` (parcs, réserves, militaire), `data_quality` (confiance, % sur chemin), `weather_forecast`, `compare_routes`, `compare_with_reference`, `validate_route` (~35 règles) |
 | Itinérance | `find_bivouac_spots` (refuges, cabanes, abris, grottes, emplacements calculés ; option « abrité seulement »), `plan_stages` (découpage en jours, nuits à l'abri possibles) |

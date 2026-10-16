@@ -263,3 +263,63 @@ def test_parallel_drafts_follow_the_configured_router():
 
     assert parallel_routes(app_with("https://brouter.de/brouter")) == 2
     assert parallel_routes(app_with("http://localhost:17777/brouter")) == PARALLEL_ROUTES
+
+
+@pytest.mark.anyio
+async def test_legacy_vault_folder_is_renamed_not_duplicated(server, tmp_path):
+    from pathlib import Path
+
+    from .test_server import LANS, MOUCHEROTTE, call
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    async with Client(server) as client:
+        rid = (await call(client, "route_between", {"waypoints": [LANS, MOUCHEROTTE], "name": "Ma rando"}))["route_id"]
+        # Export fait avec l'ancien nommage (sans identifiant), avec une note ajoutée par l'utilisateur.
+        legacy = vault / "Randos" / "Ma rando"
+        legacy.mkdir(parents=True)
+        (legacy / "fiche.md").write_text(f"---\nroute_id: {rid}\n---\n", encoding="utf-8")
+        (legacy / "mes notes.md").write_text("souvenirs", encoding="utf-8")
+        other = vault / "Randos" / "Autre"  # dossier d'une autre rando : jamais touché
+        other.mkdir()
+        (other / "fiche.md").write_text("---\nroute_id: r_2000-01-01_000000\n---\n", encoding="utf-8")
+        files = await call(client, "export_route", {"route_id": rid, "formats": ["md"], "vault_dir": str(vault)})
+    folder = Path(files["files"]["vault_md"]).parent
+    assert not legacy.exists() and (folder / "mes notes.md").read_text(encoding="utf-8") == "souvenirs"
+    assert sorted(p.name for p in (vault / "Randos").iterdir()) == ["Autre", folder.name]
+
+
+# --- Sentiers balisés OSM --------------------------------------------------------------------
+
+
+def test_chain_route_relation_orients_ways_and_reports_gaps():
+    from randoforge.core.osmgeom import chain_route_relation
+
+    def way(*pts, role=""):
+        return {"type": "way", "role": role, "geometry": [{"lat": a, "lon": b} for a, b in pts]}
+
+    # Premier chemin à l'envers, deuxième dans le bon sens, troisième à l'envers.
+    rel = {"members": [way((45.002, 6), (45.0, 6)), way((45.002, 6), (45.004, 6)), way((45.006, 6), (45.004, 6)),
+                       way((45.5, 6), (45.6, 6), role="alternative")]}  # fmt: skip
+    line, warnings = chain_route_relation(rel)
+    assert line == [(45.0, 6), (45.002, 6), (45.004, 6), (45.006, 6)]
+    assert len(warnings) == 1 and "variante" in warnings[0]
+    _, warnings = chain_route_relation({"members": [way((45.0, 6), (45.001, 6)), way((45.01, 6), (45.011, 6))]})
+    assert "saut" in warnings[0]
+    with pytest.raises(ValueError, match="étape"):
+        chain_route_relation({"members": [{"type": "relation", "ref": 5}]})
+
+
+@pytest.mark.anyio
+async def test_import_hiking_route_follows_the_marked_trail(server):
+    from .test_server import call
+
+    async with Client(server) as client:
+        routes = await call(client, "find_hiking_routes", {"lat": 45.13, "lon": 5.59})
+        osm_id = next(r["osm_id"] for r in routes["routes"] if r["nom"] == "Boucle locale")
+        summary = await call(client, "import_hiking_route", {"osm_id": osm_id})
+        assert summary["name"] == "Boucle locale" and summary["stats"]["d_plus_m"] > 0
+        assert any("variante" in w for w in summary.get("warnings", []))
+        assert summary["source"] == "osm:relation/1"
+        res = await client.call_tool("import_hiking_route", {"osm_id": "way/12"})
+        assert res.is_error and "relation/123" in res.content[0].text

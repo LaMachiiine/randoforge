@@ -284,7 +284,10 @@ def check_numbers(route: Route) -> list[Check]:
     engine_dplus = route.engine_stats.get("d_plus_m")
     if engine_dplus:
         diff = abs(s.d_plus_m - engine_dplus)
-        source = "le topo-guide officiel" if route.source.startswith("officiel:") else "le moteur de routage"
+        source = (
+            "le topo-guide officiel" if route.source.startswith("officiel:")
+            else "OpenStreetMap" if route.source.startswith("osm:") else "le moteur de routage"
+        )  # fmt: skip
         if diff > max(30, 0.15 * engine_dplus):
             checks.append(
                 Check(

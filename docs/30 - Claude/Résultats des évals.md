@@ -1,9 +1,9 @@
 ---
 tags: [claude, evals]
 ---
-# Résultats des évals — 2026-10-15_2017
+# Résultats des évals — 2026-10-16_1130
 
-**27 / 28 scénarios réussis** · score moyen 100%
+**25 / 28 scénarios réussis** · score moyen 97%
 
 | Scénario | Réussi | Score | Échecs | Mesures |
 |---|---|---|---|---|
@@ -27,16 +27,16 @@ tags: [claude, evals]
 | 18-passages-techniques | ✅ | 100% | — | chiffres_tracables=1.0 |
 | 19-impossible-dplus | ✅ | 100% | — | chiffres_tracables=1.0 |
 | 20-incoherent | ✅ | 100% | — | chiffres_tracables=0.95 |
-| ref-ecrins-962618 | ✅ | 100% | — | chiffres_tracables=0.93, recouvrement=1.0, ecart_moyen_m=0, distance_agent_km=11.01, distance_officielle_km=11.01, ecart_distance=0.0, d_plus_agent=362, d_plus_officiel=351, ecart_d_plus=0.031, km_officiel_recalcule=11.01 |
-| ref-ecrins-903486 | ✅ | 100% | — | chiffres_tracables=1.0, recouvrement=1.0, ecart_moyen_m=0, distance_agent_km=9.62, distance_officielle_km=9.62, ecart_distance=0.0, d_plus_agent=836, d_plus_officiel=831, ecart_d_plus=0.006, km_officiel_recalcule=9.62 |
-| ref-ecrins-991062 | ✅ | 100% | — | chiffres_tracables=1.0, recouvrement=1.0, ecart_moyen_m=0, distance_agent_km=9.33, distance_officielle_km=9.33, ecart_distance=0.0, d_plus_agent=666, d_plus_officiel=670, ecart_d_plus=-0.006, km_officiel_recalcule=9.33 |
-| ref-ecrins-995753 | ✅ | 100% | — | chiffres_tracables=1.0, recouvrement=1.0, ecart_moyen_m=0, distance_agent_km=4.3, distance_officielle_km=4.3, ecart_distance=0.0, d_plus_agent=308, d_plus_officiel=297, ecart_d_plus=0.037, km_officiel_recalcule=4.3 |
-| ref-cevennes-41621 | ❌ | 88% | D+ à ± 25 % (-26%) | chiffres_tracables=0.9, recouvrement=1.0, ecart_moyen_m=0, distance_agent_km=7.85, distance_officielle_km=7.85, ecart_distance=0.0, d_plus_agent=166, d_plus_officiel=223, ecart_d_plus=-0.256, km_officiel_recalcule=7.85 |
-| ref-cevennes-45054 | ✅ | 100% | — | chiffres_tracables=1.0, recouvrement=1.0, ecart_moyen_m=0, distance_agent_km=8.79, distance_officielle_km=8.79, ecart_distance=0.0, d_plus_agent=385, d_plus_officiel=438, ecart_d_plus=-0.121, km_officiel_recalcule=8.79 |
-| ref-cevennes-98959 | ✅ | 100% | — | chiffres_tracables=0.91, recouvrement=1.0, ecart_moyen_m=0, distance_agent_km=12.52, distance_officielle_km=12.52, ecart_distance=0.0, d_plus_agent=669, d_plus_officiel=625, ecart_d_plus=0.07, km_officiel_recalcule=12.52 |
-| ref-cevennes-74874 | ✅ | 100% | — | chiffres_tracables=1.0, recouvrement=1.0, ecart_moyen_m=0, distance_agent_km=9.04, distance_officielle_km=9.04, ecart_distance=0.0, d_plus_agent=516, d_plus_officiel=469, ecart_d_plus=0.1, km_officiel_recalcule=9.04 |
+| ref-ecrins-962618 | ❌ | 75% | suit le tracé officiel (≥ 60 % à moins de 50 m) (60%); distance à ± 20 % (-27%) | chiffres_tracables=1.0, recouvrement=0.6, ecart_moyen_m=31, distance_agent_km=8.04, distance_officielle_km=11.01, ecart_distance=-0.27, d_plus_agent=297, d_plus_officiel=351, ecart_d_plus=-0.154, km_officiel_recalcule=11.01 |
+| ref-ecrins-903486 | ✅ | 100% | — | chiffres_tracables=1.0, recouvrement=1.0, ecart_moyen_m=2, distance_agent_km=9.89, distance_officielle_km=9.62, ecart_distance=0.028, d_plus_agent=852, d_plus_officiel=831, ecart_d_plus=0.025, km_officiel_recalcule=9.62 |
+| ref-ecrins-991062 | ✅ | 100% | — | chiffres_tracables=1.0, recouvrement=0.92, ecart_moyen_m=2, distance_agent_km=8.63, distance_officielle_km=9.33, ecart_distance=-0.075, d_plus_agent=671, d_plus_officiel=670, ecart_d_plus=0.001, km_officiel_recalcule=9.33 |
+| ref-ecrins-995753 | ✅ | 100% | — | chiffres_tracables=1.0, recouvrement=0.82, ecart_moyen_m=23, distance_agent_km=4.6, distance_officielle_km=4.3, ecart_distance=0.07, d_plus_agent=313, d_plus_officiel=297, ecart_d_plus=0.054, km_officiel_recalcule=4.3 |
+| ref-cevennes-41621 | ❌ | 88% | D+ à ± 25 % (-28%) | chiffres_tracables=0.92, recouvrement=1.0, ecart_moyen_m=3, distance_agent_km=7.78, distance_officielle_km=7.85, ecart_distance=-0.009, d_plus_agent=160, d_plus_officiel=223, ecart_d_plus=-0.283, km_officiel_recalcule=7.85 |
+| ref-cevennes-45054 | ✅ | 100% | — | chiffres_tracables=1.0, recouvrement=1.0, ecart_moyen_m=3, distance_agent_km=8.79, distance_officielle_km=8.79, ecart_distance=0.0, d_plus_agent=372, d_plus_officiel=438, ecart_d_plus=-0.151, km_officiel_recalcule=8.79 |
+| ref-cevennes-98959 | ❌ | 62% | suit le tracé officiel (≥ 60 % à moins de 50 m) (18%); distance à ± 20 % (-60%); D+ à ± 25 % (-65%) | chiffres_tracables=1.0, recouvrement=0.18, ecart_moyen_m=123, distance_agent_km=5.05, distance_officielle_km=12.52, ecart_distance=-0.597, d_plus_agent=220, d_plus_officiel=625, ecart_d_plus=-0.648, km_officiel_recalcule=12.52 |
+| ref-cevennes-74874 | ✅ | 100% | — | chiffres_tracables=1.0, recouvrement=0.97, ecart_moyen_m=5, distance_agent_km=9.05, distance_officielle_km=9.04, ecart_distance=0.001, d_plus_agent=427, d_plus_officiel=469, ecart_d_plus=-0.09, km_officiel_recalcule=9.04 |
 
-Agents : Claude Code `claude -p` (sonnet), outils RandoForge uniquement. Coût total : 3.74 $.
+Agents : Claude Code `claude -p` (modèle par défaut), outils RandoForge uniquement. Coût total : 5.22 $.
 
 ## Consommation
 
@@ -61,34 +61,33 @@ Agents : Claude Code `claude -p` (sonnet), outils RandoForge uniquement. Coût t
 | 14-zermatt | 0.13 $ | 124,183 (104,236) | 1,910 | 8 |
 | 19-impossible-dplus | 0.14 $ | 106,586 (86,461) | 2,277 | 6 |
 | 20-incoherent | 0.08 $ | 86,102 (75,378) | 1,470 | 5 |
-| ref-ecrins-962618 | 0.10 $ | 108,725 (96,624) | 2,035 | 8 |
-| ref-ecrins-903486 | 0.15 $ | 183,357 (166,582) | 2,264 | 11 |
-| ref-ecrins-991062 | 0.10 $ | 123,680 (112,891) | 1,769 | 8 |
-| ref-ecrins-995753 | 0.09 $ | 106,109 (95,280) | 1,467 | 7 |
-| ref-cevennes-41621 | 0.09 $ | 105,034 (94,283) | 1,447 | 7 |
-| ref-cevennes-45054 | 0.09 $ | 104,939 (94,439) | 1,806 | 7 |
-| ref-cevennes-98959 | 0.10 $ | 123,567 (112,876) | 1,635 | 8 |
-| ref-cevennes-74874 | 0.09 $ | 103,150 (93,271) | 1,438 | 7 |
 | 08-meteo-demain | 0.10 $ | 81,840 (64,786) | 917 | 5 |
+| ref-ecrins-962618 | 0.28 $ | 142,112 (118,307) | 2,968 | 10 |
+| ref-ecrins-903486 | 0.37 $ | 235,138 (205,267) | 3,066 | 15 |
+| ref-ecrins-991062 | 0.34 $ | 214,150 (184,869) | 2,773 | 13 |
+| ref-ecrins-995753 | 0.41 $ | 288,705 (259,644) | 3,981 | 15 |
+| ref-cevennes-41621 | 0.19 $ | 134,379 (121,702) | 1,904 | 8 |
+| ref-cevennes-45054 | 0.22 $ | 150,515 (134,926) | 2,332 | 10 |
+| ref-cevennes-98959 | 0.29 $ | 212,021 (194,146) | 3,315 | 12 |
+| ref-cevennes-74874 | 0.19 $ | 134,830 (122,861) | 1,958 | 10 |
 
 Taille cumulée des réponses d'outils (caractères, environ 4 par jeton) :
 
-- `find_pois` : 75,124
-- `analyze_route` : 46,625
+- `find_pois` : 121,604
+- `analyze_route` : 53,312
 - `annotate_route` : 31,876
-- `generate_loop_candidates` : 21,303
-- `geocode` : 12,825
-- `validate_route` : 11,083
+- `find_hiking_routes` : 27,734
+- `generate_loop_candidates` : 22,998
+- `geocode` : 15,735
+- `validate_route` : 12,189
+- `set_constraints` : 11,401
 - `find_bivouac_spots` : 10,627
-- `set_constraints` : 10,405
-- `export_route` : 9,086
-- `find_official_treks` : 8,538
-- `find_hiking_routes` : 6,004
-- `weather_forecast` : 4,751
+- `export_route` : 9,213
+- `weather_forecast` : 8,896
+- `route_between` : 4,827
 - `compare_routes` : 4,502
 - `technical_passages` : 4,220
-- `import_official_trek` : 3,284
-- `route_between` : 3,090
+- `import_hiking_route` : 2,672
 - `plan_stages` : 1,491
 - `compute_stats` : 977
 - `data_quality` : 552
@@ -952,486 +951,409 @@ Outils : geocode, generate_loop_candidates, set_constraints, analyze_route
 
 <details><summary>ref-ecrins-962618</summary>
 
----
-
-## À la découverte des hameaux de Vallouise et Pelvoux
-
-**Source : itinéraire officiel Parc national des Écrins**
-Boucle depuis la Maison du Parc, Vallouise
-
----
+## Boucle de Vallouise — À la découverte des hameaux
 
 ### Résumé
 
 | | |
 |---|---|
-| Distance | 11,0 km |
-| D+ / D- | 362 m / 367 m |
-| Altitude min/max | 1 114 m / 1 316 m |
-| Durée | 3h43 |
-| Départ | 9h00 → arrivée estimée ~13h20 |
-| Difficulté | Modérée (passages T3 ponctuels) |
-| Validation | **⚠ Avertissement** : voir ci-dessous |
+| **Distance** | 8,04 km |
+| **D+ / D-** | 297 m / 297 m (fourchette plausible : 277–338 m) |
+| **Altitude** | 1 114 m → 1 301 m |
+| **Durée estimée** | 2h48 |
+| **Difficulté** | T1 (randonnée, sentiers balisés locaux — balisage vert) |
+| **Départ / arrivée** | Parking de la Maison du Parc, Vallouise |
+| **Statut** | ✅ Validé (warnings, pas d'erreur) |
 
----
+### Météo du jour (9h–14h)
+
+Conditions idéales : **11–20 °C**, pas de pluie, vent quasi nul (< 4 km/h), pas d'orage. Aucune alerte.
 
 ### 3 points forts
 
-1. **Lac des Allards** (km 0,9) — joli plan d'eau en début de boucle
-2. **Chapelle Saint-Pancrace** (km 7,9) — patrimoine local typique du Pays des Écrins
-3. **Chapelle Saint-Genest** (km 10,8) — dernière curiosité avant le retour, avec vue sur Vallouise
+1. **Lac des Allards** (km 5,7) — petit lac à 77 m du sentier
+2. **Chapelle des Pénitents** (km 7,2) — patrimoine historique de Vallouise
+3. **Chapelle Saint-Genest** (km 5,3) — accessible par un court détour (358 m A/R)
 
----
+### Points d'eau
+
+- **Source** au km 1,2
+- **Eau potable** au km 3,3
 
 ### Vigilance
 
-**Passages techniques**
-- km 4,0 : **pente à 36 %** sur ~140 m — courte mais raide
-- km 5,3 / 5,5 / 7,2 / 8,4 : **pierriers** (T3) sur des tronçons de 50 à 109 m — chaussures montantes recommandées
+- **2 gués** : Ruisseau de la Champarie (km 1,9) et Riou des Eyssalarettes (km 5,2, intermittent) — vérifier le niveau d'eau en cas de pluie récente ou de fonte.
+- **2 pierriers** (km 1,1 et km 1,3, cotés T3) : passages courts (50–105 m) demandant un peu d'attention aux pieds.
+- **Passage raide** (km 2,5) : pente jusqu'à 35 % sur ~100 m.
+- Aucune zone réglementée détectée sur le tracé (le sentier reste hors cœur de parc).
 
-**Gués — à vérifier avant de partir**
-- km 4,7 : **Ruisseau de la Champarie** — niveau à contrôler (mi-octobre, pas de neige mais vérifier la pluie récente)
-- km 6,5 : **Rif Paulin** — idem
+### Fichiers exportés
 
-**Zones réglementées** — Les données Overpass étaient indisponibles lors de l'analyse ; le tracé longe le Parc national des Écrins. Consulter le règlement du parc avant la randonnée (chiens, bivouac).
+- **GPX** : `home/routes/r_2026-10-16_f91e16/route.gpx`
+- **Fiche Markdown** : `home/routes/r_2026-10-16_f91e16/fiche.md`
+- **Carte interactive** : `home/routes/r_2026-10-16_f91e16/carte.html`
+- **Roadbook imprimable** : `home/routes/r_2026-10-16_f91e16/roadbook.html`
 
-**Note altimétrique** : D+ (362 m) légèrement différent de D- (367 m) — écart de 5 m dû aux arrondis du MNT IGN, sans incidence pratique.
+Bonne balade à travers les hameaux du Pays des Écrins ! Au retour, je pourrai marquer cette rando comme faite (`mark_done`) pour que les prochaines boucles générées évitent de repasser par les mêmes chemins.
 
----
-
-### Météo du jour (Open-Meteo)
-
-Conditions excellentes, pas d'alerte :
-- Au départ (1 147 m) : 12→22 °C, vent calme, 0 mm de pluie
-- Au point culminant (1 316 m) : 11→21 °C, vent calme, 0 mm
-- Coucher du soleil : 18h55 — retour largement avant
-
----
-
-### Fichiers produits
-
-| Format | Chemin |
-|--------|--------|
-| GPX | `home/routes/r_2026-10-16_5c267e/route.gpx` |
-| Fiche Markdown | `home/routes/r_2026-10-16_5c267e/fiche.md` |
-| Carte interactive | `home/routes/r_2026-10-16_5c267e/carte.html` |
-| Roadbook (PDF) | `home/routes/r_2026-10-16_5c267e/roadbook.html` |
-
----
-
-Belle journée en perspective ! Après la rando, dites-moi comment s'est passée la sortie et je marquerai l'itinéraire comme fait (`mark_done`) pour que vos prochaines boucles évitent les chemins déjà parcourus.
-
-Outils : find_official_treks, geocode, import_official_trek, set_constraints, analyze_route, weather_forecast, export_route
+Outils : geocode, find_hiking_routes, import_hiking_route, import_hiking_route, import_hiking_route, set_constraints, analyze_route, weather_forecast, export_route
 </details>
 
 <details><summary>ref-ecrins-903486</summary>
 
+Voici l'itinéraire prêt pour la **Boucle du Pigeonnier dans le cirque du Gioberney**.
+
 ---
 
-## Boucle du Pigeonnier dans le cirque du Gioberney
-
-**Statut : ⚠️ Validé avec avertissements**
-Tracé officiel Parc national des Écrins · Altimétrie IGN RGE ALTI (100 %)
+## Résumé
 
 | | |
 |---|---|
-| **Distance** | 9,62 km |
-| **D+ / D-** | 836 m / 836 m |
-| **Altitude min/max** | 1 637 m / 2 446 m |
-| **Durée estimée** | 5h40 |
-| **Type** | Boucle · Départ parking du Gioberney |
+| **Distance** | 9,89 km |
+| **D+ / D-** | 852 m / 852 m |
+| **Fourchette D+ plausible** | 792 – 941 m |
+| **Altitude** | 1 637 m → 2 445 m (point culminant) |
+| **Durée estimée** | 5h47 (marcheur moyen) |
+| **Boucle** | Oui |
+| **Source altimétrie** | IGN RGE ALTI (100 %) |
+| **Statut** | ⚠️ Warning (pas d'erreur bloquante) |
+| **Arrivée estimée** | ≈ 15h44 (coucher du soleil à 18h57) |
 
 ---
 
-### 3 points forts
+## 3 points forts
 
-1. **Le Voile de la Mariée** (km 0, 164 m du tracé) — cascade emblématique au départ, au cœur du cirque.
-2. **Lac de cirque** (km 4,4) — lac glaciaire traversé en rive, au cœur du cirque sous les sommets.
-3. **Panorama sur les géants** — Mont Gioberney (3 350 m), Les Bans (3 669 m), Pics du Says (3 422 m) et leurs glaciers visibles depuis le cirque.
-
----
-
-### Vigilance
-
-**Pentes raides** (plusieurs passages) :
-- km 1,2 : 41 % sur ~140 m
-- km 6,0 : jusqu'à 39 % sur ~120 m
-- km 7,2–7,4 : série de passages à 37–42 % (descente)
-
-**Passages techniques T3 (pierriers)** :
-- km 3,9 : pierrier ~239 m — orientation requise
-- km 5,0 : pierrier ~180 m
-- km 2,9 : sentier peu visible, orientation nécessaire
-
-**Gués (6 au total)** — à vérifier impérativement avant de partir :
-- km 3,0 · km 5,5 (Torrent du Vaccivier) · km 6,2 · km 6,5 · km 6,8 · km 6,8
-> En octobre, les torrents sont en général plus bas qu'en été, mais une pluie récente peut changer la donne.
-
-**Zones réglementées** : le service de vérification (Overpass) était indisponible lors de l'analyse ; la boucle traverse le Parc national des Écrins — bivouac et chiens soumis à réglementation spécifique, consulter le règlement du parc.
-
-**Saison** : mi-octobre, des enneigements précoces sont possibles au-dessus de 2 000 m. Vérifier la météo avant le départ.
+1. **Le Voile de la Mariée** — cascade emblématique visible dès le départ
+2. **Refuge du Pigeonnier** (2 423 m) — au km 4,6, pause panoramique face aux sommets glaciaires (Les Bans, Les Rouies, Mont Gioberney)
+3. **Cascades et torrents du cirque** — plusieurs cascades jalonnent le parcours, avec des vues sur les glaciers environnants
 
 ---
 
-### Fichiers produits
+## Vigilance
 
-| Format | Chemin |
-|---|---|
-| GPX | `home/routes/r_2026-10-16_bba5b8/route.gpx` |
-| Fiche Markdown | `home/routes/r_2026-10-16_bba5b8/fiche.md` |
-| Carte interactive | `home/routes/r_2026-10-16_bba5b8/carte.html` |
-| Roadbook imprimable | `home/routes/r_2026-10-16_bba5b8/roadbook.html` |
+### Passages techniques
+- **Pierriers (T3)** : entre les km 4,1 et 5,3 — trois sections de pierrier totalisant ~500 m autour du Refuge du Pigeonnier
+- **Sentier peu visible** : au km 2,4 et km 3,1 — orientation nécessaire
+- **Pentes raides** (jusqu'à 43 %) : plusieurs sections, notamment au km 1,3 (montée), km 3,5 et km 7,5 (descente raide sur ~280 m)
+
+### Gués (6 traversées)
+- **Torrent de Muande Bellone** (km 3,3)
+- **Torrent du Vaccivier** (km 5,7) — le plus important
+- 4 autres gués entre km 6,5 et km 7,1 (dont certains intermittents)
+
+⚠️ Vérifier le niveau d'eau avant de partir, surtout après des pluies ou en période de fonte.
+
+### Météo du 16 octobre
+Conditions favorables : **pas de pluie, pas d'orage**, vent faible (rafales max 11 km/h).
+- Au départ (1 637 m) : 12 à 16 °C
+- Au point culminant (2 448 m) : 9 à 12 °C
+
+Prévoir une couche chaude pour les pauses en altitude.
 
 ---
 
-Après la rando, dis-moi et je lancerai `mark_done` pour que les prochaines boucles dans la vallée évitent les chemins déjà parcourus. Bon Valgaudemar !
+## Fichiers produits
 
-Outils : find_official_treks, geocode, find_official_treks, geocode, find_official_treks, find_pois, import_official_trek, set_constraints, analyze_route, export_route
+- **GPX** : `home/routes/r_2026-10-16_2b9456/route.gpx`
+- **Fiche Markdown** : `home/routes/r_2026-10-16_2b9456/fiche.md`
+- **Carte interactive** : `home/routes/r_2026-10-16_2b9456/carte.html`
+- **Roadbook** : `home/routes/r_2026-10-16_2b9456/roadbook.html`
+
+Bonne randonnée dans ce magnifique cirque du Gioberney ! Une fois de retour, je peux marquer cette rando comme faite (`mark_done`) pour que les prochaines boucles évitent de repasser par les mêmes chemins.
+
+Outils : geocode, geocode, geocode, find_pois, find_hiking_routes, find_pois, geocode, find_pois, find_hiking_routes, import_hiking_route, set_constraints, analyze_route, weather_forecast, export_route
 </details>
 
 <details><summary>ref-ecrins-991062</summary>
 
+Voici ton itinéraire **Col de la Gardette (aller-retour)** prêt à partir !
+
 ---
 
-## Col de la Gardette — Aller-retour depuis Les Chirouzes (Chorges)
-
-**Tracé officiel Parc national des Écrins · Altimétrie IGN RGE ALTI**
+## Résumé
 
 | | |
 |---|---|
-| Distance | 9,3 km |
-| D+ / D- | 666 m / 666 m |
-| Altitude départ | 1 459 m · Col : 2 125 m |
-| Durée | 4h43 |
-| Difficulté | — (passages techniques non vérifiés, Overpass indisponible) |
-| Statut | ⚠️ Warning |
+| **Distance** | 8,63 km |
+| **D+ / D-** | 671 m / 671 m (fourchette plausible : 624–671 m) |
+| **Durée estimée** | 4h39 (marcheur moyen) |
+| **Altitude** | 1 455 m → 2 125 m (Col de la Gardette) |
+| **Difficulté** | T2 (randonnée de montagne) |
+| **Départ** | Parking des Chirouzes, Chorges (1 455 m) |
+| **Altimétrie** | IGN RGE ALTI (100 %) |
+| **Validation** | ⚠️ Warning (aucune erreur bloquante) |
+
+## 3 points forts
+
+1. **Col de la Gardette** (2 125 m, km 4.3) — le col et ses alpages, objectif de la randonnée
+2. **Point de vue** (km 1.7) — panorama à 107 m du sentier (petit détour de 214 m A/R)
+3. **Croix de chemin** (km 1.7) — patrimoine au bord du sentier
+
+## Météo du jour (16 octobre)
+
+Conditions excellentes, pas de pluie ni d'orage :
+- **Au départ** (1 455 m) : 13–17 °C, rafales 16 km/h
+- **Au col** (2 125 m) : 11–14 °C, rafales 9 km/h
+- Pas de neige au sol. Arrivée estimée vers 14h25, coucher du soleil à 18h57.
+
+## Vigilance
+
+- **Eau** ⚠️ : aucun point d'eau connu sur 7,4 km (~4h de marche). Une source existe au km 1.2 mais à 188 m de détour. **Emporter suffisamment d'eau.**
+- **Gué** ⚠️ : traversée d'un ruisseau intermittent au km 6.5 — vérifier le niveau d'eau.
+- **Aller-retour** ⚠️ : 4,2 km parcourus deux fois (km 4.5–8.6). C'est cohérent avec ta demande d'aller-retour.
+- **Parc national des Écrins** (aire d'adhésion, km 4.3) : respecter la réglementation locale. Les chiens y sont interdits.
+
+## Fichiers produits
+
+- **GPX** : `home/routes/r_2026-10-16_7fb16d/route.gpx`
+- **Fiche Markdown** : `home/routes/r_2026-10-16_7fb16d/fiche.md`
+- **Carte interactive** : `home/routes/r_2026-10-16_7fb16d/carte.html`
+- **Roadbook imprimable** : `home/routes/r_2026-10-16_7fb16d/roadbook.html`
 
 ---
 
-### Points forts
+Bonne randonnée vers ce col bucolique ! Au retour, n'hésite pas à me dire comment ça s'est passé pour que je marque cette rando comme faite — les prochaines boucles éviteront alors ces chemins.
 
-1. **Col de la Gardette** (km 4,5 · 2 125 m) — le point culminant, alpages à perte de vue
-2. **Point de vue** (km 1,7) — panorama en cours d'ascension
-3. **Croix de chemin** (km 1,7) — patrimoine pastoral
-
----
-
-### Vigilance
-
-- **D6 — Eau** : aucun point d'eau connu sur 8,2 km (après la source au km 1,2). Emportez suffisamment d'eau pour l'ensemble de la journée.
-- **D7 — Gué** (km 2,1) : traversée d'un ruisseau intermittent — vérifier le niveau avant de partir (crue, fonte des neiges).
-- **Passages techniques / zones réglementées** : Overpass était indisponible lors de l'analyse. Ces vérifications n'ont pas pu être effectuées ; réessayer avant le départ.
-- **Aller-retour** : 4,5 km parcourus deux fois (km 4,8 → 9,3 = retour).
-
-### Météo du jour (16 octobre 2026)
-
-| Lieu | T° min/max | Pluie | Rafales |
-|---|---|---|---|
-| Départ (1 459 m) | 13 – 17 °C | 0 mm | 15 km/h |
-| Col (2 125 m) | 11 – 14 °C | 0 mm | 10 km/h |
-
-Très bonne fenêtre météo. Arrivée estimée vers **14h30**, coucher du soleil à 18h57 — large marge.
-
----
-
-### Fichiers
-
-| Format | Chemin |
-|---|---|
-| GPX | `home/routes/r_2026-10-16_f5c9b9/route.gpx` |
-| Fiche Markdown | `home/routes/r_2026-10-16_f5c9b9/fiche.md` |
-| Carte interactive | `home/routes/r_2026-10-16_f5c9b9/carte.html` |
-| Roadbook (PDF) | `home/routes/r_2026-10-16_f5c9b9/roadbook.html` |
-
----
-
-Bonne randonnée ! À votre retour, signalez-moi si vous souhaitez marquer cette rando comme faite (`mark_done`) — les prochaines suggestions éviteront les chemins déjà parcourus.
-
-Outils : find_official_treks, geocode, import_official_trek, set_constraints, analyze_route, weather_forecast, export_route
+Outils : geocode, geocode, geocode, find_pois, geocode, geocode, find_pois, route_between, set_constraints, analyze_route, weather_forecast, export_route
 </details>
 
 <details><summary>ref-ecrins-995753</summary>
 
+Voici l'itinéraire **« De La Grave au hameau de Ventelon »** prêt à partir.
+
 ---
 
-## De La Grave au hameau de Ventelon
+## Résumé
 
-**Source :** itinéraire officiel Parc national des Écrins (Geotrek)
-**Statut de validation : ⚠ avertissements** (voir Vigilance ci-dessous)
+| | |
+|---|---|
+| **Distance** | 4,6 km |
+| **Dénivelé** | D+ 313 m / D− 314 m (fourchette plausible : 291–330 m) |
+| **Durée estimée** | 2h15 (marcheur moyen) |
+| **Altitude** | 1 483 m → 1 777 m (point culminant) |
+| **Difficulté** | Randonnée (aucun passage technique détecté) |
+| **Boucle** | Oui, depuis l'Office de tourisme de La Grave |
+| **Source altimétrique** | IGN RGE ALTI (100 %) |
+| **Statut** | ⚠️ Warning |
+
+## 3 points forts
+
+1. **Chapelle Saint-Jacques et Saint-Christophe** (km 1,9) — chapelle patrimoniale au cœur du hameau de Ventelon
+2. **Fontaine de « quéréost »** (km 1,9) — point d'eau potable à Ventelon
+3. **Traversée du Torrent des Clots** (km 0,4) — torrent intermittent
+
+## Météo du 16 octobre
+
+Conditions idéales : **pas de pluie**, pas d'orage, pas de neige.
+- Au départ (1 484 m) : 8–14 °C, rafales < 8 km/h
+- Au point culminant (1 777 m) : 6–12 °C
+
+Coucher du soleil à **18h56** — partir au plus tard vers **15h49**.
+
+## Vigilances
+
+- **Aller-retour** (G4) : 0,7 km parcourus deux fois (km 2,1–2,3 et km 4,1–4,6). C'est inhérent au réseau de chemins dans ce secteur.
+- **Goudron** (A5) : 54 % du parcours sur route goudronnée — inévitable entre La Grave et Ventelon, les deux hameaux étant reliés par la route.
+- **Aucun passage technique** détecté.
+- **Aucune zone réglementée** traversée (le tracé reste en bordure du Parc national des Écrins sans entrer dans la zone cœur).
+- **Eau** : plusieurs fontaines sur le parcours (Le Fanton au km 0,1, Fontaine de « quéréost » au km 1,9).
+
+## Fichiers produits
+
+- **GPX** : `home/routes/r_2026-10-16_459133/route.gpx`
+- **Fiche Markdown** : `home/routes/r_2026-10-16_459133/fiche.md`
+- **Carte interactive** : `home/routes/r_2026-10-16_459133/carte.html`
+- **Roadbook imprimable** : `home/routes/r_2026-10-16_459133/roadbook.html`
+
+Bonne balade entre La Grave et Ventelon ! Au retour, je pourrai marquer cette rando comme faite (`mark_done`) pour que les prochaines boucles évitent ces chemins.
+
+Outils : geocode, geocode, find_hiking_routes, find_pois, route_between, set_constraints, analyze_route, route_between, validate_route, route_between, set_constraints, analyze_route, weather_forecast, export_route
+</details>
+
+<details><summary>ref-cevennes-41621</summary>
+
+## Randonnée « Aire-de-Côte » — Boucle depuis Bassurels (Cévennes)
 
 ### Résumé
 
 | | |
 |---|---|
-| Distance | 4,3 km |
-| D+ / D− | 308 m / 310 m |
-| Alt. min/max | 1 482 m / 1 770 m |
-| Durée | 2h11 |
-| Type | Boucle |
-| Altimétrie | IGN RGE ALTI (100 %) |
+| **Distance** | 7,78 km |
+| **D+ / D-** | 160 m / 160 m (fourchette plausible : 149–197 m) |
+| **Altitude** | 989 m → 1 105 m |
+| **Durée** | ~2h22 |
+| **Difficulté** | T1 — Randonnée facile |
+| **Balisage** | Jaune et blanc (boucle locale) |
+| **Statut** | ✅ Validé (warnings mineurs) |
+| **Source altitude** | IGN RGE ALTI (100 %) — bonne précision |
 
-### Points forts
+### 3 points forts
 
-1. **Monument des Fusillés** (km 0,3) — mémorial au bord du tracé
-2. **Chapelle Saint-Jacques et Saint-Christophe** (km 1,4) — patrimoine architectural à ~113 m du sentier
-3. **Fontaine de "quéréost"** (km 1,4) — point d'eau potable au hameau de Ventelon
+1. **Le Coulet** (km 2,4) — Point de vue remarquable sur les vallées cévenoles
+2. **Roque Rouge** (km 1,4) — Curiosité rocheuse à 160 m du sentier (détour possible)
+3. **Point d'eau potable** au départ (km 0) — Fontaine pour remplir les gourdes
 
-Points d'eau potables également au km 0,28 et km 4,1 (fontaine Le Fanton).
+### Météo du 16 octobre
 
-### Vigilance
-
-- **Passage raide (D2)** au km 0,9 : pente jusqu'à **60 % sur ~310 m**. Prévoir des bâtons, attention par temps humide.
-- **Aller-retour partiel (G4)** : environ 0,6 km parcourus deux fois sur le retour (km 3,5–4,3). Le tracé officiel emprunte le même chemin ; il n'existe pas forcément d'alternative sur ce tronçon.
-- **Zones réglementées** : la vérification Overpass est indisponible pour cette session — vérifiez directement auprès du Parc national des Écrins les règles en vigueur (bivouac, chiens...).
-- **Trace importée** : difficulté OSM et présence sur des chemins balisés non vérifiées automatiquement.
-
-### Fichiers
-
-| Format | Chemin |
-|---|---|
-| GPX | `home/routes/r_2026-10-16_7e8829/route.gpx` |
-| Fiche Markdown | `home/routes/r_2026-10-16_7e8829/fiche.md` |
-| Carte interactive | `home/routes/r_2026-10-16_7e8829/carte.html` |
-
----
-
-Une fois la rando effectuée, signalez-la avec `mark_done` pour que les prochaines suggestions évitent ces chemins.
-
-Outils : find_official_treks, geocode, import_official_trek, set_constraints, analyze_route, export_route
-</details>
-
-<details><summary>ref-cevennes-41621</summary>
-
----
-
-## Aire-de-Côte — Boucle forestière (Bassurels)
-
-**Itinéraire officiel Parc national des Cévennes** · statut : ⚠️ warnings (voir Vigilance)
-
-| | |
-|---|---|
-| Distance | 7,85 km |
-| D+ / D− | 166 m / 166 m |
-| Altitude | 990–1 106 m |
-| Durée | 2h24 |
-| Type | Boucle |
-| Difficulté | Balade (aucun passage technique) |
-| Altimétrie | IGN RGE ALTI 100 % |
-
-> Note : le parc publie 223 m de D+, RandoForge calcule 166 m sur le MNT IGN plus précis — notre valeur fait foi, l'écart est normal entre deux sources différentes.
-
----
-
-### Points forts
-
-1. **Le Coulet** (km 2,4) — point de vue, directement sur le tracé.
-2. **Roque Rouge** (km 1,4) — curiosité géologique (rocher), à 160 m du tracé (détour ~300 m).
-3. **Point de vue** (km 0,1) — panorama dès le départ, à 95 m du tracé.
-
-Fontaine d'eau potable au départ (km 0,0).
-
----
+Conditions idéales : **13–19 °C**, pas de pluie, pas d'orage, rafales modérées (26 km/h max). Départ 9h → arrivée estimée ~11h45, coucher du soleil à 19h07.
 
 ### Vigilance
 
-- **Aller-retour km 7,4–7,8** : 500 m empruntés deux fois sur ce tronçon final — c'est la trace officielle du parc, à prévoir.
-- **Cœur du Parc national des Cévennes (km 0–7,8)** : chiens **interdits** même tenus en laisse, bivouac encadré, feux et cueillette interdits. Vérifier le règlement du parc avant de partir.
-- **Réserve de biosphère des Cévennes, zone centrale (km 0–7,8)** : protection stricte — rester sur les sentiers, vérifier la réglementation locale.
-- Trace importée : suivi des chemins non vérifié automatiquement (lancer `data_quality` si besoin).
-- Aucune date de départ enregistrée : heure de coucher du soleil non vérifiée.
+- **Parc national des Cévennes (zone cœur)** : l'intégralité du parcours traverse le cœur du parc. Chiens généralement interdits (même en laisse), bivouac encadré, feux et cueillette interdits. Vérifier le règlement du parc avant de partir.
+- **Aller-retour** : un court tronçon de 500 m est parcouru deux fois en fin de boucle (km 7,3–7,8) — inhérent au tracé balisé.
+- **D+ variable** : le D+ calculé (160 m) diffère de la valeur OSM (223 m). Prévoir plutôt le haut de la fourchette (197 m) pour l'effort.
+- **Aucun passage technique** détecté — sentier adapté à tous niveaux.
 
----
+### Fichiers produits
 
-### Fichiers
+- **GPX** : `home/routes/r_2026-10-16_76a00b/route.gpx`
+- **Fiche** : `home/routes/r_2026-10-16_76a00b/fiche.md`
+- **Carte interactive** : `home/routes/r_2026-10-16_76a00b/carte.html`
+- **Roadbook** : `home/routes/r_2026-10-16_76a00b/roadbook.html`
 
-| Fichier | Chemin |
-|---|---|
-| GPX | `home/routes/r_2026-10-16_2ce8f2/route.gpx` |
-| Fiche Markdown | `home/routes/r_2026-10-16_2ce8f2/fiche.md` |
-| Carte interactive | `home/routes/r_2026-10-16_2ce8f2/carte.html` |
+Bonne balade dans les forêts cévenoles ! De retour, je peux marquer cette rando comme faite (`mark_done`) pour que les futures boucles empruntent de nouveaux chemins.
 
----
-
-Après la sortie, dis-le-moi pour enregistrer cette rando comme faite (`mark_done`) — les prochaines boucles éviteront les chemins déjà parcourus.
-
-Outils : find_official_treks, geocode, import_official_trek, set_constraints, analyze_route, export_route
+Outils : geocode, find_hiking_routes, import_hiking_route, set_constraints, analyze_route, weather_forecast, export_route
 </details>
 
 <details><summary>ref-cevennes-45054</summary>
 
----
+## Randonnée « Camias » — Boucle depuis l'Ancienne Gare de Pont-d'Hérault
 
-## Camias – Boucle depuis l'Ancienne gare de Pont d'Hérault
-
-**Source : itinéraire officiel du Parc national des Cévennes (Geotrek)**
+### Résumé
 
 | | |
 |---|---|
-| Distance | 8,79 km |
-| D+ / D− | 385 m / 386 m |
-| Altitude | 192 m → 434 m |
-| Durée | 3h14 |
-| Type | Boucle |
-| Altimétrie | IGN RGE ALTI 100 % |
+| **Distance** | 8,79 km |
+| **D+ / D-** | 372 m / 372 m (fourchette plausible : 346–429 m) |
+| **Altitude** | 191 m → 434 m |
+| **Durée estimée** | 3h11 (marcheur moyen) |
+| **Boucle** | Oui |
+| **Balisage** | Jaune |
+| **Altimétrie** | IGN RGE ALTI (100 %) |
+| **Statut** | ⚠️ Warning |
 
-Départ 9h → **arrivée estimée 12h46** (coucher du soleil à 19h03, très confortable).
+### 3 points forts
 
----
-
-### Points forts
-Les points notables OSM sont momentanément indisponibles (Overpass injoignable). La description officielle met en avant :
-- Le sentier à flanc de coteau qui monte et serpente depuis la vieille gare
-- Le raccord à l'ancienne voie de chemin de fer et son tracé doux en balcon
-- Les panoramas sur la vallée du Hérault
-
----
+1. **Château du Rey** (km 7,6) — à 150 m du sentier, un château médiéval sur le retour.
+2. **Traversée de ruisseaux** — L'Arboux, Ruisseau du Gazel, Valat de Courbière : ambiance fraîche à flanc de coteau.
+3. **La Vianèze** (418 m, km 1,0) — premier belvédère en montée, vue sur la vallée.
 
 ### Vigilance
 
-**Passages raides** (3 sections signalées par le MNT) :
-| km | Longueur | Pente max |
-|---|---|---|
-| 0,14 | ~110 m | **38 %** |
-| 3,48 | ~110 m | **36 %** |
-| 5,04 | ~130 m | **38 %** |
+- **Passage raide (km 5,0)** : pente jusqu'à 40 % sur ~190 m. Attention en descente, surtout par temps humide.
+- **D+ potentiellement sous-estimé** : OpenStreetMap indique 467 m. Prévoir plutôt la valeur haute de la fourchette (429 m) pour l'effort.
+- **Parc national des Cévennes** : l'itinéraire se situe dans le périmètre du parc (la vérification automatique des zones était indisponible). Consultez la réglementation du parc, notamment si vous venez avec un chien.
+- **Coucher du soleil à 19h03** : départ au plus tard vers 14h50.
 
-Ces montées/descentes brèves mais très pentues demandent de l'attention, surtout par temps humide.
+### Météo du jour (16 octobre 2026)
 
-**Autres points d'attention :**
-- Trace officielle importée : accès et difficulté des chemins non vérifiés automatiquement (données OSM absentes)
-- Franchissements de cours d'eau non vérifiés — renseignez-vous en cas de fortes pluies récentes
-- Aucune zone réglementée détectée sur ce tracé
-
----
+Excellentes conditions : **13–22 °C** au départ, **12–20 °C** au point culminant. Pas de pluie, pas d'orage, vent faible (rafales < 9 km/h).
 
 ### Fichiers produits
 
-| Format | Chemin |
-|---|---|
-| GPX | `home/routes/r_2026-10-16_ce6dcf/route.gpx` |
-| Fiche Markdown | `home/routes/r_2026-10-16_ce6dcf/fiche.md` |
-| Carte interactive | `home/routes/r_2026-10-16_ce6dcf/carte.html` |
-| Roadbook imprimable | `home/routes/r_2026-10-16_ce6dcf/roadbook.html` |
+- **GPX** : `home/routes/r_2026-10-16_b897bc/route.gpx`
+- **Fiche Markdown** : `home/routes/r_2026-10-16_b897bc/fiche.md`
+- **Carte interactive** : `home/routes/r_2026-10-16_b897bc/carte.html`
+- **Roadbook imprimable** : `home/routes/r_2026-10-16_b897bc/roadbook.html`
 
----
+Bonne randonnée sur les coteaux cévenols ! Au retour, je pourrai marquer cette rando comme faite (`mark_done`) pour que les prochaines boucles évitent de repasser par les mêmes chemins.
 
-Une fois rentré, dites-moi et je marquerai cette rando comme faite (`mark_done`) — les prochaines boucles générées éviteront les chemins déjà parcourus.
-
-Outils : find_official_treks, geocode, import_official_trek, set_constraints, analyze_route, export_route
+Outils : geocode, geocode, find_hiking_routes, find_pois, import_hiking_route, set_constraints, analyze_route, weather_forecast, export_route
 </details>
 
 <details><summary>ref-cevennes-98959</summary>
 
+Voici l'itinéraire préparé. Une remarque importante d'abord :
+
+> **Le « Chemin des fileuses » n'est pas référencé comme sentier balisé dans OpenStreetMap.** L'itinéraire proposé est une **boucle reconstituée** sur les hauteurs de L'Estréchure, passant par les chemins cartographiés du secteur. Il peut différer du tracé historique exact lié à la sériciculture. Vérifiez sur place le balisage local.
+
 ---
 
-## Chemin des fileuses — L'Estréchure
-
-**Tracé officiel du Parc national des Cévennes** · Source : Geotrek · Altimétrie : IGN RGE ALTI (100 %)
+## Chemin des fileuses – L'Estréchure (boucle)
 
 | | |
 |---|---|
-| **Distance** | 12,52 km |
-| **D+ / D−** | 669 m / 669 m |
-| **Durée** | 5h08 |
-| **Type** | Boucle |
-| **Alt. min / max** | 296 m / 760 m |
-| **Statut** | ⚠️ Warning (aucune erreur bloquante) |
+| **Distance** | 5,05 km |
+| **D+ / D-** | 220 m / 221 m (plausible 205–264 m) |
+| **Altitude** | 296 m → 435 m |
+| **Durée** | ≈ 1h51 |
+| **Difficulté** | T1 (randonnée facile) |
+| **Statut** | **Warning** (voir ci-dessous) |
 
----
-
-### Points forts
-
-1. **Château de l'Hom** (km 11,3 — +169 m de détour) — patrimoine médiéval sur les hauteurs de la vallée
-2. **Gardon de Saint-Jean** (km 10,9 et 12,3) — rivière traversée en fin de boucle
-3. **Val Salien / Valat d'Ausset** (km 10,0–10,5) — ruisseaux qui animent le retour en vallée
-
----
+### Points d'intérêt
+- **Château de l'Hom** (km 1,3) — patrimoine historique, petit détour de 170 m
+- **Le Gardon de Saint-Jean** — traversé au km 0,2 et au km 3,9
+- **Valat de Monésille** (km 4,6) — ruisseau
 
 ### Vigilance
 
-**Eau** ⚠️ Aucun point d'eau connu pendant ~10 km (environ 4h de marche). **Partir avec suffisamment d'eau.**
+- **Aller-retour** : 1,1 km parcourus deux fois (km 2,7–3,6). Le réseau de chemins dans ce secteur est limité.
+- **Route goudronnée** : 42 % du parcours, dont 586 m sur route départementale (km 4,5). Prudence avec la circulation.
+- **Pas de passage technique**, pas de zone réglementée signalée sur ce tracé.
 
-**Passage raide** au km 3,2 : pente jusqu'à **36 %** sur ~100 m — attention en descente si sol glissant.
+### Météo du 16 octobre 2026
+Conditions idéales : **11–20 °C**, pas de pluie, vent faible (6 km/h), pas d'orage. Coucher du soleil à 19h03 — partir au plus tard vers 16h24.
 
-**Difficulté** : la trace est importée depuis le parc (non vérifiée sur OSM) — accès et difficulté non confirmés par les outils. Se fier au topo-guide officiel du PNC.
+### Fichiers produits
+- **GPX** : `home/routes/r_2026-10-16_e3032a/route.gpx`
+- **Fiche** : `home/routes/r_2026-10-16_e3032a/fiche.md`
+- **Carte** : `home/routes/r_2026-10-16_e3032a/carte.html`
 
-**Zones réglementées** : le service n'était pas disponible lors de l'analyse — vérifier les règles du Parc national des Cévennes (bivouac, chiens…) directement sur le site du parc.
+Bonne balade dans la vallée du Gardon ! À votre retour, je peux enregistrer cette rando comme faite (`mark_done`) pour que les prochaines boucles évitent ces chemins.
 
----
-
-### Météo aujourd'hui (départ 9h, retour ~15h)
-
-| Point | Temp. min/max | Pluie | Rafales | Orage |
-|---|---|---|---|---|
-| Départ (302 m) | 12 / 24 °C | 0 mm | 10 km/h | Non |
-| Sommet (761 m) | 10 / 20 °C | 0 mm | 10 km/h | Non |
-
-Conditions excellentes. Coucher du soleil à **19h03**, retour estimé ~**15h00** — large marge.
-
----
-
-### Fichiers
-
-| Format | Chemin |
-|---|---|
-| GPX | `home/routes/r_2026-10-16_d09532/route.gpx` |
-| Fiche Markdown | `home/routes/r_2026-10-16_d09532/fiche.md` |
-| Carte HTML | `home/routes/r_2026-10-16_d09532/carte.html` |
-
----
-
-Après la balade, dis-le moi et je la marque comme faite (`mark_done`) pour que les prochaines boucles évitent ces chemins.
-
-Outils : find_official_treks, geocode, import_official_trek, set_constraints, analyze_route, weather_forecast, export_route
+Outils : geocode, find_hiking_routes, find_hiking_routes, find_pois, generate_loop_candidates, set_constraints, analyze_route, set_constraints, validate_route, weather_forecast, export_route
 </details>
 
 <details><summary>ref-cevennes-74874</summary>
 
+Voici l'itinéraire **« Du Bosc au valat de Merlason »** prêt à partir.
+
 ---
 
-## Du Bosc au valat de Merlason — Bez-et-Esparon
-
-**Itinéraire officiel** du Parc national des Cévennes (tracé Geotrek), recalculé sur IGN RGE ALTI.
+## Résumé
 
 | | |
 |---|---|
-| Distance | 9,0 km (boucle) |
-| D+ / D- | 516 m / 517 m |
-| Altitude | 302 m → 659 m |
-| Durée estimée | 3h53 |
-| Statut | **Warning** |
+| **Distance** | 9,05 km |
+| **D+ / D-** | 427 m / 427 m (fourchette plausible : 397–536 m) |
+| **Durée estimée** | 3 h 25 (marcheur moyen) |
+| **Altitude** | 301 m → 632 m (point culminant) |
+| **Type** | Boucle — balisage jaune |
+| **Difficulté** | Aucun passage technique signalé |
+| **Altimétrie** | IGN RGE ALTI 100 % |
+| **Statut** | **Warning** (eau — voir ci-dessous) |
+
+**Horaires estimés** : départ 9 h → arrivée ≈ 12 h 59, bien avant le coucher du soleil (19 h 05).
 
 ---
 
-### Points forts
-Points notables non disponibles ce soir (Overpass indisponible). Le descriptif du parc met en avant les paysages caractéristiques des Cévennes : élevage, maraîchage, prairies et châtaigneraies depuis la vallée jusqu'aux crêtes du village de Bez-et-Esparon.
+## 3 points forts
+
+1. **Chapelle Sainte-Philomène** (km 6,5) — sur le tracé, petit patrimoine cévenol.
+2. **Château de Bez** (km 0) — au départ, à 78 m du tracé.
+3. **Aire de pique-nique** (km 6,3) — idéale pour la pause de mi-parcours.
+
+Le parcours traverse les paysages évoqués : fond de vallée cultivé, prairies puis châtaigneraies en montant vers les hauteurs.
 
 ---
 
-### Vigilance
+## Vigilance
 
-**Warning G4** — ~0,4 km parcourus en aller-retour (km 1,2 et km 2,8–3,1). C'est inhérent à la trace officielle du parc sur ces deux courts tronçons ; pas de correction à apporter.
-
-**Infos à noter :**
-- Trace importée : la présence sur des chemins balisés n'a pas pu être vérifiée automatiquement — fiez-vous au balisage du parc sur le terrain.
-- Franchissements de cours d'eau non vérifiés (le valat de Merlason longe le tracé).
-- Aucune zone réglementaire bloquante détectée.
-- Date non précisée : si vous partez en journée courte d'automne, prévoir une lampe.
+- **Eau** : aucun point d'eau connu sur les 9 km. **Emportez suffisamment d'eau** (≈ 1,5 L minimum par personne).
+- **Météo du jour** : conditions idéales — 9–21 °C au départ, 13–19 °C au point culminant, pas de pluie, vent faible (rafales max 13 km/h), pas d'orage.
+- **Passages techniques** : aucun signalé.
+- **Zones réglementées** : aucune zone protégée détectée le long du tracé (le Parc national des Cévennes n'a pas de cœur de parc dans ce secteur).
 
 ---
 
-### Fichiers produits
+## Fichiers produits
 
-| Format | Chemin |
-|---|---|
-| GPX | `home/routes/r_2026-10-16_93721f/route.gpx` |
-| Fiche Markdown | `home/routes/r_2026-10-16_93721f/fiche.md` |
-| Carte interactive | `home/routes/r_2026-10-16_93721f/carte.html` |
-| Roadbook imprimable | `home/routes/r_2026-10-16_93721f/roadbook.html` |
+- **GPX** : `home/routes/r_2026-10-16_589e3a/route.gpx`
+- **Fiche** : `home/routes/r_2026-10-16_589e3a/fiche.md`
+- **Carte interactive** : `home/routes/r_2026-10-16_589e3a/carte.html`
 
----
+Bonne randonnée dans les Cévennes ! Au retour, je pourrai marquer cette rando comme faite (`mark_done`) pour que vos prochaines boucles empruntent de nouveaux chemins.
 
-Après la rando, dites-moi et je lancerai `mark_done` pour que les prochaines boucles en Cévennes évitent les chemins déjà parcourus.
-
-Outils : find_official_treks, geocode, import_official_trek, set_constraints, analyze_route, export_route
+Outils : geocode, geocode, find_hiking_routes, find_pois, import_hiking_route, set_constraints, analyze_route, weather_forecast, export_route
 </details>

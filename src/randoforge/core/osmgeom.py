@@ -99,3 +99,56 @@ class RouteFrame:
         dlon = margin_m / (111_000 * max(0.1, np.cos(np.radians(np.mean(lats)))))
         w, e = lon_bounds(lons, dlon)
         return f"{lats.min() - dlat:.5f},{w:.5f},{lats.max() + dlat:.5f},{e:.5f}"
+
+
+# Rôles d'une relation de randonnée qui ne font pas partie du tracé principal.
+SIDE_ROLES = {"alternative", "excursion", "approach", "connection", "link", "guidepost", "start", "stop"}
+JOIN_TOLERANCE_M = 30.0  # deux chemins OSM consécutifs sont censés se toucher
+
+
+def chain_route_relation(rel: dict) -> tuple[list[tuple[float, float]], list[str]]:
+    """Met bout à bout les chemins d'une relation OSM `route=hiking` (sortie `out geom`).
+
+    Les chemins sont pris dans l'ordre de la relation et retournés si besoin. Renvoie le tracé (lat, lon) et des
+    avertissements (variantes ignorées, trous entre chemins). Lève ValueError si aucun tracé n'est exploitable.
+    """
+    from .geo import distance_m
+
+    members = rel.get("members", [])
+    ways = [
+        [(c["lat"], c["lon"]) for c in m.get("geometry") or [] if c]
+        for m in members
+        if m.get("type") == "way" and (m.get("role") or "") not in SIDE_ROLES
+    ]
+    ways = [w for w in ways if len(w) >= 2]
+    skipped = sum(1 for m in members if m.get("type") == "way" and (m.get("role") or "") in SIDE_ROLES)
+    if not ways:
+        if any(m.get("type") == "relation" for m in members):
+            raise ValueError("Itinéraire découpé en sous-itinéraires (étapes) : importer une étape à la fois.")
+        raise ValueError("Relation OSM sans chemin exploitable.")
+    line = list(ways[0])
+    gaps: list[float] = []
+    for i, way in enumerate(ways[1:]):
+        ends = {
+            "fin→début": (distance_m(line[-1], way[0]), False, False),
+            "fin→fin": (distance_m(line[-1], way[-1]), False, True),
+        }
+        if i == 0:  # le premier chemin peut lui-même être à l'envers
+            ends["début→début"] = (distance_m(line[0], way[0]), True, False)
+            ends["début→fin"] = (distance_m(line[0], way[-1]), True, True)
+        gap, flip_line, flip_way = min(ends.values())
+        if flip_line:
+            line.reverse()
+        seg = way[::-1] if flip_way else way
+        if gap > JOIN_TOLERANCE_M:
+            gaps.append(gap)
+        line.extend(seg[1:] if gap < 1 else seg)
+    warnings = []
+    if gaps:
+        warnings.append(
+            f"Relation OSM incomplète ou désordonnée : {len(gaps)} saut(s) entre chemins (max {max(gaps):.0f} m), "
+            "reliés en ligne droite. Vérifier le tracé (data_quality) ou le reconstruire avec route_between."
+        )
+    if skipped:
+        warnings.append(f"{skipped} chemin(s) de variante ou d'accès ignoré(s) : seul le tracé principal est importé.")
+    return line, warnings

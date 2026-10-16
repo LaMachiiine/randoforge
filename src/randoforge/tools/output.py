@@ -27,6 +27,15 @@ def slug(text: str) -> str:
     return re.sub(r"\s+", " ", s)[:80] or "rando"
 
 
+def _exported_from(folder: Path, route_id: str) -> bool:
+    """Vrai si `folder` est un export RandoForge de cet itinéraire (frontmatter de la fiche)."""
+    fiche = folder / "fiche.md"
+    try:
+        return fiche.is_file() and f"\nroute_id: {route_id}\n" in fiche.read_text(encoding="utf-8")[:2000]
+    except OSError:
+        return False
+
+
 def register(mcp: MCPServer, app: App) -> None:
     @mcp.tool()
     def get_route(route_id: str) -> RouteSummary:
@@ -93,6 +102,9 @@ def register(mcp: MCPServer, app: App) -> None:
                 raise ToolError(f"Dossier du vault introuvable : {vault}")
             # Identifiant dans le nom : deux randos homonymes (« Boucle 1 (N) »…) ne s'écrasent pas.
             target = vault / "Randos" / f"{slug(route.name)}-{route_id.rsplit('_', 1)[-1]}"
+            legacy = vault / "Randos" / slug(route.name)  # ancien nommage, sans identifiant
+            if not target.exists() and _exported_from(legacy, route_id):
+                legacy.rename(target)  # même itinéraire : dossier renommé (notes de l'utilisateur comprises)
             target.mkdir(parents=True, exist_ok=True)
             if "gpx" in formats:
                 for old in target.glob("jour-*.gpx"):  # étapes d'un ancien découpage

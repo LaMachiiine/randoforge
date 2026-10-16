@@ -19,7 +19,14 @@ from randoforge.core.models import Route, TrackPoint
 from randoforge.core.similarity import deviation, overlap_fraction
 from randoforge.core.stats import compute_stats
 
-ROUTE_TOOLS = {"route_between", "generate_loop_candidates", "import_gpx", "bailout_route", "import_official_trek"}
+ROUTE_TOOLS = {
+    "route_between",
+    "generate_loop_candidates",
+    "import_gpx",
+    "bailout_route",
+    "import_official_trek",
+    "import_hiking_route",
+}
 # Espaces de séparation des milliers : ASCII, insécable (U+00A0) et fine insécable (U+202F).
 SPACES = " \u00a0\u202f"
 # Champs de résultat qui ne sont pas des mesures (identifiants, coordonnées, liens) : exclus de la traçabilité.
@@ -203,9 +210,11 @@ def grade_behaviour(scenario: dict, run_dir: Path) -> Grade:
 def grade_reference(scenario: dict, run_dir: Path, official: list[tuple[float, float, float | None]]) -> Grade:
     """Rando réelle : le tracé final de l'agent est comparé au tracé officiel du parc."""
     calls, answer = load_run(run_dir)
-    g = grade_behaviour({**scenario, "tools": ["route_between|generate_loop_candidates"]}, run_dir)
-    # Le tracé présenté : le dernier construit, hors itinéraire de repli (demandé en fin de démarche par le skill).
-    ids = created_routes(calls, exclude=frozenset({"bailout_route"}))
+    g = grade_behaviour({**scenario, "tools": ["route_between|generate_loop_candidates|import_hiking_route"]}, run_dir)
+    # Le tracé présenté : celui exporté en dernier ; à défaut, le dernier construit, hors itinéraire de repli
+    # (demandé en fin de démarche par le skill). Les tracés construits pour comparer ne comptent pas.
+    exported = [c["args"].get("route_id") for c in calls if c["outil"] == "export_route" and not c.get("erreur")]
+    ids = created_routes(calls, exclude=frozenset({"bailout_route"})) + [r for r in exported if r]
     routes_dir = run_dir / "home" / "routes"
     agent_route = None
     for rid in reversed(ids):  # le dernier tracé construit est celui présenté

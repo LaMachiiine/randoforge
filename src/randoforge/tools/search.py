@@ -109,8 +109,8 @@ def register(mcp: MCPServer, app: App) -> None:
         """Sentiers balisés (GR, GRP, PR, sentiers locaux) qui passent à proximité d'un lieu,
         des plus importants (réseau international/national) aux plus locaux.
 
-        Utile pour proposer un itinéraire balisé ; pour tracer une portion, utiliser route_between
-        avec des points situés sur le sentier.
+        Pour suivre un de ces sentiers en entier : import_hiking_route(osm_id). Pour n'en tracer qu'une portion,
+        route_between avec des points situés sur le sentier.
         """
         q = f'[out:json][timeout:90];relation["route"="hiking"](around:{radius_km * 1000:.0f},{lat},{lon});out tags center;'
         rels = app.overpass(q)

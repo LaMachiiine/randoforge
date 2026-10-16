@@ -4,7 +4,7 @@ maj: 2026-10-15
 ---
 # Serveur MCP — Catalogue d'outils
 
-> 26 outils, regroupés par module dans `src/randoforge/tools/`. Chaque outil renvoie un résumé compact
+> 27 outils, regroupés par module dans `src/randoforge/tools/`. Chaque outil renvoie un résumé compact
 > (jamais la géométrie complète) ; un `route_id` désigne l'itinéraire stocké côté serveur.
 
 ## Règles de design
@@ -19,7 +19,7 @@ maj: 2026-10-15
 | `geocode` | Coordonnées d'un lieu par son nom (Nominatim) |
 | `find_pois` | Points notables autour d'un lieu, triés par intérêt ; catégorie `transport` pour bus/gares |
 | `find_official_treks` | Randos officielles des parcs nationaux (Écrins, Cévennes, Port-Cros) par nom ou lieu |
-| `find_hiking_routes` | Sentiers balisés (GR, PR…) proches, réseau national d'abord |
+| `find_hiking_routes` | Sentiers balisés (GR, PR…) proches, réseau national d'abord ; à importer avec `import_hiking_route` |
 
 ## Construction — `tools/build.py`
 | Outil | Rôle |
@@ -27,6 +27,7 @@ maj: 2026-10-15
 | `route_between` | Tracé BRouter par des points imposés (≤ 30), boucle possible ; altitudes recalculées sur MNT |
 | `generate_loop_candidates` | Boucles automatiques (triangles dans 3–12 directions), notées et mesurées |
 | `import_official_trek` | Import du tracé officiel d'un parc, recalculé (D+ comparé au topo-guide) |
+| `import_hiking_route` | Import d'un sentier balisé OSM (relation trouvée par `find_hiking_routes`) : chemins mis bout à bout, variantes ignorées, trous signalés |
 | `import_gpx` | Import d'une trace (altitudes du fichier ou du MNT) |
 | `bailout_route` | Itinéraire de repli depuis un km vers le départ, l'arrivée ou un lieu |
 

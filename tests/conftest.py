@@ -72,6 +72,14 @@ class FakeOverpass:
         if "way(around" in ql and '["highway"];out meta geom' in ql:
             return [{"type": "way", "id": 901, "tags": {"highway": "path"}, "timestamp": "2024-05-01T00:00:00Z",
                      "geometry": geom}]  # fmt: skip
+        if ql.endswith("out geom;") and "relation(" in ql and "around" not in ql:
+            # Sentier balisé importé : trois chemins dans l'ordre, le deuxième à l'envers, plus une variante.
+            n = len(geom)
+            parts = [geom[: n // 3 + 1], geom[n // 3 : 2 * n // 3 + 1][::-1], geom[2 * n // 3 :]]
+            members = [{"type": "way", "role": "", "geometry": g} for g in parts]
+            members.insert(1, {"type": "way", "role": "alternative", "geometry": geom[:5]})
+            return [{"type": "relation", "id": 1, "members": members,
+                     "tags": {"route": "hiking", "name": "Boucle locale", "distance": "8,4 km"}}]  # fmt: skip
         if 'route"="hiking' in ql:
             return [
                 {"type": "relation", "id": 1, "tags": {"route": "hiking", "network": "lwn", "name": "Boucle locale"},
