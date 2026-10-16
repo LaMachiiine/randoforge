@@ -18,7 +18,7 @@ from ..app import App
 from ..core import loops
 from ..core.geo import cumulative_distance, interp_lon
 from ..core.models import Route, RouteRequest, RouteSummary, TrackPoint
-from ..core.osmgeom import chain_route_relation
+from ..core.osmgeom import chain_route_relation, declared_values
 from ..core.quality import marked_share
 from ..core.similarity import overlap_fraction
 from ..core.terrain import retraced_sections
@@ -31,21 +31,6 @@ from .schemas import LatLon, LoopCandidate, LoopCandidates, Park, Profile, SacSc
 # Brouillons en parallèle : autant que le serveur BRouter accepte de requêtes simultanées (au-delà, ils attendraient).
 MAX_IMPORT_KM = 300  # au-delà : ~30 000 altitudes à demander et un stockage lourd ; importer par étapes
 PARALLEL_ROUTES = 4  # serveur sans limite connue (ex. BRouter local)
-
-
-def declared_values(tags: dict) -> dict[str, float]:
-    """Distance et D+ déclarés dans une relation OSM (comparés aux nôtres, règle N5).
-
-    Tout format douteux est ignoré plutôt que mal lu : unité autre que km/m, « 12.500 » (séparateur de milliers ou
-    décimale ?), D+ non entier.
-    """
-    out: dict[str, float] = {}
-    raw = tags.get("distance", "")
-    if not re.search(r"\d[.,]\d{3}(?!\d)", raw) and (m := re.fullmatch(r"\s*(\d+(?:[.,]\d+)?)\s*(km|m)?\s*", raw)):
-        out["distance_m"] = float(m[1].replace(",", ".")) * (1 if m[2] == "m" else 1000)
-    if m := re.fullmatch(r"\s*(\d+)\s*(m)?\s*", tags.get("ascent", "")):
-        out["d_plus_m"] = float(m[1])
-    return out
 
 
 def parallel_routes(app: App) -> int:
@@ -298,8 +283,9 @@ def register(mcp: MCPServer, app: App) -> None:
                 "Importer une étape (relation d'étape) ou tracer une portion avec route_between."
             )
         app.apply_dem(route)
+        # Notes de source : conservées à chaque recalcul des stats (stats_into les reprend).
+        route.elevation_notes = route.elevation_notes + warnings
         app.stats_into(route)
-        route.warnings += warnings
         app.save(route)
         return RouteSummary.of(route)
 

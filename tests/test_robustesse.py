@@ -402,3 +402,100 @@ def test_declared_osm_values_are_read_strictly():
     assert declared_values({"distance": "8"}) == {"distance_m": 8000.0}
     for doubtful in ("12.500 m", "1,200", "8 mi", "env. 8", "650 ft"):
         assert declared_values({"distance": doubtful, "ascent": doubtful}) == {}
+
+
+# --- Relecture globale finale -------------------------------------------------------------------
+
+
+def _out_and_back():
+    from randoforge.core.models import TrackPoint
+
+    go = [TrackPoint(lat=45 + i * 9e-5, lon=6.0, ele=1000.0) for i in range(500)]  # ~5 km vers le nord
+    return go + go[-2::-1]  # retour exact sur les mêmes points
+
+
+def test_out_and_back_positions_follow_the_walking_order():
+    from randoforge.core.pois import annotate
+
+    pts = _out_and_back()
+    views = [{"type": "node", "id": i, "lat": 45 + k * 9e-5, "lon": 6.0003, "tags": {"tourism": "viewpoint"}}
+             for i, k in enumerate(range(50, 450, 50))]  # fmt: skip
+    stream = {"type": "way", "id": 99, "tags": {"waterway": "stream"},
+              "geometry": [{"lat": 45.018, "lon": 5.999}, {"lat": 45.018, "lon": 6.001}]}  # fmt: skip
+    pois = annotate(pts, [*views, stream], ["point_de_vue", "riviere"], 300)
+    kms = [p.km for p in pois if p.categorie == "point_de_vue"]
+    assert kms == sorted(kms) and max(kms) < 5  # tous à l'aller, dans l'ordre de marche
+    crossings = sorted(p.km for p in pois if p.categorie == "riviere")
+    assert len(crossings) == 2 and crossings[0] < 2.1 and crossings[1] > 7.9  # aller et retour
+
+
+def test_hiking_route_length_reads_units():
+    from randoforge.core.osmgeom import declared_values
+
+    assert declared_values({"distance": "5000 m"}) == {"distance_m": 5000.0}  # et non 5000 km
+
+
+@pytest.mark.anyio
+async def test_compute_stats_out_of_range_is_a_clear_error(server):
+    from .test_server import LANS, MOUCHEROTTE, call
+
+    async with Client(server) as client:
+        rid = (await call(client, "route_between", {"waypoints": [LANS, MOUCHEROTTE]}))["route_id"]
+        res = await client.call_tool("compute_stats", {"route_id": rid, "step_m": 0})
+    assert res.is_error and "Paramètre hors bornes" in res.content[0].text
+
+
+@pytest.mark.anyio
+async def test_import_warnings_survive_a_stats_recompute(server):
+    from .test_server import call
+
+    async with Client(server) as client:
+        rid = (await call(client, "import_hiking_route", {"osm_id": "relation/1"}))["route_id"]
+        again = await call(client, "compute_stats", {"route_id": rid, "walker": "famille"})
+    assert any("variante" in w for w in again.get("warnings", []))
+
+
+def test_daylight_reports_both_dark_start_and_dark_arrival():
+    from datetime import date, time
+
+    from randoforge.core.models import RouteRequest
+    from randoforge.validation import validate
+
+    pts = line(5000, ele=lambda i: 1000 + i // 5)  # ~55 km : arrivée bien après le coucher du soleil
+    r = route_of(pts, request=RouteRequest(date=date(2026, 10, 20), start_time=time(6, 0)))
+    d4 = [c for c in validate(r).checks if c.id == "D4"]
+    assert {c.level for c in d4} == {"warning", "error"}
+
+
+def test_gpx_stays_valid_with_control_characters():
+    import gpxpy
+
+    from randoforge.formats.gpx import write_gpx
+
+    r = route_of(line())
+    r.name = "Crête\x0bdu\x01Moucherotte"
+    assert gpxpy.parse(write_gpx(r)).tracks[0].name == "CrêteduMoucherotte"
+
+
+@pytest.mark.anyio
+async def test_bivouac_ban_stays_on_the_spots_it_concerns(server, monkeypatch):
+    from randoforge.core.models import BivouacSpot
+
+    from .test_server import LANS, MOUCHEROTTE, call
+
+    ban = "Bivouac probablement interdit (réserve naturelle) : vérifier le règlement"
+
+    def fake(app, route):
+        route.bivouacs = [
+            BivouacSpot(km=k, lat=45.1, lon=5.6, source="calculé", type="emplacement possible", score=0.5,
+                        avertissements=["À vérifier sur place"] + ([ban] if k < 3 else []))
+            for k in range(6)
+        ]  # fmt: skip
+        return []
+
+    monkeypatch.setattr("randoforge.tools.trek.compute_bivouacs", fake)
+    async with Client(server) as client:
+        rid = (await call(client, "route_between", {"waypoints": [LANS, MOUCHEROTTE]}))["route_id"]
+        res = await call(client, "find_bivouac_spots", {"route_id": rid})
+    banned = [s["km"] for s in res["emplacements"] if ban in s.get("avertissements", [])]
+    assert banned == [0, 1, 2] and ban not in res["rappels"] and "À vérifier sur place" in res["rappels"]

@@ -12,6 +12,7 @@ from ..app import DEFAULT_CATEGORIES, App
 from ..core import pois as poi_lib
 from ..core.geo import distance_m
 from ..core.models import TrackPoint
+from ..core.osmgeom import declared_values
 from ..engines.geotrek import INSTANCES
 from .schemas import (
     CategoryName,
@@ -120,11 +121,8 @@ def register(mcp: MCPServer, app: App) -> None:
             t = r.get("tags", {})
             if not t.get("name") and not t.get("ref"):
                 continue  # relation anonyme : inutilisable pour décrire un itinéraire
-            dist = None
-            try:
-                dist = float(t.get("distance", "").replace(",", ".").split()[0])
-            except (ValueError, IndexError):
-                pass
+            declared = declared_values(t).get("distance_m")  # formats douteux ignorés plutôt que mal lus
+            dist = round(declared / 1000, 2) if declared is not None else None
             rows.append(
                 (
                     order.index(t["network"]) if t.get("network") in order else len(order),

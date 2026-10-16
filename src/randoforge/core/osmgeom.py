@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from functools import reduce
+import re
+from functools import cached_property, reduce
 
 import numpy as np
 import shapely
@@ -60,6 +61,39 @@ def element_geometry(el: dict, proj: LocalProjection) -> BaseGeometry | None:
     return shapely.union_all(lines)
 
 
+class Locator:
+    """Positions le long d'une ligne projetée, sans ambiguïté sur un aller-retour : quand le tracé passe deux fois
+    au même endroit, c'est le **premier** passage qui compte (ordre de marche)."""
+
+    def __init__(self, line: LineString):
+        xy = np.asarray(line.coords)
+        self.line = line
+        self.segs = shapely.linestrings(np.stack([xy[:-1], xy[1:]], axis=1))
+        self.start = np.concatenate([[0.0], np.cumsum(shapely.length(self.segs))[:-1]])
+        self.tree = shapely.STRtree(self.segs)
+
+    def _at(self, i: int, geom: BaseGeometry) -> float:
+        seg = self.segs[i]
+        return float(self.start[i] + seg.project(nearest_points(seg, geom)[0]))
+
+    def first(self, geom: BaseGeometry, tolerance_m: float = 10.0) -> float:
+        """Position (m projetés) du premier passage à moins de `tolerance_m` du point le plus proche de `geom`."""
+        near = self.tree.query(geom, predicate="dwithin", distance=self.line.distance(geom) + tolerance_m)
+        i = int(near.min()) if len(near) else int(np.argmin(shapely.distance(self.segs, geom)))
+        return self._at(i, geom)
+
+    def crossings(self, geom: BaseGeometry) -> list[tuple[float, Point]]:
+        """Chaque franchissement de `geom` (rivière…) : position et point, un par passage, aller et retour compris."""
+        hits = np.sort(self.tree.query(geom, predicate="intersects"))
+        out = []
+        for run in np.split(hits, np.flatnonzero(np.diff(hits) > 1) + 1) if len(hits) else []:
+            i = int(run[0])
+            inter = self.segs[i].intersection(geom)
+            pt = inter if inter.geom_type == "Point" else inter.representative_point()
+            out.append((self._at(i, pt), pt))
+        return out
+
+
 class RouteFrame:
     """Le tracé projeté, prêt pour les croisements géométriques."""
 
@@ -69,9 +103,14 @@ class RouteFrame:
         self.pts = shapely.points(xy)
         self._proj_cum = np.concatenate([[0.0], np.cumsum(np.hypot(*np.diff(xy, axis=0).T))])
 
+    @cached_property
+    def locator(self) -> Locator:
+        return Locator(self.line)
+
     def km_of(self, geom: BaseGeometry) -> float:
-        """Position (m, distance géodésique) du point du tracé le plus proche de `geom`."""
-        return float(np.interp(self.line.project(nearest_points(self.line, geom)[0]), self._proj_cum, self.cum))
+        """Position (m, distance géodésique) du point du tracé le plus proche de `geom` ; premier passage si le
+        tracé y passe deux fois (aller-retour)."""
+        return float(np.interp(self.locator.first(geom), self._proj_cum, self.cum))
 
     def ranges_on(self, geom: BaseGeometry, within_m: float = 8.0) -> list[tuple[float, float]]:
         """Portions du tracé (m) dans une surface, ou à moins de `within_m` d'une ligne/d'un point."""
@@ -173,3 +212,18 @@ def chain_route_relation(rel: dict) -> tuple[list[tuple[float, float]], list[str
             f"{sub_relations} sous-itinéraire(s) de la relation non importé(s) : tracé possiblement incomplet."
         )
     return line, warnings
+
+
+def declared_values(tags: dict) -> dict[str, float]:
+    """Distance et D+ déclarés dans une relation OSM (comparés aux nôtres, règle N5).
+
+    Tout format douteux est ignoré plutôt que mal lu : unité autre que km/m, « 12.500 » (séparateur de milliers ou
+    décimale ?), D+ non entier.
+    """
+    out: dict[str, float] = {}
+    raw = tags.get("distance", "")
+    if not re.search(r"\d[.,]\d{3}(?!\d)", raw) and (m := re.fullmatch(r"\s*(\d+(?:[.,]\d+)?)\s*(km|m)?\s*", raw)):
+        out["distance_m"] = float(m[1].replace(",", ".")) * (1 if m[2] == "m" else 1000)
+    if m := re.fullmatch(r"\s*(\d+)\s*(m)?\s*", tags.get("ascent", "")):
+        out["d_plus_m"] = float(m[1])
+    return out

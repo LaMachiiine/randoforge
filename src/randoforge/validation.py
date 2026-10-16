@@ -440,12 +440,13 @@ def check_daylight(route: Route) -> list[Check]:
         ]
     start_dt = datetime.combine(req.date, req.start_time, tzinfo=tz)
     arrival = start_dt + walk
+    early = []
     if start_dt < sunrise - DAYLIGHT_MARGIN:
-        return [
+        early = [
             Check(id="D4", level="warning", message=f"Départ avant le lever du soleil ({sunrise:%H:%M}) : frontale")
         ]
     if arrival > sunset:
-        return [
+        return early + [
             Check(
                 id="D4",
                 level="error",
@@ -454,14 +455,14 @@ def check_daylight(route: Route) -> list[Check]:
             )
         ]
     if arrival > sunset - DAYLIGHT_MARGIN:
-        return [
+        return early + [
             Check(
                 id="D4",
                 level="warning",
                 message=f"Arrivée vers {arrival:%H:%M}, moins de 30 min avant le coucher du soleil ({sunset:%H:%M})",
             )
         ]
-    return [
+    return early + [
         Check(
             id="D4", level="info", message=f"Arrivée estimée vers {arrival:%H:%M}, coucher du soleil à {sunset:%H:%M}"
         )

@@ -92,12 +92,13 @@ def register(mcp: MCPServer, app: App) -> None:
         if abrite_seulement and not spots:
             rappels.append("Aucun abri cartographié le long du tracé : prévoir une tente.")
         best = sorted(sorted(spots, key=lambda b: -b.score)[:limit], key=lambda b: b.km)
-        # Les avertissements répétés sur la plupart des emplacements ne sont donnés qu'une fois (économie de jetons).
+        # Les avertissements portés par tous les emplacements affichés ne sont donnés qu'une fois (économie de
+        # jetons) ; un avertissement propre à certains (ex. bivouac interdit) reste sur chacun d'eux.
         counts: dict[str, int] = {}
         for b in best:
             for w in b.avertissements:
                 counts[w] = counts.get(w, 0) + 1
-        common = {w for w, n in counts.items() if n >= max(2, len(best) // 2)}
+        common = {w for w, n in counts.items() if len(best) >= 2 and n == len(best)}
         rappels += sorted(common)
         shown = [
             b.model_copy(update={"avertissements": [w for w in b.avertissements if w not in common]}) for b in best

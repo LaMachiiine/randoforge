@@ -94,12 +94,15 @@ def register(mcp: MCPServer, app: App) -> None:
         Les paramètres de lissage par défaut conviennent à la plupart des cas.
         """
         route = app.load(route_id)
-        params = ElevationParams(step_m=step_m, smooth_window_m=smooth_window_m, threshold_m=threshold_m)
-        profile = (
-            WALKERS[walker]
-            if walker
-            else WalkerProfile(flat_kmh=flat_kmh, up_m_per_h=up_m_per_h, down_m_per_h=down_m_per_h)
-        )
+        try:
+            params = ElevationParams(step_m=step_m, smooth_window_m=smooth_window_m, threshold_m=threshold_m)
+            profile = (
+                WALKERS[walker]
+                if walker
+                else WalkerProfile(flat_kmh=flat_kmh, up_m_per_h=up_m_per_h, down_m_per_h=down_m_per_h)
+            )
+        except ValueError as exc:  # ValidationError : valeur hors des bornes du modèle
+            raise ToolError(f"Paramètre hors bornes : {exc}") from exc
         app.stats_into(route, params, profile)
         app.save(route)
         return RouteSummary.of(route)

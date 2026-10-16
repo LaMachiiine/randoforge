@@ -7,6 +7,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import httpx
 import numpy as np
 
 from ..http import CachedHttp, HttpError
@@ -45,8 +46,22 @@ class IgnElevation:
         return out
 
 
-# Messages GDAL d'une tuile absente (mer) : S3 répond 404, ou 403 sur une clé inexistante.
-MISSING_TILE = ("404", "403", "does not exist", "No such file")
+# Tuile absente (mer) : S3 répond 404, ou 403 sur une clé inexistante. Vérifié par une requête HTTP plutôt que
+# d'après le message de GDAL, qui garde en mémoire un échec réseau et le présente ensuite comme « does not exist ».
+MISSING_STATUS = {403, 404}
+
+
+def tile_missing(url: str) -> bool:
+    """Vrai si le serveur confirme que la tuile n'existe pas ; une panne réseau lève HttpError."""
+    try:
+        r = httpx.head(url, timeout=15, follow_redirects=True)
+    except httpx.HTTPError as exc:
+        raise HttpError(f"Copernicus injoignable ({type(exc).__name__})") from exc
+    if r.status_code in MISSING_STATUS:
+        return True
+    if r.status_code >= 400:
+        raise HttpError(f"Copernicus : erreur {r.status_code}")
+    return False
 
 
 class CopernicusElevation:
@@ -76,16 +91,21 @@ class CopernicusElevation:
         for i, (lat, lon) in enumerate(points):
             by_tile[self.tile_name(lat, lon)].append(i)
 
-        env = Env(GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR", CPL_VSIL_CURL_ALLOWED_EXTENSIONS=".tif")
+        # Pas de cache GDAL pour ces tuiles : un échec réseau ne doit pas survivre au retour du réseau.
+        env = Env(
+            GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR",
+            CPL_VSIL_CURL_ALLOWED_EXTENSIONS=".tif",
+            CPL_VSIL_CURL_NON_CACHED=f"/vsicurl/{self.BASE}",
+        )
         with env:
             for tile, idx in by_tile.items():
                 url = f"/vsicurl/{self.BASE}/{tile}/{tile}.tif"
                 try:
                     ds = rasterio.open(url)
-                except RasterioIOError as exc:
-                    if not any(k in str(exc) for k in MISSING_TILE):
-                        raise  # réseau ou serveur : ne pas confondre avec « pas de tuile »
-                    continue  # pas de tuile (mer) : on laisse None
+                except RasterioIOError:
+                    if tile_missing(f"{self.BASE}/{tile}/{tile}.tif"):
+                        continue  # pas de tuile (mer) : on laisse None
+                    raise  # la tuile existe : panne de lecture, à ne pas confondre avec « pas de tuile »
                 with ds:
                     z = sample_bilinear(ds, [points[i] for i in idx])
                 for i, v in zip(idx, z, strict=True):

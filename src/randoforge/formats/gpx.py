@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 import gpxpy
 import gpxpy.gpx
 import numpy as np
@@ -22,6 +24,9 @@ POI_LABELS = {
 }
 
 ATTRIBUTION = "Généré par RandoForge. Données © contributeurs OpenStreetMap (ODbL)."
+
+
+CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
 
 
 def read_gpx(text: str) -> tuple[str | None, list[TrackPoint]]:
@@ -96,4 +101,5 @@ def write_gpx(route: Route, day: int | None = None) -> str:
                     p.lat, p.lon, elevation=p.ele, name=label, type=p.categorie, comment=f"km {p.km:.1f}"
                 )
             )
-    return gpx.to_xml()
+    # Caractères de contrôle interdits en XML 1.0 (noms OSM ou GPX importés) : retirés pour garder un GPX valide.
+    return CONTROL_CHARS.sub("", gpx.to_xml())

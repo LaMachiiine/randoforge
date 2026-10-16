@@ -17,6 +17,7 @@ from shapely.ops import nearest_points
 
 from .geo import LocalProjection, cumulative_distance, lon_bounds
 from .models import Poi, TrackPoint
+from .osmgeom import Locator
 
 ON_ROUTE_M = 50.0
 FORD_MATCH_M = 25.0
@@ -254,6 +255,7 @@ def annotate(
     xs, ys = proj.to_xy(lats, lons)
     route = LineString(zip(xs, ys, strict=True))
     to_km = total_m / route.length / 1000 if route.length else 0
+    locator = Locator(route)
 
     def latlon(p: Point) -> tuple[float, float]:
         la, lo = proj.to_latlon(p.x, p.y)
@@ -273,14 +275,14 @@ def annotate(
         if cat == "riviere":
             if tags.get("tunnel") in {"culvert", "yes"}:
                 continue  # buse sous le chemin : pas un vrai franchissement
-            for pt in _points_of(route.intersection(geom)):
+            for pos, pt in locator.crossings(geom):  # un franchissement par passage (aller-retour : deux)
                 is_ford = any(f.distance(pt) <= FORD_MATCH_M for f in fords)
                 pois.append(
                     _poi(
                         el,
                         cat,
                         typ,
-                        route.project(pt) * to_km,
+                        pos * to_km,
                         latlon(pt),
                         0.0,
                         max_detour_m,
@@ -291,8 +293,8 @@ def annotate(
         dist = route.distance(geom)
         if dist > max_detour_m:
             continue
-        on_route, on_el = nearest_points(route, geom)
-        pois.append(_poi(el, cat, typ, route.project(on_route) * to_km, latlon(on_el), dist, max_detour_m))
+        _, on_el = nearest_points(route, geom)
+        pois.append(_poi(el, cat, typ, locator.first(geom) * to_km, latlon(on_el), dist, max_detour_m))
 
     return dedupe(sorted(pois, key=lambda p: p.km))
 
