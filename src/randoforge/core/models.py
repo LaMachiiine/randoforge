@@ -220,6 +220,9 @@ class SnowReport(Compact):
     limite_source: str | None = None
     part_enneigee_pct: float | None = Field(None, description="Part du tracé probablement enneigée")
     troncons_enneiges: list[str] = Field(default_factory=list, description="Tronçons enneigés (km) et facteur")
+    troncons_km: list[tuple[float, float]] = Field(
+        default_factory=list, description="Tronçons enneigés (début, fin km)"
+    )
     vu_par_satellite_pct: float | None = Field(None, description="Part du tracé observée sans nuage")
     sentinel2: str | None = Field(None, description="Image Sentinel-2 (20 m) utilisée, si récente")
     epaisseur_modele_cm: tuple[int, int] | None = Field(None, description="Épaisseur modélisée (min, max), estimation")
@@ -237,6 +240,9 @@ class AvalancheReport(Compact):
     message: str
     troncons: list[str] = Field(default_factory=list, description="Tronçons exposés (km), pente et hauteur")
     part_exposee_pct: float = Field(description="Part du tracé sur ou sous une pente de départ possible")
+    part_exposee_enneigee_pct: float | None = Field(
+        None, description="Part du tracé exposée là où la neige est probable (si snow_conditions a été lancé)"
+    )
     pente_max_traversee_deg: float | None = None
     source: str
     avertissements: list[str] = Field(default_factory=list)

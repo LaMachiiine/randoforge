@@ -46,6 +46,18 @@ class Section:
     above_m: float  # sa hauteur au-dessus du sentier
 
 
+SNOW_MARGIN_KM = 0.2  # tolérance de chevauchement avec un tronçon enneigé (échantillonnage des deux calculs)
+
+
+def snowy(sec: Section, snow_km: list[tuple[float, float]], line_m: float | None, trail_top_m: float | None) -> bool:
+    """Vrai si la neige est probable sur ce tronçon exposé : il chevauche un tronçon enneigé du tracé, ou le haut de
+    la pente de départ au-dessus de lui dépasse la limite de la neige (la neige peut partir d'au-dessus du sentier)."""
+    a, b = sec.start_m / 1000, sec.end_m / 1000
+    if any(lo - SNOW_MARGIN_KM <= b and a <= hi + SNOW_MARGIN_KM for lo, hi in snow_km):
+        return True
+    return line_m is not None and trail_top_m is not None and trail_top_m + sec.above_m >= line_m
+
+
 def slope_deg(g: Grid) -> np.ndarray:
     """Pente (degrés) de chaque maille, mailles en mètres selon la latitude."""
     lat = g.top - (np.arange(g.z.shape[0]) + 0.5) * g.dlat

@@ -60,3 +60,13 @@ async def test_avalanche_tool_on_gentle_terrain(server):
         rid = (await call(client, "route_between", {"waypoints": [LANS, MOUCHEROTTE]}))["route_id"]
         rep = await call(client, "avalanche_terrain", {"route_id": rid})
         assert rep["part_exposee_pct"] == 0 and "Aucune pente" in rep["message"]
+
+
+def test_exposed_section_counts_with_snow_when_overlapping_or_slope_above_the_snow_line():
+    from randoforge.core.avalanche import Section, snowy
+
+    sec = Section(start_m=2000, end_m=2500, cross_deg=0, above_deg=35, above_m=300)
+    assert snowy(sec, [(2.6, 3.0)], None, None)  # chevauche (tolérance 200 m)
+    assert not snowy(sec, [(4.0, 5.0)], None, None)
+    assert snowy(sec, [], 1800, 1550)  # sentier à 1550 m, pente jusqu'à 1850 m : au-dessus de la limite
+    assert not snowy(sec, [], 2000, 1550)

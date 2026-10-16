@@ -20,6 +20,11 @@ l'IGN fausserait les hauteurs en forêt).
    sentier, vues depuis le sentier sous un angle d'au moins **22°** ; au moins 4 mailles (~0,3 ha) pour écarter
    un simple talus.
 3. Tronçons : points exposés consécutifs, fusionnés s'ils sont à moins de 100 m ; tronçons de moins de 100 m ignorés.
+4. Avec l'état de la neige (`snow_conditions` lancé avant, ou `prepare_dossier`) : chaque tronçon est marqué « neige
+   probable » s'il chevauche un tronçon enneigé (tolérance 200 m, l'échantillonnage des deux calculs diffère) ou si
+   le haut de la pente de départ au-dessus de lui dépasse la limite de la neige (la neige peut partir d'au-dessus
+   d'un sentier déneigé). `part_exposee_enneigee_pct` donne la part du tracé concernée. Sans ce marquage, une
+   boucle enneigée sur 0,2 km annonçait « 70 % exposé » sans distinguer les tronçons secs.
 
 ## Seuils
 

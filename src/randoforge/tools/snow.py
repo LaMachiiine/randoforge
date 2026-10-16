@@ -157,6 +157,7 @@ def compute_snow(
         limite_neige_m=None if line is None else int(line), limite_source=limite_source,
         part_enneigee_pct=snow_pct,
         troncons_enneiges=[f"km {a:.1f}–{b:.1f} (×{f:g})" for a, b, f in sections],
+        troncons_km=[(round(a, 2), round(b, 2)) for a, b, _ in sections],
         vu_par_satellite_pct=seen_pct if grid is not None or s2_label else None, sentinel2=s2_label,
         epaisseur_modele_cm=(round(min(depths) * 100), round(max(depths) * 100)) if depths else None,
         neige_fraiche_72h_cm=max(falls) if falls else None, en_raquettes=en_raquettes,
@@ -167,8 +168,9 @@ def compute_snow(
     return report
 
 
-def compute_avalanche(app: App, route: Route) -> AvalancheReport:
-    """Calcul de l'outil `avalanche_terrain` sur un itinéraire chargé (ne l'enregistre pas)."""
+def compute_avalanche(app: App, route: Route, snow: SnowReport | None = None) -> AvalancheReport:
+    """Calcul de l'outil `avalanche_terrain` sur un itinéraire chargé (ne l'enregistre pas). Avec un état de la
+    neige, distingue les tronçons exposés là où la neige est probable."""
     if not app.services.dem_grid:
         raise ToolError("Modèle de terrain en grille non configuré.")
     lats = np.array([p.lat for p in route.points])
@@ -190,22 +192,39 @@ def compute_avalanche(app: App, route: Route) -> AvalancheReport:
     found = aval_lib.sections(cum[at], under, reach, height)
     exposed = sum(s.end_m - s.start_m for s in found)
     pct = round(100 * exposed / cum[-1], 1) if cum[-1] else 0.0
+    with_snow = snow is not None and snow.applicable
+    eles = np.array([np.nan if p.ele is None else p.ele for p in route.points])
     lines = []
+    snowy_m = 0.0
     for sec in found:
+        in_snow = None
+        if with_snow:
+            span = eles[np.searchsorted(cum, sec.start_m) : np.searchsorted(cum, sec.end_m) + 1]
+            top = float(np.nanmax(span)) if span.size and not np.isnan(span).all() else None
+            in_snow = aval_lib.snowy(sec, snow.troncons_km, snow.limite_neige_m, top)
+            snowy_m += (sec.end_m - sec.start_m) if in_snow else 0
         parts = []
         if sec.cross_deg:
             parts.append(f"traverse une pente jusqu'à {sec.cross_deg:.0f}°")
         if sec.above_deg:
             parts.append(f"sous une pente de {sec.above_deg:.0f}° (jusqu'à ~{sec.above_m:.0f} m au-dessus)")
-        lines.append(f"km {sec.start_m / 1000:.1f}–{sec.end_m / 1000:.1f} : {', '.join(parts)}")
+        tag = " — neige probable" if in_snow else " — sans neige probable" if in_snow is False else ""
+        lines.append(f"km {sec.start_m / 1000:.1f}–{sec.end_m / 1000:.1f} : {', '.join(parts)}{tag}")
     cross = [sec.cross_deg for sec in found if sec.cross_deg]
     message = (f"{pct:g} % du tracé sur ou sous une pente de départ d'avalanche possible ({len(found)} tronçon(s))."
                if found else "Aucune pente de départ d'avalanche possible sur ou au-dessus du tracé (relief à 30 m).")  # fmt: skip
+    snowy_pct = round(100 * snowy_m / cum[-1], 1) if with_snow and cum[-1] else None
+    if found and with_snow:
+        message += (
+            f" Là où la neige est probable : {snowy_pct:g} % du tracé."
+            if snowy_m
+            else " Aucun de ces tronçons là où la neige est probable."
+        )
     warnings = ["Terrain seulement : avec de la neige, consulter le bulletin d'estimation du risque d'avalanche."]
     if found:
         warnings.append("Relief à 30 m : une pente courte (barre, talus raide) peut échapper au calcul.")
     report = AvalancheReport(
-        message=message, troncons=lines, part_exposee_pct=pct,
+        message=message, troncons=lines, part_exposee_pct=pct, part_exposee_enneigee_pct=snowy_pct,
         pente_max_traversee_deg=round(max(cross)) if cross else None,
         source=f"{grid.source} (pentes calculées à ~30 m)", avertissements=warnings,
     )  # fmt: skip
@@ -238,9 +257,10 @@ def register(mcp: MCPServer, app: App) -> None:
         """Terrain avalancheux le long du tracé, calculé sur le relief (Copernicus 30 m) : tronçons qui **traversent**
         une pente de 30° ou plus, et tronçons **sous** une pente de départ possible (30–55°) assez haute pour atteindre
         le sentier (angle de portée ≥ 22°, rayon 500 m). Pertinent seulement avec de la neige (snow_conditions) ;
-        ce n'est pas un niveau de risque : le danger dépend de la neige et du bulletin d'avalanche."""
+        ce n'est pas un niveau de risque : le danger dépend de la neige et du bulletin d'avalanche.
+        Lancé après snow_conditions, chaque tronçon indique si la neige y est probable."""
         route = app.load(route_id)
-        report = compute_avalanche(app, route)
+        report = compute_avalanche(app, route, route.snow)
         route.avalanche = report
         app.save(route)
         return report
