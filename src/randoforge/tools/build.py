@@ -33,6 +33,21 @@ MAX_IMPORT_KM = 300  # au-delà : ~30 000 altitudes à demander et un stockage l
 PARALLEL_ROUTES = 4  # serveur sans limite connue (ex. BRouter local)
 
 
+def declared_values(tags: dict) -> dict[str, float]:
+    """Distance et D+ déclarés dans une relation OSM (comparés aux nôtres, règle N5).
+
+    Tout format douteux est ignoré plutôt que mal lu : unité autre que km/m, « 12.500 » (séparateur de milliers ou
+    décimale ?), D+ non entier.
+    """
+    out: dict[str, float] = {}
+    raw = tags.get("distance", "")
+    if not re.search(r"\d[.,]\d{3}(?!\d)", raw) and (m := re.fullmatch(r"\s*(\d+(?:[.,]\d+)?)\s*(km|m)?\s*", raw)):
+        out["distance_m"] = float(m[1].replace(",", ".")) * (1 if m[2] == "m" else 1000)
+    if m := re.fullmatch(r"\s*(\d+)\s*(m)?\s*", tags.get("ascent", "")):
+        out["d_plus_m"] = float(m[1])
+    return out
+
+
 def parallel_routes(app: App) -> int:
     host = urlsplit(getattr(app.services.router, "base_url", "")).hostname or ""
     return HOST_LIMITS.get(host, (PARALLEL_ROUTES, 0.0))[0]
@@ -264,12 +279,7 @@ def register(mcp: MCPServer, app: App) -> None:
         except ValueError as exc:
             raise ToolError(str(exc)) from exc
         tags = rel.get("tags", {})
-        # Valeurs déclarées dans OSM, comparées aux nôtres (N5) ; tout format douteux est ignoré plutôt que mal lu.
-        engine: dict[str, float] = {}
-        if dist := re.fullmatch(r"\s*(\d+(?:[.,]\d+)?)\s*(km|m)?\s*", tags.get("distance", "")):
-            engine["distance_m"] = float(dist[1].replace(",", ".")) * (1 if dist[2] == "m" else 1000)
-        if asc := re.fullmatch(r"\s*(\d+)\s*(m)?\s*", tags.get("ascent", "")):
-            engine["d_plus_m"] = float(asc[1])
+        engine = declared_values(tags)
         route = Route(
             route_id=new_route_id(),
             name=name or tags.get("name") or tags.get("ref") or f"Sentier OSM {m[1]}",

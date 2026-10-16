@@ -392,3 +392,13 @@ async def test_export_survives_a_locked_legacy_folder(server, tmp_path, monkeypa
         monkeypatch.setattr(Path, "rename", locked)
         res = await call(client, "export_route", {"route_id": rid, "formats": ["md"], "vault_dir": str(vault)})
     assert Path(res["files"]["vault_md"]).exists() and legacy.exists()
+
+
+def test_declared_osm_values_are_read_strictly():
+    from randoforge.tools.build import declared_values
+
+    assert declared_values({"distance": "8,4 km", "ascent": "650 m"}) == {"distance_m": 8400.0, "d_plus_m": 650.0}
+    assert declared_values({"distance": "12500 m", "ascent": "650m"}) == {"distance_m": 12500.0, "d_plus_m": 650.0}
+    assert declared_values({"distance": "8"}) == {"distance_m": 8000.0}
+    for doubtful in ("12.500 m", "1,200", "8 mi", "env. 8", "650 ft"):
+        assert declared_values({"distance": doubtful, "ascent": doubtful}) == {}
