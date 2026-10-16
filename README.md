@@ -14,6 +14,8 @@ Claude ne calcule rien lui-même : il appelle les outils RandoForge et explique 
 - **Vérifier** : distance, D+ / D- (IGN en France), durée, passages techniques, zones réglementées, eau, météo,
   heure du coucher du soleil, une trentaine de règles de cohérence.
 - **Neige** : enneigement observé par satellite, limite de la neige, durée ajustée et pentes avalancheuses.
+- **Accès et sécurité** : bus et trains au départ et au retour, état des sources et des cabanes (avis récents),
+  couverture mobile le long du tracé (France).
 - **Exporter** : GPX (complet et par jour), fiche Obsidian, carte HTML, roadbook imprimable.
 
 Exemples : *« prépare-moi le Chemin des fileuses au départ de L'Estréchure »*, *« une boucle de 12 km depuis Autrans
@@ -88,6 +90,8 @@ si vous republiez un tracé, gardez-les.
 | [Open-Meteo](https://open-meteo.com) | météo, neige modélisée | CC BY 4.0 |
 | [NASA GIBS](https://nasa-gibs.github.io/gibs-api-docs/) (MODIS, VIIRS) | neige observée | données ouvertes NASA, remerciement demandé |
 | Sentinel-2 (Copernicus, via [Earth Search](https://earth-search.aws.element84.com/v1)) | neige observée à 20 m | données Copernicus libres, citation de la source |
+| [Transitous](https://transitous.org) | horaires de transport | données des réseaux (ODbL) ; usage open source non commercial, attribution |
+| Arcep « Mon réseau mobile » | couverture mobile (France) | Licence Ouverte |
 | Catalogues [Geotrek](https://geotrek.fr) | randos officielles | celle de chaque organisme éditeur |
 | [BRouter](https://brouter.de) | calcul des tracés | service public, à ménager (cache intégré) |
 

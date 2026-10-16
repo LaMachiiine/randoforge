@@ -4,7 +4,7 @@ maj: 2026-10-15
 ---
 # Serveur MCP — Catalogue d'outils
 
-> 30 outils, regroupés par module dans `src/randoforge/tools/`. Chaque outil renvoie un résumé compact
+> 33 outils, regroupés par module dans `src/randoforge/tools/`. Chaque outil renvoie un résumé compact
 > (jamais la géométrie complète) ; un `route_id` désigne l'itinéraire stocké côté serveur.
 
 ## Règles de design
@@ -44,6 +44,9 @@ maj: 2026-10-15
 | `data_quality` | Score de confiance, % sur chemin cartographié, fraîcheur OSM, part balisée |
 | `snow_conditions` | Enneigement : neige observée par satellite (MODIS/VIIRS 500 m, Sentinel-2 20 m), limite de la neige, épaisseur modélisée, durée ajustée → [[Neige]] |
 | `avalanche_terrain` | Tronçons sur ou sous une pente de départ d'avalanche possible (relief 30 m, angle de portée) → [[Terrain avalancheux]] |
+| `public_transport` | Arrêts et horaires du jour au départ et à l'arrivée, premier passage après l'arrivée estimée (Transitous) → [[Accès, eau et réseau]] |
+| `water_and_huts` | Points d'eau, cabanes, refuges : état (tari, fermée…), équipement, derniers avis datés (refuges.info) |
+| `mobile_coverage` | Couverture mobile théorique le long du tracé, tronçons sans réseau, par opérateur (Arcep, France) |
 | `weather_forecast` | Prévisions Open-Meteo au départ / point culminant / arrivée sur la plage de marche |
 | `compare_routes` | Tableau comparatif (dont goudron, balisage, déjà fait) |
 | `compare_with_reference` | Écart à une trace de référence |

@@ -30,6 +30,7 @@ HOST_LIMITS: dict[str, tuple[int, float]] = {
     "data.geopf.fr": (3, 0.25),
     "brouter.de": (2, 0.2),
     "gibs.earthdata.nasa.gov": (4, 0.05),
+    "monreseaumobile.arcep.fr": (2, 0.1),
 }
 # Blocage temporaire signalé avec un code « définitif » par certains serveurs publics (BRouter : 403).
 RETRYABLE_BY_HOST = {"brouter.de": {403}}
@@ -51,6 +52,19 @@ class HttpError(Exception):
     """Échec d'un appel externe, avec un message compréhensible par Claude."""
 
 
+def _ssl_context():
+    """Autorités habituelles (certifi) + certificats intermédiaires que certains serveurs publics oublient
+    d'envoyer (ex. GlobalSign RSA OV SSL CA 2018 pour la carte « Mon réseau mobile » de l'Arcep)."""
+    import ssl
+
+    import certifi
+
+    ctx = ssl.create_default_context(cafile=certifi.where())
+    for pem in sorted((Path(__file__).parent / "certs").glob("*.pem")):
+        ctx.load_verify_locations(cafile=str(pem))
+    return ctx
+
+
 class CachedHttp:
     def __init__(
         self,
@@ -62,6 +76,7 @@ class CachedHttp:
     ):
         self.client = httpx.Client(
             headers={"User-Agent": USER_AGENT},
+            verify=_ssl_context(),
             timeout=httpx.Timeout(90, connect=8),
             transport=transport,
             follow_redirects=True,

@@ -93,6 +93,47 @@ class FakeDemGrid:
         return DemGrid(z=z.astype("float32"), top=n, left=w, dlat=d, dlon=d, source="Relief de test")
 
 
+def stop_time(
+    hhmm, line="T64", headsign="Grenoble", agency="Cars Région", stop="Mairie", terminus=None, day="2026-10-19"
+):
+    """Passage au format Transitous (heure UTC = heure locale − 2 h en octobre)."""
+    h, m = map(int, hhmm.split(":"))
+    iso = f"{day}T{h - 2:02d}:{m:02d}:00Z"
+    place = {
+        "name": f"Lans-en-Vercors, {stop}",
+        "stopId": f"id-{stop}",
+        "lat": 45.1279,
+        "lon": 5.5885,
+        "departure": iso,
+        "pickupType": "NORMAL",
+    }
+    return {
+        "place": place,
+        "routeShortName": line,
+        "headsign": headsign,
+        "agencyName": agency,
+        "tripTo": {"stopId": f"id-{terminus or 'loin'}", "name": headsign},
+    }
+
+
+class FakeTransit:
+    def stop_times(self, lat, lon, start_utc, radius_m=800, n=200):
+        day = start_utc.date().isoformat()
+        return [stop_time(t, day=day) for t in ("07:10", "07:11", "17:00", "18:04")] + [
+            stop_time("12:00", agency="M - Covoit Lignes +", day=day),  # covoiturage : écarté
+            stop_time("13:00", stop="Terminus", terminus="Terminus", day=day),  # arrivée au terminus : écartée
+        ]
+
+
+class FakeCoverage:
+    """Carte Arcep : voix chez SFR sur la moitié ouest de chaque tuile, 4G nulle part."""
+
+    def tile(self, x, y, z=12):
+        from shapely.geometry import box
+
+        return [(box(0, 0, 2048, 4096), {"operateur": 20810, "techno": "2G3G", "niveau": "BC", "date": "2026-06-30"})]
+
+
 class FakeNominatim:
     # Lieux connus de la doublure ; tout le reste est placé à Lans-en-Vercors, sauf « Lyon » (loin du Vercors).
     KNOWN = {"Moucherotte": (45.1503, 5.6303), "Lyon": (45.7640, 4.8357)}
@@ -150,13 +191,20 @@ class FakeOverpass:
 class FakeRefuges:
     def points(self, s, w, n, e):
         geom = route_geometry()
-        q = geom[len(geom) // 4]
+        q, h = geom[len(geom) // 4], geom[len(geom) // 2]
         return [
             {"id": 1, "nom": "Refuge de test", "type": "refuge gardé", "lat": q["lat"], "lon": q["lon"], "alt": 1200,
              "places": 20, "lien": "https://www.refuges.info/point/1"},
             {"id": 2, "nom": "Source", "type": "point d'eau", "lat": q["lat"], "lon": q["lon"], "alt": 1200,
-             "places": None, "lien": None},
+             "places": None, "lien": None, "etat": "Débit intermittent"},
+            {"id": 3, "nom": "Source tarie", "type": "point d'eau", "lat": h["lat"], "lon": h["lon"], "alt": 1300,
+             "places": None, "lien": None, "etat": "Tari définitivement"},
+            {"id": 4, "nom": "Cabane fermée", "type": "cabane non gardée", "lat": h["lat"], "lon": h["lon"],
+             "alt": 1300, "places": 6, "lien": None, "etat": "Fermée", "info": {"poele": "Oui", "couvertures": "Non"}},
         ]  # fmt: skip
+
+    def comments(self, ids, per_point=3):
+        return {2: [{"date": "2026-08-12", "texte": "La source coule à flot.", "auteur": "Randonneur"}]}
 
 
 class FakeWeather:
@@ -212,7 +260,8 @@ def services():
     return Services(router=FakeRouter(), elevation=FakeElevation(), nominatim=FakeNominatim(), overpass=FakeOverpass(),
                     refuges=FakeRefuges(), weather=FakeWeather(), wikidata=FakeWikidata(), geotrek=FakeGeotrek(),
                     snow_sat=FakeSnowSat(), snow_s2=FakeSnowS2(), snow_model=FakeSnowModel(),
-                    dem_grid=FakeDemGrid())  # fmt: skip
+                    dem_grid=FakeDemGrid(), transit=FakeTransit(),
+                    coverage=FakeCoverage())  # fmt: skip
 
 
 @pytest.fixture

@@ -71,6 +71,14 @@ observé (satellites) et ce qui est modélisé (épaisseur). Ne pas donner de co
 Si de la neige est probable sur le tracé : `avalanche_terrain` (tronçons sur ou sous une pente de départ
 possible). Le présenter comme du terrain, pas comme un niveau de risque, et renvoyer au bulletin d'avalanche.
 
+## 5 ter. Accès, eau, réseau (selon la demande)
+- Sans voiture, en train ou en bus : `public_transport` (date et heure de départ) ; annoncer le premier passage
+  après l'arrivée estimée et citer Transitous.
+- Eau et abris (itinérance, été, bivouac) : `water_and_huts` ; signaler les sources taries ou intermittentes et les
+  cabanes fermées, citer les avis datés tels quels avec leur date, et refuges.info.
+- Sortie isolée, seul ou en hiver : `mobile_coverage` (France) ; annoncer les tronçons sans réseau, préciser que la
+  couverture est théorique.
+
 ## 6. Valider, sécuriser, livrer
 - `validate_route` ; corrige ou explique chaque `error`.
 - `bailout_route` pour un repli depuis le passage le plus exposé ou le point le plus éloigné.

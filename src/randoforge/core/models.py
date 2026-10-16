@@ -242,6 +242,67 @@ class AvalancheReport(Compact):
     avertissements: list[str] = Field(default_factory=list)
 
 
+class TransitLine(Compact):
+    ligne: str
+    direction: str
+    horaires: list[str] = Field(description="Heures de passage (heure locale)")
+
+
+class TransitSide(Compact):
+    arrets: list[str] = Field(default_factory=list, description="Arrêts desservis à proximité (distance)")
+    lignes: list[TransitLine] = Field(default_factory=list)
+    premier_retour: str | None = Field(None, description="Premier passage après l'arrivée estimée")
+
+
+class TransitReport(Compact):
+    """Transports en commun au départ et à l'arrivée, le jour de la sortie (horaires théoriques)."""
+
+    message: str
+    date: Date
+    depart: TransitSide | None = None
+    arrivee: TransitSide | None = Field(None, description="Absente pour une boucle (même arrêts qu'au départ)")
+    arrivee_estimee: str | None = Field(None, description="Heure d'arrivée estimée (pauses comprises)")
+    source: str
+
+
+class WaterHutPoint(Compact):
+    km: float
+    type: str
+    nom: str
+    distance_m: float = Field(description="Distance au tracé")
+    etat: str | None = Field(None, description="État signalé (tari, intermittent, fermée, détruite…)")
+    equipement: str | None = None
+    derniers_avis: list[str] = Field(default_factory=list, description="Commentaires datés des visiteurs")
+    lien: str | None = None
+
+
+class WaterHutsReport(Compact):
+    """Points d'eau, cabanes et refuges près du tracé, avec leur état et les derniers avis (refuges.info)."""
+
+    message: str
+    points: list[WaterHutPoint]
+    source: str = "© Les contributeurs de Refuges.info (CC BY-SA), commentaires de leurs auteurs"
+    avertissements: list[str] = Field(default_factory=list)
+
+
+class MobileCoverageReport(Compact):
+    """Couverture mobile théorique le long du tracé (France, Arcep)."""
+
+    message: str
+    reseau_pct: float | None = Field(
+        None, description="Part du tracé avec réseau (voix 2G/3G ou 4G), au moins un opérateur"
+    )
+    voix_pct: float | None = Field(None, description="Part du tracé où au moins un opérateur passe en voix 2G/3G")
+    voix_bonne_pct: float | None = Field(None, description="Idem, en bonne ou très bonne couverture")
+    donnees_4g_pct: float | None = None
+    zones_sans_reseau: list[str] = Field(default_factory=list, description="Tronçons sans voix ni 4G (km)")
+    par_operateur: dict[str, float] = Field(
+        default_factory=dict, description="Part couverte en voix 2G/3G par opérateur"
+    )
+    source: str
+    avertissements: list[str] = Field(default_factory=list)
+
+
 class Quality(BaseModel):
     score: float = Field(description="Confiance dans les données, de 0 à 1")
     niveau: str

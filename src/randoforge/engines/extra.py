@@ -35,6 +35,10 @@ class RefugesInfo:
             if lat is None or lon is None:
                 continue  # point sans coordonnées : ignoré
             places = (p.get("places") or {}).get("valeur")
+            info = {
+                k: v.get("valeur") for k, v in (p.get("info_comp") or {}).items()
+                if isinstance(v, dict) and v.get("valeur") not in (None, "", "*Inconnu*", 0)
+            }  # fmt: skip
             out.append(
                 {
                     "id": p.get("id"),
@@ -45,9 +49,35 @@ class RefugesInfo:
                     "alt": coord.get("alt"),
                     "places": places if isinstance(places, int) else None,
                     "lien": p.get("lien"),
+                    "etat": ((p.get("etat") or {}).get("valeur") or "").strip(),  # « Tari définitivement », « Fermée »…
+                    "info": info,  # eau, poêle, couvertures… (« Oui » / « Non »)
                 }
             )
         return out
+
+    def comments(self, ids: list[int], per_point: int = 3) -> dict[int, list[dict]]:
+        return refuges_comments(self.http, ids, per_point)
+
+
+def refuges_comments(http: CachedHttp, ids: list[int], per_point: int = 3) -> dict[int, list[dict]]:
+    """Derniers commentaires datés des visiteurs (refuges.info), du plus récent au plus ancien, en un appel."""
+    if not ids:
+        return {}
+    res = http.request_json("GET", "https://www.refuges.info/api/commentaires",
+                            params={"id_point": ",".join(map(str, ids)), "format_texte": "texte"},
+                            ttl_s=6 * 3600, service="refuges.info (commentaires)")  # fmt: skip
+    out: dict[int, list[dict]] = {}
+    items = res.values() if isinstance(res, dict) else res
+    for c in items:
+        if not isinstance(c, dict) or "id_point" not in c:
+            continue  # clé « copyright »
+        lst = out.setdefault(int(c["id_point"]), [])
+        lst.append({"date": (c.get("date_commentaire") or "")[:10], "texte": c.get("texte_commentaire") or "",
+                    "auteur": c.get("auteur_commentaire") or ""})  # fmt: skip
+    for lst in out.values():
+        lst.sort(key=lambda c: c["date"], reverse=True)
+        del lst[per_point:]
+    return out
 
 
 class OpenMeteo:

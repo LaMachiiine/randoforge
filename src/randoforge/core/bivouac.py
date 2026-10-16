@@ -143,7 +143,7 @@ def find_spots(
     scale = frame.cum[-1] / engine_distance_m if engine_distance_m else 1.0
     waters = [(p.lat, p.lon) for p in pois if p.categorie in WATER_CATEGORIES]
     waters += [(p.lat, p.lon) for p in pois if p.categorie == "riviere" and not p.intermittent]
-    waters += [(r["lat"], r["lon"]) for r in refuges if r["type"] == "point d'eau"]
+    waters += [(r["lat"], r["lon"]) for r in refuges if r["type"] == "point d'eau" and not unusable(r)]
     hazards = _hazard_ranges(technical)
     eles = [p.ele for p in points]
 
@@ -205,12 +205,17 @@ def find_spots(
         label = REFUGES_TYPES.get(r["type"]) or ("emplacement de bivouac" if "bivouac" in r["type"] else None)
         if not label:
             continue
+        if unusable(r):
+            continue  # détruit, inutilisable ou tari : jamais proposé
         m, d = place(r["lat"], r["lon"])
         if d > MAX_DETOUR_M:
             continue
         warnings, forbidden = _legal_warnings(areas, m / 1000)
         if label.startswith("abri naturel"):
             warnings += CAVE_WARNINGS
+        closed = is_closed(r)
+        if closed:
+            warnings.append(f"Signalé « {r['etat']} » sur refuges.info : vérifier avant de compter dessus")
         spots.append(
             BivouacSpot(
                 km=round(m / 1000, 2),
@@ -225,7 +230,7 @@ def find_spots(
                 places=r.get("places"),
                 lien=r.get("lien"),
                 eau_m=_water_distance(r["lat"], r["lon"], waters),
-                score=0.85 if not forbidden else 0.3,
+                score=0.3 if forbidden or closed else 0.85,
                 avertissements=warnings,
             )
         )
@@ -273,6 +278,18 @@ def find_spots(
             best_by_km[key] = spot
     spots.extend(best_by_km.values())
     return sorted(spots, key=lambda s: s.km)
+
+
+UNUSABLE_STATES = ("détruit", "inutilisable", "tari")  # refuges.info : jamais proposés ni comptés comme eau
+CLOSED_STATES = ("fermé", "clés à récupérer", "contact préalable")
+
+
+def unusable(point: dict) -> bool:
+    return any(w in (point.get("etat") or "").lower() for w in UNUSABLE_STATES)
+
+
+def is_closed(point: dict) -> bool:
+    return any(w in (point.get("etat") or "").lower() for w in CLOSED_STATES)
 
 
 def night_window(total_km: float) -> tuple[float, float]:

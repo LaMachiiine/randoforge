@@ -7,11 +7,13 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .engines.brouter import BRouterEngine
+from .engines.coverage import ArcepCoverage
 from .engines.elevation import CopernicusElevation, ElevationChain, IgnElevation, LocalDemElevation
 from .engines.extra import OpenMeteo, OpenMeteoSnow, RefugesInfo, Wikidata
 from .engines.geotrek import GeotrekReference
 from .engines.osm import Nominatim, Overpass
 from .engines.snow import GibsSnow, Sentinel2Snow
+from .engines.transit import Transitous
 from .http import CachedHttp
 
 
@@ -29,6 +31,8 @@ class Services:
     snow_s2: object | None = None  # Sentinel-2
     snow_model: object | None = None  # Open-Meteo (épaisseur, neige fraîche)
     dem_grid: object | None = None  # modèle de terrain en grille (pentes)
+    transit: object | None = None  # horaires de transport en commun
+    coverage: object | None = None  # couverture mobile (France)
 
     @classmethod
     def from_env(cls, home: Path) -> Services:
@@ -53,4 +57,6 @@ class Services:
             snow_s2=Sentinel2Snow(http),
             snow_model=OpenMeteoSnow(http),
             dem_grid=CopernicusElevation(),
+            transit=Transitous(http),
+            coverage=ArcepCoverage(http),
         )

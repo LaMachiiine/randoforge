@@ -62,7 +62,7 @@ async def test_day_loop_from_autrans(home):
     """Boucle à la journée générée automatiquement, analysée, validée et exportée."""
     async with server(home) as c:
         tools = {t.name for t in (await c.list_tools()).tools}
-        assert len(tools) == 30
+        assert len(tools) == 33
 
         place = (await call(c, "geocode", {"query": "Autrans", "country": "fr", "limit": 1}))["places"][0]
         assert 45.1 < place["lat"] < 45.25
@@ -172,3 +172,18 @@ async def test_snow_on_pierre_sur_haute(home):
         now = await call(c, "snow_conditions", {"route_id": route["route_id"], "date": date.today().isoformat(),
                                                 "force": True})  # fmt: skip
         assert now["applicable"] and now.get("vu_par_satellite_pct") is not None
+
+
+async def test_access_water_and_network_in_the_vercors(home):
+    """Transports, eau et couverture mobile réels sur une boucle au départ de Lans-en-Vercors."""
+    async with server(home) as c:
+        lans, moucherotte = {"lat": 45.1279, "lon": 5.5885}, {"lat": 45.1503, "lon": 5.6303}
+        route = await call(c, "route_between", {"waypoints": [lans, moucherotte], "loop": True})
+        monday = date.today() + timedelta(days=(7 - date.today().weekday()) % 7 or 7)
+        bus = await call(c, "public_transport", {"route_id": route["route_id"], "date": monday.isoformat(),
+                                                 "start_time": "08:30"})  # fmt: skip
+        assert bus["depart"]["lignes"] and "Transitous" in bus["source"]
+        water = await call(c, "water_and_huts", {"route_id": route["route_id"], "max_distance_m": 800})
+        assert any(p["type"] == "point d'eau" for p in water["points"])
+        net = await call(c, "mobile_coverage", {"route_id": route["route_id"]})
+        assert net["reseau_pct"] is not None and "Arcep" in net["source"]
