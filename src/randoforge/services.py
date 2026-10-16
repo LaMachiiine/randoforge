@@ -28,6 +28,7 @@ class Services:
     snow_sat: object | None = None  # satellites quotidiens (GIBS)
     snow_s2: object | None = None  # Sentinel-2
     snow_model: object | None = None  # Open-Meteo (épaisseur, neige fraîche)
+    dem_grid: object | None = None  # modèle de terrain en grille (pentes)
 
     @classmethod
     def from_env(cls, home: Path) -> Services:
@@ -51,4 +52,5 @@ class Services:
             snow_sat=GibsSnow(http),
             snow_s2=Sentinel2Snow(http),
             snow_model=OpenMeteoSnow(http),
+            dem_grid=CopernicusElevation(),
         )

@@ -13,7 +13,7 @@ Claude ne calcule rien lui-même : il appelle les outils RandoForge et explique 
 - **Créer une rando** : boucle par distance et D+, ou passage par des lieux choisis ; itinérance sur plusieurs jours.
 - **Vérifier** : distance, D+ / D- (IGN en France), durée, passages techniques, zones réglementées, eau, météo,
   heure du coucher du soleil, une trentaine de règles de cohérence.
-- **Neige** : enneigement observé par satellite, limite de la neige et durée ajustée en saison froide.
+- **Neige** : enneigement observé par satellite, limite de la neige, durée ajustée et pentes avalancheuses.
 - **Exporter** : GPX (complet et par jour), fiche Obsidian, carte HTML, roadbook imprimable.
 
 Exemples : *« prépare-moi le Chemin des fileuses au départ de L'Estréchure »*, *« une boucle de 12 km depuis Autrans

@@ -10,9 +10,10 @@ from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 
 from ..app import App
+from ..core import avalanche as aval_lib
 from ..core import snow as snow_lib
 from ..core.geo import cumulative_distance
-from ..core.models import SnowReport
+from ..core.models import AvalancheReport, SnowReport
 from ..core.timing import format_duration
 from ..engines.snow import SCL_CLOUDS, SCL_NODATA, SCL_SNOW
 
@@ -178,6 +179,57 @@ def register(mcp: MCPServer, app: App) -> None:
             sources=sources, avertissements=warnings,
         )  # fmt: skip
         route.snow = report
+        app.save(route)
+        return report
+
+    @mcp.tool()
+    def avalanche_terrain(route_id: str) -> AvalancheReport:
+        """Terrain avalancheux le long du tracé, calculé sur le relief (Copernicus 30 m) : tronçons qui **traversent**
+        une pente de 30° ou plus, et tronçons **sous** une pente de départ possible (30–55°) assez haute pour atteindre
+        le sentier (angle de portée ≥ 22°, rayon 500 m). Pertinent seulement avec de la neige (snow_conditions) ;
+        ce n'est pas un niveau de risque : le danger dépend de la neige et du bulletin d'avalanche."""
+        route = app.load(route_id)
+        if not app.services.dem_grid:
+            raise ToolError("Modèle de terrain en grille non configuré.")
+        lats = np.array([p.lat for p in route.points])
+        lons = np.array([p.lon for p in route.points])
+        cum = cumulative_distance(lats, lons)
+        margin = (aval_lib.REACH_RADIUS_M + 200) / 111_320
+        dlon = margin / max(0.1, float(np.cos(np.radians(lats.mean()))))
+        bbox = (
+            float(lats.min()) - margin,
+            float(lons.min()) - dlon,
+            float(lats.max()) + margin,
+            float(lons.max()) + dlon,
+        )
+        grid = app.external(lambda: app.services.dem_grid.grid(bbox))
+        at = np.searchsorted(cum, np.arange(0, cum[-1], aval_lib.SAMPLE_M))
+        at = np.unique(np.minimum(at, len(lats) - 1))
+        # Altitudes du sentier prises sur la même grille que les pentes (cohérence ; Copernicus inclut la canopée).
+        under, reach, height = aval_lib.exposure(grid, lats[at], lons[at], np.full(len(at), np.nan))
+        found = aval_lib.sections(cum[at], under, reach, height)
+        exposed = sum(s.end_m - s.start_m for s in found)
+        pct = round(100 * exposed / cum[-1], 1) if cum[-1] else 0.0
+        lines = []
+        for sec in found:
+            parts = []
+            if sec.cross_deg:
+                parts.append(f"traverse une pente jusqu'à {sec.cross_deg:.0f}°")
+            if sec.above_deg:
+                parts.append(f"sous une pente de {sec.above_deg:.0f}° (jusqu'à ~{sec.above_m:.0f} m au-dessus)")
+            lines.append(f"km {sec.start_m / 1000:.1f}–{sec.end_m / 1000:.1f} : {', '.join(parts)}")
+        cross = [sec.cross_deg for sec in found if sec.cross_deg]
+        message = (f"{pct:g} % du tracé sur ou sous une pente de départ d'avalanche possible ({len(found)} tronçon(s))."
+                   if found else "Aucune pente de départ d'avalanche possible sur ou au-dessus du tracé (relief à 30 m).")  # fmt: skip
+        warnings = ["Terrain seulement : avec de la neige, consulter le bulletin d'estimation du risque d'avalanche."]
+        if found:
+            warnings.append("Relief à 30 m : une pente courte (barre, talus raide) peut échapper au calcul.")
+        report = AvalancheReport(
+            message=message, troncons=lines, part_exposee_pct=pct,
+            pente_max_traversee_deg=round(max(cross)) if cross else None,
+            source=f"{grid.source} (pentes calculées à ~30 m)", avertissements=warnings,
+        )  # fmt: skip
+        route.avalanche = report
         app.save(route)
         return report
 

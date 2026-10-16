@@ -231,6 +231,17 @@ class SnowReport(Compact):
     avertissements: list[str] = Field(default_factory=list)
 
 
+class AvalancheReport(Compact):
+    """Terrain avalancheux le long du tracé, d'après le relief (pas un bulletin de risque)."""
+
+    message: str
+    troncons: list[str] = Field(default_factory=list, description="Tronçons exposés (km), pente et hauteur")
+    part_exposee_pct: float = Field(description="Part du tracé sur ou sous une pente de départ possible")
+    pente_max_traversee_deg: float | None = None
+    source: str
+    avertissements: list[str] = Field(default_factory=list)
+
+
 class Quality(BaseModel):
     score: float = Field(description="Confiance dans les données, de 0 à 1")
     niveau: str
@@ -275,6 +286,7 @@ class Route(BaseModel):
     stages: list[Stage] | None = None
     weather: WeatherReport | None = None
     snow: SnowReport | None = None
+    avalanche: AvalancheReport | None = None
     quality: Quality | None = None
     done_on: Date | None = None
     done_notes: str | None = None

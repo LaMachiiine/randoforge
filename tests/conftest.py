@@ -77,6 +77,22 @@ class FakeSnowModel:
         return [{"snow_depth_m": 0.15, "snowfall_72h_cm": 8.0, "model_elevation_m": e} for _, _, e in points]
 
 
+class FakeDemGrid:
+    """Relief de test en grille (même formule que FakeElevation) : pentes douces, rien d'avalancheux."""
+
+    def grid(self, bbox):
+        import numpy as np
+
+        from randoforge.engines.elevation import DemGrid
+
+        s, w, n, e = bbox
+        d = 1 / 3600
+        lats = n - (np.arange(int((n - s) / d)) + 0.5) * d
+        lons = w + (np.arange(int((e - w) / d)) + 0.5) * d
+        z = 1000 + (lats[:, None] - 45.12) * 11_000 + 50 * np.sin(lons[None, :] * 200)
+        return DemGrid(z=z.astype("float32"), top=n, left=w, dlat=d, dlon=d, source="Relief de test")
+
+
 class FakeNominatim:
     # Lieux connus de la doublure ; tout le reste est placé à Lans-en-Vercors, sauf « Lyon » (loin du Vercors).
     KNOWN = {"Moucherotte": (45.1503, 5.6303), "Lyon": (45.7640, 4.8357)}
@@ -195,7 +211,8 @@ def store(tmp_path):
 def services():
     return Services(router=FakeRouter(), elevation=FakeElevation(), nominatim=FakeNominatim(), overpass=FakeOverpass(),
                     refuges=FakeRefuges(), weather=FakeWeather(), wikidata=FakeWikidata(), geotrek=FakeGeotrek(),
-                    snow_sat=FakeSnowSat(), snow_s2=FakeSnowS2(), snow_model=FakeSnowModel())  # fmt: skip
+                    snow_sat=FakeSnowSat(), snow_s2=FakeSnowS2(), snow_model=FakeSnowModel(),
+                    dem_grid=FakeDemGrid())  # fmt: skip
 
 
 @pytest.fixture

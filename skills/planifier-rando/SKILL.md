@@ -68,6 +68,8 @@ En saison froide au-dessus de ~600 m, ou en haute montagne, ou si l'utilisateur 
 (date de la sortie ; `en_raquettes=true` s'il le précise). Annoncer la limite de la neige et sa source (satellite,
 date de l'image), la part enneigée du tracé et la **durée ajustée en estimation (≈)**, en précisant ce qui est
 observé (satellites) et ce qui est modélisé (épaisseur). Ne pas donner de conseils d'équipement.
+Si de la neige est probable sur le tracé : `avalanche_terrain` (tronçons sur ou sous une pente de départ
+possible). Le présenter comme du terrain, pas comme un niveau de risque, et renvoyer au bulletin d'avalanche.
 
 ## 6. Valider, sécuriser, livrer
 - `validate_route` ; corrige ou explique chaque `error`.

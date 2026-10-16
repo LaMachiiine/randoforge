@@ -64,6 +64,18 @@ def tile_missing(url: str) -> bool:
     return False
 
 
+@dataclass
+class DemGrid:
+    """Grille d'altitudes en degrés (ligne 0 = bord nord)."""
+
+    z: np.ndarray
+    top: float
+    left: float
+    dlat: float
+    dlon: float
+    source: str
+
+
 class CopernicusElevation:
     """Copernicus DEM GLO-30 (30 m, monde entier), tuiles COG lues à distance sur AWS.
 
@@ -80,6 +92,43 @@ class CopernicusElevation:
         ns = f"{'N' if la >= 0 else 'S'}{abs(la):02d}"
         ew = f"{'E' if lo >= 0 else 'W'}{abs(lo):03d}"
         return f"Copernicus_DSM_COG_10_{ns}_00_{ew}_00_DEM"
+
+    def grid(self, bbox: tuple[float, float, float, float]) -> DemGrid:
+        """Altitudes d'un rectangle (sud, ouest, nord, est) en grille (tuiles voisines assemblées) : pour les calculs
+        de pente. NaN en mer ou hors données."""
+        import rasterio
+        from rasterio.env import Env
+        from rasterio.errors import RasterioIOError
+        from rasterio.merge import merge
+
+        s, w, n, e = bbox
+        names = {self.tile_name(la + 0.5, lo + 0.5) for la in range(math.floor(s), math.floor(n) + 1)
+                 for lo in range(math.floor(w), math.floor(e) + 1)}  # fmt: skip
+        env = Env(
+            GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR",
+            CPL_VSIL_CURL_ALLOWED_EXTENSIONS=".tif",
+            CPL_VSIL_CURL_NON_CACHED=f"/vsicurl/{self.BASE}",
+        )
+        with env:
+            datasets = []
+            try:
+                for name in sorted(names):
+                    url = f"{self.BASE}/{name}/{name}.tif"
+                    try:
+                        datasets.append(rasterio.open(f"/vsicurl/{url}"))
+                    except RasterioIOError:
+                        if not tile_missing(url):
+                            raise
+                if not datasets:
+                    raise ValueError("Aucune tuile Copernicus sur cette zone (mer ?).")
+                # Résolution de la première tuile (les tuiles au-delà de 50° de latitude sont plus larges en longitude).
+                arr, transform = merge(datasets, bounds=(w, s, e, n), res=datasets[0].res, nodata=np.nan,
+                                       dtype="float32")  # fmt: skip
+            finally:
+                for ds in datasets:
+                    ds.close()
+        return DemGrid(z=arr[0], top=transform.f, left=transform.c, dlat=-transform.e, dlon=transform.a,
+                       source=self.name)  # fmt: skip
 
     def elevations(self, points: list[LatLon]) -> list[float | None]:
         import rasterio
