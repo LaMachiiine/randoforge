@@ -183,6 +183,26 @@ def weather(route: Route) -> Section | None:
     )
 
 
+def snow(route: Route) -> Section | None:
+    r = route.snow
+    if not r or not r.applicable:
+        return None
+    rows = [[t] for t in r.troncons_enneiges]
+    notes = [r.message]
+    if r.limite_neige_m is not None:
+        notes.append(f"Limite de la neige : ~{r.limite_neige_m} m ({r.limite_source})")
+    elif r.limite_source:
+        notes.append(r.limite_source)
+    if r.epaisseur_modele_cm:
+        notes.append(f"Épaisseur estimée (modèle) : {r.epaisseur_modele_cm[0]} à {r.epaisseur_modele_cm[1]} cm"
+                     + (f", dont ~{r.neige_fraiche_72h_cm:g} cm tombés en 3 jours" if r.neige_fraiche_72h_cm else ""))  # fmt: skip
+    if r.duree_neige and r.duree_neige != r.duree_normale:
+        notes.append(f"Durée ajustée à la neige : ≈ {r.duree_neige} (au lieu de {r.duree_normale})"
+                     + (", en raquettes" if r.en_raquettes else ""))  # fmt: skip
+    notes += r.avertissements + [f"Sources : {', '.join(r.sources)}"]
+    return Section(f"Neige ({r.date:%d/%m/%Y})", ["Tronçons enneigés"] if rows else [], rows, notes)
+
+
 def validation(route: Route) -> Section | None:
     v = route.validation
     if not v:
@@ -209,5 +229,5 @@ def quality(route: Route) -> Section | None:
 
 
 def all_sections(route: Route) -> list[Section]:
-    builders = (stages, pois, technical, areas, bivouacs, weather, validation, quality)
+    builders = (stages, pois, technical, areas, bivouacs, weather, snow, validation, quality)
     return [s for b in builders if (s := b(route))]

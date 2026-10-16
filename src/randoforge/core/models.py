@@ -210,6 +210,27 @@ class WeatherReport(BaseModel):
     )
 
 
+class SnowReport(Compact):
+    """Enneigement le long du tracé : observations satellite, limite de la neige, modèle et durée ajustée."""
+
+    applicable: bool = Field(description="Faux hors saison froide / altitude : rien n'a été analysé")
+    message: str = Field(description="Résumé en une phrase")
+    date: Date
+    limite_neige_m: int | None = Field(None, description="Altitude au-dessus de laquelle le sol est enneigé")
+    limite_source: str | None = None
+    part_enneigee_pct: float | None = Field(None, description="Part du tracé probablement enneigée")
+    troncons_enneiges: list[str] = Field(default_factory=list, description="Tronçons enneigés (km) et facteur")
+    vu_par_satellite_pct: float | None = Field(None, description="Part du tracé observée sans nuage")
+    sentinel2: str | None = Field(None, description="Image Sentinel-2 (20 m) utilisée, si récente")
+    epaisseur_modele_cm: tuple[int, int] | None = Field(None, description="Épaisseur modélisée (min, max), estimation")
+    neige_fraiche_72h_cm: float | None = Field(None, description="Neige tombée sur 3 jours (modèle)")
+    en_raquettes: bool = False
+    duree_normale: str | None = None
+    duree_neige: str | None = Field(None, description="Durée ajustée à la neige (estimation ≈)")
+    sources: list[str] = Field(default_factory=list)
+    avertissements: list[str] = Field(default_factory=list)
+
+
 class Quality(BaseModel):
     score: float = Field(description="Confiance dans les données, de 0 à 1")
     niveau: str
@@ -253,6 +274,7 @@ class Route(BaseModel):
     bivouacs: list[BivouacSpot] | None = None
     stages: list[Stage] | None = None
     weather: WeatherReport | None = None
+    snow: SnowReport | None = None
     quality: Quality | None = None
     done_on: Date | None = None
     done_notes: str | None = None

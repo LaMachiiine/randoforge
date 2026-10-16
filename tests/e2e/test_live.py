@@ -62,7 +62,7 @@ async def test_day_loop_from_autrans(home):
     """Boucle à la journée générée automatiquement, analysée, validée et exportée."""
     async with server(home) as c:
         tools = {t.name for t in (await c.list_tools()).tools}
-        assert len(tools) == 28
+        assert len(tools) == 29
 
         place = (await call(c, "geocode", {"query": "Autrans", "country": "fr", "limit": 1}))["places"][0]
         assert 45.1 < place["lat"] < 45.25
@@ -157,3 +157,18 @@ async def test_roundtrip_import_and_reference(home, tmp_path):
             c, "compare_with_reference", {"route_id": imported["route_id"], "reference_id": route["route_id"]}
         )
         assert ref["comparaison"]["ecart_max_m"] < 5
+
+
+async def test_snow_on_pierre_sur_haute(home):
+    """Enneigement réel : satellites et modèle, un jour d'hiver puis aujourd'hui, au même tracé."""
+    async with server(home) as c:
+        # Col du Béal → Pierre-sur-Haute (Monts du Forez, 1 634 m).
+        route = await call(c, "route_between", {"waypoints": [{"lat": 45.6869, "lon": 3.7826},
+                                                              {"lat": 45.6560, "lon": 3.8062}]})  # fmt: skip
+        winter = await call(c, "snow_conditions", {"route_id": route["route_id"], "date": "2026-02-15"})
+        assert winter["applicable"] and winter["part_enneigee_pct"] > 50  # neige au-dessus de ~1 300 m ce jour-là
+        assert winter["duree_neige"] != winter["duree_normale"]
+        assert any("GIBS" in s for s in winter["sources"])
+        now = await call(c, "snow_conditions", {"route_id": route["route_id"], "date": date.today().isoformat(),
+                                                "force": True})  # fmt: skip
+        assert now["applicable"] and now.get("vu_par_satellite_pct") is not None

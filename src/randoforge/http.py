@@ -29,6 +29,7 @@ HOST_LIMITS: dict[str, tuple[int, float]] = {
     "nominatim.openstreetmap.org": (1, 1.1),
     "data.geopf.fr": (3, 0.25),
     "brouter.de": (2, 0.2),
+    "gibs.earthdata.nasa.gov": (4, 0.05),
 }
 # Blocage temporaire signalé avec un code « définitif » par certains serveurs publics (BRouter : 403).
 RETRYABLE_BY_HOST = {"brouter.de": {403}}
@@ -188,6 +189,44 @@ class CachedHttp:
             return last
         finally:
             pool.shutdown(wait=False, cancel_futures=True)
+
+    def request_bytes(
+        self, url: str, *, ttl_s: float | None = 7 * DAY, service: str = "service externe"
+    ) -> bytes | None:
+        """Contenu binaire (image satellite…) mis en cache ; None si le serveur répond 404 (pas de donnée),
+        HttpError si le service est en panne. Réessais sur les erreurs passagères."""
+        import base64
+
+        key = self._cache_key("GET-bytes", url, None)
+        if (cached := self._cache_get(key, ttl_s)) is not None:
+            return base64.b64decode(cached) if cached else None
+        host = urlsplit(url).hostname or url
+        last = ""
+        for attempt in range(self.retries):
+            slot = self._slots.get(host)
+            if slot:
+                slot.acquire()
+            try:
+                self._throttle(host)
+                r = self.client.get(url)
+            except httpx.TransportError as exc:
+                last = f"{host} : {type(exc).__name__}"
+            else:
+                if r.status_code == 200:
+                    self._cache_put(key, base64.b64encode(r.content).decode())
+                    return r.content
+                if r.status_code == 404:
+                    self._cache_put(key, "")  # absence mise en cache aussi
+                    return None
+                if r.status_code not in RETRYABLE:
+                    raise HttpError(f"{service} : erreur {r.status_code}")
+                last = f"{host} : {r.status_code}"
+            finally:
+                if slot:
+                    slot.release()
+            if attempt < self.retries - 1:
+                self.sleep(min(2**attempt, MAX_BACKOFF_S))
+        raise HttpError(f"{service} indisponible ({last}).")
 
     def request_json(
         self,

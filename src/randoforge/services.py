@@ -8,9 +8,10 @@ from pathlib import Path
 
 from .engines.brouter import BRouterEngine
 from .engines.elevation import CopernicusElevation, ElevationChain, IgnElevation, LocalDemElevation
-from .engines.extra import OpenMeteo, RefugesInfo, Wikidata
+from .engines.extra import OpenMeteo, OpenMeteoSnow, RefugesInfo, Wikidata
 from .engines.geotrek import GeotrekReference
 from .engines.osm import Nominatim, Overpass
+from .engines.snow import GibsSnow, Sentinel2Snow
 from .http import CachedHttp
 
 
@@ -24,6 +25,9 @@ class Services:
     weather: object | None = None
     wikidata: object | None = None
     geotrek: object | None = None
+    snow_sat: object | None = None  # satellites quotidiens (GIBS)
+    snow_s2: object | None = None  # Sentinel-2
+    snow_model: object | None = None  # Open-Meteo (épaisseur, neige fraîche)
 
     @classmethod
     def from_env(cls, home: Path) -> Services:
@@ -44,4 +48,7 @@ class Services:
             weather=OpenMeteo(http),
             wikidata=Wikidata(http),
             geotrek=GeotrekReference(http),
+            snow_sat=GibsSnow(http),
+            snow_s2=Sentinel2Snow(http),
+            snow_model=OpenMeteoSnow(http),
         )

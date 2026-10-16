@@ -63,6 +63,12 @@ sportif) pour ajuster la durée. Les outils séparés (`annotate_route`, `techni
 Grottes et abris naturels : rappeler les avertissements (crue, chutes de pierres, faune protégée).
 Les emplacements « calculés » sont des pistes à vérifier sur place : dis-le.
 
+## 5 bis. Neige
+En saison froide au-dessus de ~600 m, ou en haute montagne, ou si l'utilisateur parle de neige : `snow_conditions`
+(date de la sortie ; `en_raquettes=true` s'il le précise). Annoncer la limite de la neige et sa source (satellite,
+date de l'image), la part enneigée du tracé et la **durée ajustée en estimation (≈)**, en précisant ce qui est
+observé (satellites) et ce qui est modélisé (épaisseur). Ne pas donner de conseils d'équipement.
+
 ## 6. Valider, sécuriser, livrer
 - `validate_route` ; corrige ou explique chaque `error`.
 - `bailout_route` pour un repli depuis le passage le plus exposé ou le point le plus éloigné.

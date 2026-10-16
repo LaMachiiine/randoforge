@@ -11,11 +11,11 @@ Conception détaillée : vault Obsidian dans `docs/` (point d'entrée `docs/00 -
 - Plugin : `claude plugin validate .`
 
 ## Structure
-- `src/randoforge/core/` : calculs purs, aucune I/O — géodésie (`geo.py`), dénivelé (`elevation.py`), durée, stats, pentes et allers-retours (`terrain.py`), géométries OSM (`osmgeom.py`), points notables (`pois.py`), passages techniques (`technical.py`), zones (`areas.py`), bivouacs (`bivouac.py`), étapes (`stages.py`), qualité (`quality.py`), similarité (`similarity.py`), soleil (`sun.py`), météo (`weather.py`), boucles (`loops.py`), lieux d'un descriptif parmi leurs homonymes (`places.py`), modèles pydantic (`models.py`). Les données externes sont passées en paramètre.
-- `src/randoforge/engines/` : clients externes — BRouter, altimétrie (IGN → Copernicus, MNT local), Nominatim/Overpass, refuges.info / Open-Meteo / Wikidata (`extra.py`), itinéraires officiels de 44 catalogues Geotrek (`geotrek.py` + registre `geotrek_catalogs.json`, régénéré par `scripts/build_geotrek_catalogs.py`) — outils `find_official_treks` / `import_official_trek` et calibration.
+- `src/randoforge/core/` : calculs purs, aucune I/O — géodésie (`geo.py`), dénivelé (`elevation.py`), durée, stats, pentes et allers-retours (`terrain.py`), géométries OSM (`osmgeom.py`), points notables (`pois.py`), passages techniques (`technical.py`), zones (`areas.py`), bivouacs (`bivouac.py`), étapes (`stages.py`), qualité (`quality.py`), similarité (`similarity.py`), soleil (`sun.py`), météo (`weather.py`), neige (`snow.py`), boucles (`loops.py`), lieux d'un descriptif parmi leurs homonymes (`places.py`), modèles pydantic (`models.py`). Les données externes sont passées en paramètre.
+- `src/randoforge/engines/` : clients externes — BRouter, altimétrie (IGN → Copernicus, MNT local), Nominatim/Overpass, refuges.info / Open-Meteo / Wikidata (`extra.py`), neige observée par satellite (`snow.py`), itinéraires officiels de 44 catalogues Geotrek (`geotrek.py` + registre `geotrek_catalogs.json`, régénéré par `scripts/build_geotrek_catalogs.py`) — outils `find_official_treks` / `import_official_trek` et calibration.
 - `src/randoforge/http.py` : client HTTP commun (cache SQLite, réessais, bascule entre serveurs, User-Agent).
 - `src/randoforge/services.py` : assemblage des services (variables `RANDOFORGE_*`) ; `app.py` : contexte partagé des outils.
-- `src/randoforge/tools/` : outils MCP par thème (`search`, `build`, `analyze`, `trek`, `output`) ; `schemas.py` pour les types.
+- `src/randoforge/tools/` : outils MCP par thème (`search`, `build`, `analyze`, `snow`, `trek`, `output`) ; `schemas.py` pour les types.
 - `src/randoforge/validation.py` : règles, identifiants = ceux de `docs/10 - Architecture/Validation & cohérence.md`.
 - `src/randoforge/formats/` : GPX, fiche Markdown, carte HTML, roadbook ; `sections.py` = contenu commun fiche/roadbook.
 - `.claude-plugin/`, `skills/planifier-rando/`, `.mcp.json` : plugin Claude Code.

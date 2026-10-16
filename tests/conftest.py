@@ -49,6 +49,34 @@ class FakeElevation:
         return ElevationResult(values, [self.name] * len(points))
 
 
+class FakeSnowSat:
+    """Satellites : neige (NDSI 80) partout où le relief de test dépasse 1 200 m, sol nu en dessous."""
+
+    def composite(self, bbox, day, days_back=4):
+        import numpy as np
+
+        from randoforge.engines.snow import PIXEL_DEG, SnowGrid
+
+        s, w, n, e = bbox
+        lat0, lon0 = n, w
+        rows, cols = max(1, int((n - s) / PIXEL_DEG)), max(1, int((e - w) / PIXEL_DEG))
+        lats = lat0 - (np.arange(rows) + 0.5) * PIXEL_DEG
+        lons = lon0 + (np.arange(cols) + 0.5) * PIXEL_DEG
+        elev = 1000 + (lats[:, None] - 45.12) * 11_000 + 50 * np.sin(lons[None, :] * 200)
+        values = np.where(elev >= 1200, 80, 0).astype(np.int16)
+        return SnowGrid(lat0, lon0, values, np.full((rows, cols), day.toordinal(), dtype=np.int32), {"MODIS Terra"})
+
+
+class FakeSnowS2:
+    def scene(self, bbox, day, days_back=6, max_cloud=60):
+        return []  # pas d'image récente sans nuages
+
+
+class FakeSnowModel:
+    def snow(self, points, day):
+        return [{"snow_depth_m": 0.15, "snowfall_72h_cm": 8.0, "model_elevation_m": e} for _, _, e in points]
+
+
 class FakeNominatim:
     # Lieux connus de la doublure ; tout le reste est placé à Lans-en-Vercors, sauf « Lyon » (loin du Vercors).
     KNOWN = {"Moucherotte": (45.1503, 5.6303), "Lyon": (45.7640, 4.8357)}
@@ -166,7 +194,8 @@ def store(tmp_path):
 @pytest.fixture
 def services():
     return Services(router=FakeRouter(), elevation=FakeElevation(), nominatim=FakeNominatim(), overpass=FakeOverpass(),
-                    refuges=FakeRefuges(), weather=FakeWeather(), wikidata=FakeWikidata(), geotrek=FakeGeotrek())  # fmt: skip
+                    refuges=FakeRefuges(), weather=FakeWeather(), wikidata=FakeWikidata(), geotrek=FakeGeotrek(),
+                    snow_sat=FakeSnowSat(), snow_s2=FakeSnowS2(), snow_model=FakeSnowModel())  # fmt: skip
 
 
 @pytest.fixture

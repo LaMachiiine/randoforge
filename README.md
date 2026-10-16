@@ -13,6 +13,7 @@ Claude ne calcule rien lui-même : il appelle les outils RandoForge et explique 
 - **Créer une rando** : boucle par distance et D+, ou passage par des lieux choisis ; itinérance sur plusieurs jours.
 - **Vérifier** : distance, D+ / D- (IGN en France), durée, passages techniques, zones réglementées, eau, météo,
   heure du coucher du soleil, une trentaine de règles de cohérence.
+- **Neige** : enneigement observé par satellite, limite de la neige et durée ajustée en saison froide.
 - **Exporter** : GPX (complet et par jour), fiche Obsidian, carte HTML, roadbook imprimable.
 
 Exemples : *« prépare-moi le Chemin des fileuses au départ de L'Estréchure »*, *« une boucle de 12 km depuis Autrans
@@ -84,7 +85,9 @@ si vous republiez un tracé, gardez-les.
 | [refuges.info](https://www.refuges.info) | refuges, cabanes, points d'eau | CC BY-SA |
 | IGN | altitudes (France) | Licence Ouverte Etalab |
 | Copernicus GLO-30 | altitudes (monde) | licence Copernicus, citation de la source |
-| [Open-Meteo](https://open-meteo.com) | météo, neige | CC BY 4.0 |
+| [Open-Meteo](https://open-meteo.com) | météo, neige modélisée | CC BY 4.0 |
+| [NASA GIBS](https://nasa-gibs.github.io/gibs-api-docs/) (MODIS, VIIRS) | neige observée | données ouvertes NASA, remerciement demandé |
+| Sentinel-2 (Copernicus, via [Earth Search](https://earth-search.aws.element84.com/v1)) | neige observée à 20 m | données Copernicus libres, citation de la source |
 | Catalogues [Geotrek](https://geotrek.fr) | randos officielles | celle de chaque organisme éditeur |
 | [BRouter](https://brouter.de) | calcul des tracés | service public, à ménager (cache intégré) |
 
