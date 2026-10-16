@@ -33,17 +33,24 @@ def element_geometry(el: dict, proj: LocalProjection) -> BaseGeometry | None:
     if el["type"] == "node":
         x, y = proj.to_xy(el["lat"], el["lon"])
         return Point(x, y)
-    ways = [el.get("geometry", [])] if el["type"] == "way" else [m.get("geometry", []) for m in el.get("members", [])]
-    lines = []
-    for coords in ways:
+    if el["type"] == "way":
+        ways = [(el.get("geometry", []), "outer")]
+    else:
+        ways = [(m.get("geometry", []), m.get("role") or "outer") for m in el.get("members", [])]
+    lines, inner = [], []
+    for coords, role in ways:
         if coords and len(coords) >= 2:
             xs, ys = proj.to_xy([c["lat"] for c in coords], [c["lon"] for c in coords])
-            lines.append(LineString(np.column_stack([xs, ys])))
+            (inner if role == "inner" else lines).append(LineString(np.column_stack([xs, ys])))
     if not lines:
         return None
     if is_area(el.get("tags", {})):
         if el["type"] == "relation":
-            polys = list(shapely.polygonize(lines).geoms)
+            # Anneaux extérieurs moins les enclaves (rôle « inner ») : un village exclu du parc reste exclu.
+            outer = shapely.union_all(list(shapely.polygonize(lines).geoms))
+            holes = list(shapely.polygonize(inner).geoms) if inner else []
+            area = outer.difference(shapely.union_all(holes)) if holes else outer
+            return None if area.is_empty else area
         else:
             polys = [Polygon(ln.coords) for ln in lines if ln.is_closed and len(ln.coords) >= 4]
         return shapely.union_all(polys) if polys else None

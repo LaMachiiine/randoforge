@@ -64,7 +64,7 @@ def register(mcp: MCPServer, app: App) -> None:
         - `md` : fiche Obsidian (frontmatter Dataview) ;
         - `html` : carte interactive (fond topo, points notables, passages techniques, profil) ;
         - `roadbook` : page imprimable (Ctrl+P → PDF) avec étapes, passages, eau, météo.
-        `vault_dir` : copie aussi la fiche, le GPX et la carte dans `<vault_dir>/Randos/<nom>/`.
+        `vault_dir` : copie aussi la fiche, le GPX et la carte dans `<vault_dir>/Randos/<nom>-<identifiant>/`.
         """
         route = app.load(route_id)
         d = app.store.dir_for(route_id)
@@ -91,8 +91,12 @@ def register(mcp: MCPServer, app: App) -> None:
             vault = Path(vault_dir).expanduser()
             if not vault.is_dir():
                 raise ToolError(f"Dossier du vault introuvable : {vault}")
-            target = vault / "Randos" / slug(route.name)
+            # Identifiant dans le nom : deux randos homonymes (« Boucle 1 (N) »…) ne s'écrasent pas.
+            target = vault / "Randos" / f"{slug(route.name)}-{route_id.rsplit('_', 1)[-1]}"
             target.mkdir(parents=True, exist_ok=True)
+            if "gpx" in formats:
+                for old in target.glob("jour-*.gpx"):  # étapes d'un ancien découpage
+                    old.unlink()
             for fmt, path in list(files.items()):
                 dest = target / Path(path).name
                 shutil.copyfile(path, dest)

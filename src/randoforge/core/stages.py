@@ -111,7 +111,10 @@ def plan(
                     c = cost[k - 1][i] + (h - target) ** 2 + KIND_COST.get(nodes[j].kind, 0.0)
                     end_m = nodes[j].m
                     span = end_m - nodes[i].m
-                    if any(end_m - 0.2 * span <= t.km * 1000 <= end_m for t in technical) and j != n - 1:
+                    # Passage technique (sur toute sa longueur) dans les 20 % finaux de l'étape : fatigue.
+                    if j != n - 1 and any(
+                        t.km * 1000 <= end_m and t.km * 1000 + t.longueur_m >= end_m - 0.2 * span for t in technical
+                    ):
                         c += TECH_END_PENALTY
                     if c < cost[k][j]:
                         cost[k][j], prev[k][j] = c, i
@@ -151,7 +154,13 @@ def plan(
         a, b = nodes[i].m, nodes[j].m
         d, up, down = prof.between(a, b)
         minutes = estimate_minutes(d / 1000, up, down, walker)
-        tech = [f"km {t.km:.1f} : {', '.join(t.types)}" for t in technical if a <= t.km * 1000 <= b]
+        last = j == path[-1]
+        # Un passage est dans chaque étape qu'il touche (y compris s'il chevauche la coupure).
+        tech = [
+            f"km {t.km:.1f} : {', '.join(t.types)}"
+            for t in technical
+            if (t.km * 1000 < b or last) and t.km * 1000 + t.longueur_m >= a
+        ]
         stages.append(
             Stage(
                 jour=day,
@@ -168,8 +177,8 @@ def plan(
                 points_eau=sum(1 for p in waters if a / 1000 <= p.km <= b / 1000),
             )
         )
-    for s in stages[:-1]:
-        if s.arrivee_type not in HOSTED:
+    for s in stages:
+        if s is not stages[-1] and s.arrivee_type not in HOSTED:
             notes.append(
                 f"Jour {s.jour} : nuit en {s.arrivee_type} ({s.arrivee}) — prévoir tente/duvet et vérifier la réglementation."
             )

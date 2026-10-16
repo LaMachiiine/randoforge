@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Annotated, Literal
 
 import numpy as np
+from gpxpy.gpx import GPXException
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from pydantic import Field
@@ -193,7 +194,10 @@ def register(mcp: MCPServer, app: App) -> None:
         file = Path(path).expanduser()
         if not file.is_file():
             raise ToolError(f"Fichier introuvable : {file}")
-        gpx_name, points = read_gpx(file.read_text(encoding="utf-8"))
+        try:
+            gpx_name, points = read_gpx(file.read_text(encoding="utf-8"))
+        except (UnicodeDecodeError, ValueError, GPXException) as exc:  # ValueError : coordonnées hors bornes
+            raise ToolError(f"GPX illisible ({file.name}) : {exc}") from exc
         if len(points) < 2:
             raise ToolError("Le GPX ne contient pas de trace exploitable (moins de 2 points).")
         route = Route(

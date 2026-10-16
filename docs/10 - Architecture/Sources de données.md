@@ -29,6 +29,15 @@ tags: [architecture, donnees]
 
 - API IGN : endpoints `elevation` (points) et `elevationLine` (profil) sur `data.geopf.fr/altimetrie` — gratuite, à confirmer pour les quotas.
 - Option offline : télécharger les tuiles MNT de la zone et lire avec `rasterio` → rapide, reproductible, pas de quota.
+- Chaîne de repli (`ElevationChain`) : un point sans valeur **ou une source en panne** passe à la source suivante ;
+  la panne est notée dans `elevation_notes` (et `elevation_source` donne la part de chaque source). Si aucune source
+  ne répond, l'outil renvoie une erreur plutôt que des altitudes partielles.
+- Copernicus : seule une tuile absente (mer, 404/403 S3) donne « pas d'altitude » ; une coupure réseau est une erreur.
+
+## Robustesse des appels (http.py)
+- Miroirs Overpass : un miroir bloqué (403, 404…) ou injoignable n'empêche pas d'essayer les autres ; jamais tous
+  écartés en même temps. Seul un 400 (requête invalide) arrête tout.
+- Durée bornée : Overpass abandonne après 180 s (`OVERPASS_BUDGET_S`) avec un message clair, au lieu de ~10 min.
 
 ## Routage
 Voir [[ADR-002 - Routage par moteur existant]].

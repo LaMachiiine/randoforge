@@ -16,6 +16,29 @@ class Section:
     notes: list[str] = field(default_factory=list)
 
 
+def _v(value: object, unit: str = "") -> str:
+    return "inconnu" if value is None else f"{value}{unit}"
+
+
+def key_facts(route: Route) -> list[tuple[str, str]]:
+    """Chiffres clés communs à la carte et au roadbook (la fiche Markdown a les mêmes, en frontmatter)."""
+    s = route.stats
+    facts: list[tuple[str, str]] = []
+    if s:
+        facts = [
+            ("Distance", f"{s.distance_km} km"),
+            ("D+ / D-", f"{_v(s.d_plus_m)} / {_v(s.d_minus_m, ' m')}"),
+            ("Durée", f"{s.duration_label} (pauses non comprises)" if s.duration_label else "inconnue"),
+            ("Altitudes", f"{s.alt_min_m}–{s.alt_max_m} m" if s.alt_min_m is not None else "inconnues"),
+        ]
+    if route.stages:
+        facts.append(("Jours", str(len(route.stages))))
+    facts.append(("Validation", route.validation.status if route.validation else "non validé"))
+    if route.done_on:
+        facts.append(("Faite le", f"{route.done_on:%d/%m/%Y}"))
+    return facts
+
+
 def highlights(route: Route) -> list[str]:
     top = sorted(route.pois or [], key=lambda p: -p.score)[:3]
     return [f"{p.nom or POI_LABELS.get(p.categorie, p.categorie)} (km {p.km:.1f})" for p in top if p.score >= 0.4]

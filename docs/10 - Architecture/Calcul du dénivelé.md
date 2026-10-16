@@ -85,6 +85,21 @@ mais dégrade les Écrins et l'ensemble — **aucun réglage n'améliore les deu
 Les cas extrêmes (ex. Aire-de-Côte : 223 m publiés, 166 m calculés) sont des désaccords entre références, pas un
 défaut de réglage. Conséquence produit : la règle N5 conseille de **prévoir la valeur haute**.
 
+**Diagnostic détaillé d'Aire-de-Côte (Cévennes 41621, boucle forestière de 7,8 km, 984–1114 m, mesuré le 2026-10-16)** :
+
+| Profil d'altitude | 30 m / 5 m (retenu) | 10 m / 1 m | Brut (somme des montées) |
+|---|---|---|---|
+| Altitudes publiées par le parc (542 pts) | 202 m | 220 m | **223 m = valeur publiée** |
+| IGN RGE ALTI 100 % (1073 pts, pas de 10 m) | 166 m | 255 m | 289 m |
+
+- Le D+ publié est **exactement la somme brute des montées** sur le profil du parc, sans lissage ni seuil : ce n'est
+  pas une mesure plus juste, c'est une autre méthode.
+- Le terrain est fait de petites ondulations de 3 à 5 m sous le seuil : notre méthode les ignore (−9 % sur le
+  même profil). Sur l'IGN, plus détaillé, la somme brute monte à 289 m (bruit du MNT et micro-relief compris) :
+  sans lissage on passerait au-dessus de la référence, et les Écrins seraient surestimés (tableau ci-dessus).
+- Conclusion : aucune correction n'est justifiable sans se caler sur une seule référence. On garde 30 m / 5 m (meilleur
+  global) et l'écart est signalé par N5 avec le conseil de prévoir la valeur haute.
+
 ## Pièges connus
 - **Ponts et tunnels** : le MNT donne l'altitude du terrain (fond de vallée / sommet de montagne). → Interpoler linéairement l'altitude entre les extrémités pour les ways OSM `bridge=yes` / `tunnel=yes`.
 - **Falaises / sentiers en corniche** : un MNT 30 m peut « tomber » de la falaise. → Préférer RGE ALTI 1–5 m en France.

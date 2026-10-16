@@ -13,7 +13,7 @@ from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from pydantic import Field
 
-from ..app import App
+from ..app import DEFAULT_CATEGORIES, App
 from ..core import quality as quality_lib
 from ..core import weather as weather_lib
 from ..core.models import (
@@ -120,7 +120,10 @@ def register(mcp: MCPServer, app: App) -> None:
         à la carte et à la fiche.
         """
         route = app.load(route_id)
-        app.ensure_pois(route, list(categories) if categories else None, max_detour_m)
+        # Toujours toutes les catégories en mémoire (gués, eau : règles D6/D7, bivouacs) ; `categories` filtre
+        # seulement la réponse.
+        app.ensure_pois(route, list(dict.fromkeys([*DEFAULT_CATEGORIES, *(categories or [])])), max_detour_m)
+        wanted = [p for p in route.pois if not categories or p.categorie in categories or p.via == "gué"]
         warnings = [
             f"Gué au km {p.km:.1f}{' (' + p.nom + ')' if p.nom else ''} : vérifier le niveau d'eau"
             for p in route.pois
@@ -142,9 +145,9 @@ def register(mcp: MCPServer, app: App) -> None:
                 "Aucun point notable cartographié dans OSM le long du tracé (couverture parfois incomplète)."
             )
         app.save(route)
-        best = sorted(route.pois, key=lambda p: (p.via != "gué", -p.score))[:limit]
+        best = sorted(wanted, key=lambda p: (p.via != "gué", -p.score))[:limit]
         shown = sorted(best, key=lambda p: p.km)
-        return AnnotationResult(route_id=route_id, pois=shown, total=len(route.pois), warnings=warnings)
+        return AnnotationResult(route_id=route_id, pois=shown, total=len(wanted), warnings=warnings)
 
     @mcp.tool()
     def technical_passages(route_id: str) -> TechnicalResult:
@@ -218,15 +221,16 @@ def register(mcp: MCPServer, app: App) -> None:
         else:
             minutes = route.stats.duration_min if route.stats and route.stats.duration_min else 240
         hours = range(t0.hour, min(24, t0.hour + int(np.ceil(minutes * 7 / 6 / 60)) + 1))
-        eles = [p.ele or 0 for p in route.points]
+        eles = [-np.inf if p.ele is None else p.ele for p in route.points]
         top = route.points[int(np.argmax(eles))]
         places = [("départ", route.points[0]), ("point culminant", top)]
         if not route.request.loop and not (route.stats and route.stats.is_loop):
             places.append(("arrivée", route.points[-1]))
         windows = []
         for label, p in places:
-            data = app.external(lambda p=p: app.services.weather.hourly(p.lat, p.lon, p.ele or 0, day))
-            windows.append(weather_lib.summarize(data, label, p.ele or 0, hours))
+            data = app.external(lambda p=p: app.services.weather.hourly(p.lat, p.lon, p.ele, day))
+            alt = p.ele if p.ele is not None else data.get("elevation", 0)  # sinon : altitude du MNT d'Open-Meteo
+            windows.append(weather_lib.summarize(data, label, alt, hours))
         route.weather = WeatherReport(
             date=day, heures=f"{hours.start}h–{hours.stop}h", points=windows, alertes=weather_lib.alerts(windows)
         )

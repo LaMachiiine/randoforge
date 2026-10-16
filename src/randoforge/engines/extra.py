@@ -29,15 +29,19 @@ class RefugesInfo:
         out = []
         for f in res.get("features", []):
             p = f.get("properties", {})
-            coord = p.get("coord", {})
+            coord = p.get("coord") or {}
+            geo = (f.get("geometry") or {}).get("coordinates") or [None, None]
+            lat, lon = coord.get("lat", geo[1]), coord.get("long", geo[0])
+            if lat is None or lon is None:
+                continue  # point sans coordonnées : ignoré
             places = (p.get("places") or {}).get("valeur")
             out.append(
                 {
                     "id": p.get("id"),
                     "nom": p.get("nom") or "",
                     "type": (p.get("type") or {}).get("valeur", ""),
-                    "lat": float(coord.get("lat", f["geometry"]["coordinates"][1])),
-                    "lon": float(coord.get("long", f["geometry"]["coordinates"][0])),
+                    "lat": float(lat),
+                    "lon": float(lon),
                     "alt": coord.get("alt"),
                     "places": places if isinstance(places, int) else None,
                     "lien": p.get("lien"),
@@ -55,16 +59,17 @@ class OpenMeteo:
     def __init__(self, http: CachedHttp):
         self.http = http
 
-    def hourly(self, lat: float, lon: float, elevation: float, day: date) -> dict:
+    def hourly(self, lat: float, lon: float, elevation: float | None, day: date) -> dict:
         params = {
             "latitude": round(lat, 4),
             "longitude": round(lon, 4),
-            "elevation": round(elevation),
             "hourly": self.HOURLY,
             "timezone": "auto",
             "start_date": day.isoformat(),
             "end_date": day.isoformat(),
         }
+        if elevation is not None:  # sinon Open-Meteo prend l'altitude de son propre MNT
+            params["elevation"] = round(elevation)
         # Prévision : cache court (3 h)
         return self.http.request_json("GET", self.URL, params=params, ttl_s=3 * 3600, service="Open-Meteo")
 

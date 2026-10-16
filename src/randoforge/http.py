@@ -135,6 +135,8 @@ class CachedHttp:
             if len(mirrors) > 1:
                 self._down_until[host] = time.time() + DOWN_S
             return "retry", f"{host} injoignable ({type(exc).__name__})"
+        except httpx.UnsupportedProtocol as exc:
+            return "fatal", f"{service} : adresse invalide ({url}) — {exc}"
         except httpx.TransportError as exc:
             return "retry", f"{host} : {type(exc).__name__}"
         finally:
@@ -150,6 +152,10 @@ class CachedHttp:
         if any(t in r.text for t in TOO_SLOW_TEXT):
             return "slow", f"{service} : {TOO_SLOW_HINT}"
         if r.status_code not in RETRYABLE | RETRYABLE_BY_HOST.get(host, set()):
+            if len(mirrors) > 1 and r.status_code != 400:
+                # Un miroir bloqué, déplacé ou mal configuré (403, 404…) : les autres peuvent répondre.
+                # Seul un 400 (requête invalide) vaut pour tous les miroirs.
+                return "retry", f"{host} : {r.status_code}"
             return "fatal", f"{service} : erreur {r.status_code} — {r.text.strip().replace(chr(10), ' ')[:300]}"
         if retry_after := r.headers.get("retry-after", "").strip():
             # Le serveur demande d'attendre : on obéit (borné), plutôt que de le marteler.
@@ -195,12 +201,14 @@ class CachedHttp:
         hedge_after_s: float | None = None,
         accept: Callable[[Any], str | None] | None = None,
         attempts: int | None = None,
+        budget_s: float | None = None,
     ) -> Any:
         """Appelle des serveurs équivalents ; `ttl_s=None` = cache sans expiration.
 
         - `hedge_after_s` : met les serveurs en concurrence (voir `_hedged`) au lieu de les essayer un par un ;
         - `accept(valeur)` : renvoie un message si une réponse 200 est en fait une erreur (ex. Overpass) ;
-        - `attempts` : nombre de tours d'essais (défaut : `retries`), espacés de 1, 2, 4, 8, 8… s.
+        - `attempts` : nombre de tours d'essais (défaut : `retries`), espacés de 1, 2, 4, 8, 8… s ;
+        - `budget_s` : durée totale au-delà de laquelle on ne relance plus de tour (borne l'attente de l'outil).
         La clé de cache ignore le serveur effectivement utilisé (les miroirs sont équivalents).
         """
         urls = [urls] if isinstance(urls, str) else urls
@@ -216,6 +224,7 @@ class CachedHttp:
 
         last_error = ""
         attempts = attempts or self.retries
+        started = time.time()
         for attempt in range(attempts):
             if hedge_after_s is not None and len(urls) > 1:
                 outcomes = [self._hedged(urls, call, hedge_after_s)]
@@ -233,5 +242,11 @@ class CachedHttp:
                     raise HttpError(value)  # « slow » deux fois de suite : la demande elle-même est en cause
                 last_error = value
             if attempt < attempts - 1:
-                self.sleep(min(2**attempt, MAX_BACKOFF_S))
+                pause = min(2**attempt, MAX_BACKOFF_S)
+                if budget_s is not None and time.time() - started + pause > budget_s:
+                    raise HttpError(
+                        f"{service} indisponible : pas de réponse en {budget_s:.0f} s ({last_error}). "
+                        "Réessayer plus tard."
+                    )
+                self.sleep(pause)
         raise HttpError(f"{service} indisponible après {attempts} essais ({last_error}). Réessayer plus tard.")

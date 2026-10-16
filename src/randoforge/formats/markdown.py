@@ -3,12 +3,27 @@
 from __future__ import annotations
 
 from ..core.models import Route
+from ..core.terrain import retraced_sections
 from .gpx import ATTRIBUTION
 from .sections import all_sections, highlights
 
 
+def route_kind(route: Route) -> str:
+    """« boucle », « aller-retour » (départ = arrivée, surtout sur le même chemin) ou « aller simple »."""
+    s = route.stats
+    if not (s and s.is_loop):
+        return "aller simple"
+    retraced = sum(sec.value for sec in retraced_sections(route.points)) / 1000
+    return "aller-retour" if s.distance_km and retraced >= 0.4 * s.distance_km else "boucle"
+
+
+def _t(text: object) -> str:
+    """Texte venu d'OSM, Wikidata… : Obsidian rend le HTML inline, on neutralise les balises."""
+    return str(text).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
 def _cell(text: str) -> str:
-    return text.replace("|", "\\|").replace("\n", " ")
+    return _t(text).replace("|", "\\|").replace("\n", " ")
 
 
 def write_fiche(route: Route, gpx_filename: str = "route.gpx") -> str:
@@ -21,7 +36,7 @@ def write_fiche(route: Route, gpx_filename: str = "route.gpx") -> str:
         "tags": "[rando]",
         "route_id": route.route_id,
         "date_creation": route.created_at.date().isoformat(),
-        "type": "boucle" if s and s.is_loop else "aller simple",
+        "type": route_kind(route),
         "distance_km": fm(s and s.distance_km),
         "d_plus": fm(s and s.d_plus_m),
         "d_minus": fm(s and s.d_minus_m),
@@ -35,7 +50,7 @@ def write_fiche(route: Route, gpx_filename: str = "route.gpx") -> str:
         "fait_le": fm(route.done_on),
         "gpx": gpx_filename,
     }
-    lines = ["---", *(f"{k}: {v}" for k, v in frontmatter.items()), "---", f"# {route.name}", ""]
+    lines = ["---", *(f"{k}: {v}" for k, v in frontmatter.items()), "---", f"# {_t(route.name)}", ""]
 
     if s:
         dplus = f"{s.d_plus_m} m D+" if s.d_plus_m is not None else "D+ inconnu"
@@ -43,7 +58,7 @@ def write_fiche(route: Route, gpx_filename: str = "route.gpx") -> str:
         days = f" · **{len(route.stages)} jours**" if route.stages else ""
         lines += ["> [!summary] En bref", f"> **{s.distance_km} km** · **{dplus}** · **{duree}**{days}", ""]
     if best := highlights(route):
-        lines += ["**À ne pas manquer :** " + " · ".join(f"⭐ {h}" for h in best), ""]
+        lines += ["**À ne pas manquer :** " + " · ".join(f"⭐ {_t(h)}" for h in best), ""]
     if route.done_on:
         lines += [
             f"> [!done] Faite le {route.done_on:%d/%m/%Y}" + (f" — {route.done_notes}" if route.done_notes else ""),
@@ -56,13 +71,13 @@ def write_fiche(route: Route, gpx_filename: str = "route.gpx") -> str:
             lines += ["| " + " | ".join(sec.headers) + " |", "|" + "---|" * len(sec.headers)]
             lines += ["| " + " | ".join(_cell(c) for c in row) + " |" for row in sec.rows]
             lines.append("")
-        lines += [f"- {n}" for n in sec.notes]
+        lines += [f"- {_t(n)}" for n in sec.notes]
         if sec.notes:
             lines.append("")
 
     if route.warnings:
         lines += ["## Points de vigilance", "> [!warning]"]
-        lines += [f"> - {w}" for w in route.warnings]
+        lines += [f"> - {_t(w)}" for w in route.warnings]
         lines.append("")
 
     lines += ["## Données", f"- Tracé : [[{gpx_filename}]]", f"- Source : {route.source}"]

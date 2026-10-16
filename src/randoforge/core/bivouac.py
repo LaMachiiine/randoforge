@@ -156,6 +156,8 @@ def find_spots(
         if c.get("lat") is None:
             continue
         m, d = place(c["lat"], c["lon"])
+        if d > MAX_DETOUR_M:  # la requête OSM peut déborder (tolérance de simplification du tracé)
+            continue
         kind = (
             tags.get("tourism")
             or tags.get("shelter_type")
@@ -229,8 +231,8 @@ def find_spots(
             continue
         if any(a <= m <= b for a, b in hazards):
             continue
-        road = _road_distance(m, segments, scale)
-        if road < ROAD_MIN_M:
+        road = _road_distance(m, segments, scale) if segments else None  # tracé importé : routes inconnues
+        if road is not None and road < ROAD_MIN_M:
             continue
         water = _water_distance(lat, lon, waters)
         warnings, forbidden = _legal_warnings(areas, m / 1000)
@@ -239,10 +241,14 @@ def find_spots(
         score = 0.5 * (1 - slope / FLAT_PCT) + 0.3 * (
             1 - min(water, WATER_MAX_M) / WATER_MAX_M if water is not None else 0
         )
-        score += 0.2 * min(road, 2000) / 2000
+        if road is not None:
+            score += 0.2 * min(road, 2000) / 2000
         if water is None or water > WATER_MAX_M:
             warnings.append("Pas de point d'eau connu à moins de 500 m : prévoir l'eau")
-        warnings.append("Emplacement calculé (terrain plat, loin des routes) : à vérifier sur place")
+        if road is None:
+            warnings.append("Emplacement calculé (terrain plat ; distance aux routes inconnue) : à vérifier sur place")
+        else:
+            warnings.append("Emplacement calculé (terrain plat, loin des routes) : à vérifier sur place")
         alt = float(np.interp(m, frame.cum, [e if e is not None else np.nan for e in eles]))
         spot = BivouacSpot(
             km=round(m / 1000, 2),

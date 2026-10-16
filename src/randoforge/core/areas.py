@@ -97,9 +97,15 @@ def crossings(points: list[TrackPoint], elements: list[dict]) -> list[AreaCrossi
             if key in seen:
                 continue  # même zone cartographiée deux fois (way + relation)
             seen.add(key)
-            prev = next((a for a in out if a.nom == tags.get("name") and a.kind == kind), None)
-            if prev and start / 1000 - prev.km_fin < MERGE_GAP_KM:
-                prev.km_fin = round(max(prev.km_fin * 1000, end) / 1000, 2)  # fragments d'une même zone
+            # Fragments d'une même zone : même nom et type, et portions qui se touchent (à MERGE_GAP_KM près).
+            prev = next(
+                (a for a in out if a.nom == tags.get("name") and a.kind == kind
+                 and start / 1000 - MERGE_GAP_KM < a.km_fin and a.km_debut < end / 1000 + MERGE_GAP_KM),
+                None,
+            )  # fmt: skip
+            if prev:
+                prev.km_debut = round(min(prev.km_debut * 1000, start) / 1000, 2)
+                prev.km_fin = round(max(prev.km_fin * 1000, end) / 1000, 2)
                 continue
             out.append(
                 AreaCrossing(

@@ -15,6 +15,7 @@ OVERPASS_URLS = [
 ]
 HEDGE_AFTER_S = 3.0
 OVERPASS_ATTEMPTS = 6
+OVERPASS_BUDGET_S = 180.0  # au-delà, l'outil répond « indisponible » plutôt que de faire attendre ~10 min
 
 
 def overpass_problem(value) -> str | None:
@@ -78,5 +79,6 @@ class Overpass:
             # Les miroirs publics alternent erreurs 500/504 et succès d'une minute à l'autre (mesuré) :
             # davantage de tours d'essais rend la panne simultanée de tous les miroirs très improbable.
             attempts=OVERPASS_ATTEMPTS,
+            budget_s=OVERPASS_BUDGET_S,
         )
         return res.get("elements", [])

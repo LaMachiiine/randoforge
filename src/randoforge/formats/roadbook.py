@@ -7,7 +7,7 @@ import html
 from ..core.models import Route
 from .gpx import ATTRIBUTION
 from .html import _profile_svg
-from .sections import all_sections, highlights
+from .sections import all_sections, highlights, key_facts
 
 
 def _e(text: object) -> str:
@@ -15,19 +15,7 @@ def _e(text: object) -> str:
 
 
 def write_roadbook(route: Route) -> str:
-    s = route.stats
-    facts = []
-    if s:
-        facts = [
-            ("Distance", f"{s.distance_km} km"),
-            ("D+ / D-", f"{s.d_plus_m} / {s.d_minus_m} m"),
-            ("Durée", s.duration_label or "?"),
-            ("Altitudes", f"{s.alt_min_m}–{s.alt_max_m} m"),
-        ]
-        if route.stages:
-            facts.append(("Jours", str(len(route.stages))))
-        if route.validation:
-            facts.append(("Validation", route.validation.status))
+    facts = key_facts(route)
     body = [f"<h1>{_e(route.name)}</h1>"]
     body.append(
         '<dl class="facts">' + "".join(f"<div><dt>{_e(k)}</dt><dd>{_e(v)}</dd></div>" for k, v in facts) + "</dl>"

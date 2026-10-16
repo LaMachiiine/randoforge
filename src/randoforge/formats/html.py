@@ -10,6 +10,7 @@ import numpy as np
 from ..core.geo import cumulative_distance
 from ..core.models import Route
 from .gpx import POI_LABELS
+from .sections import key_facts
 
 LEAFLET = "https://unpkg.com/leaflet@1.9.4/dist"
 PROFILE_W, PROFILE_H, PAD = 900, 200, 36
@@ -56,7 +57,6 @@ def _profile_svg(route: Route) -> str:
 
 
 def write_map(route: Route) -> str:
-    s = route.stats
     coords = [[p.lat, p.lon] for p in route.points]
     pois = [
         {
@@ -78,12 +78,9 @@ def write_map(route: Route) -> str:
         seg = coords[int(i0) : max(int(i1), int(i0) + 2)]
         tech.append({"coords": seg, "label": f"km {t.km:.1f} — " + " ; ".join(t.details)})
 
-    summary = ""
-    if s:
-        summary = (
-            f"<b>{s.distance_km} km</b> · <b>{s.d_plus_m or '?'} m D+</b> · {s.d_minus_m or '?'} m D- · "
-            f"<b>{s.duration_label or '?'}</b> · {s.alt_min_m}–{s.alt_max_m} m"
-        )
+    summary = " · ".join(
+        f"{html.escape(k)} : <b>{html.escape(v)}</b>" for k, v in key_facts(route) if k != "Validation"
+    )
     status = route.validation.status if route.validation else "non validé"
     title = html.escape(route.name)
     # Les noms viennent d'OSM (modifiables par tous) : on empêche toute sortie du bloc <script>.
@@ -100,7 +97,8 @@ def write_map(route: Route) -> str:
         for b in sorted(route.bivouacs or [], key=lambda b: -b.score)[:15]
     ]
     payload = {"coords": coords, "pois": pois, "tech": tech, "nights": nights, "camps": camps}
-    data = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
+    # Tout « < » est encodé : ni « </script> » ni « <!-- » ne peuvent perturber l'analyse du bloc <script>.
+    data = json.dumps(payload, ensure_ascii=False).replace("<", "\\u003c")
     return f"""<!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title}</title>

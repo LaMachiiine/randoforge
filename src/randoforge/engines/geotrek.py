@@ -85,11 +85,14 @@ class GeotrekReference:
         """Identifiants des pratiques pédestres (« A pied », « Rando à pied », « Sentiers de découverte »)."""
         res = self._get(instance, INSTANCES[instance].replace("/trek/", "/trek_practice/"),
                         {"format": "json", "language": "fr"})  # fmt: skip
-        return [
+        ids = [
             p["id"]
             for p in res.get("results", [])
             if any(k in _name(p.get("name")).lower() for k in ("pied", "découverte"))
         ]
+        if not ids:  # sans filtre, Geotrek renverrait aussi VTT, trail, etc.
+            raise ValueError(f"Geotrek {instance} : aucune pratique pédestre reconnue dans le catalogue")
+        return ids
 
     def route_types(self, instance: str) -> dict[int, str]:
         res = self._get(

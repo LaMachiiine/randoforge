@@ -45,7 +45,7 @@ class App:
     def external(call):
         try:
             return call()
-        except (HttpError, ValueError) as exc:
+        except (HttpError, ValueError, OSError) as exc:  # OSError : lecture raster (rasterio) ou fichier
             raise ToolError(str(exc)) from exc
 
     def overpass(self, query: str) -> list[dict]:
@@ -81,6 +81,7 @@ class App:
             notes.append(
                 "Copernicus est un modèle de surface (cime des arbres incluse) : D+ possiblement surestimé en forêt."
             )
+        notes += [f"Source d'altitude indisponible, source suivante utilisée : {e}" for e in res.errors]
         route.elevation_notes = notes
 
     def stats_into(

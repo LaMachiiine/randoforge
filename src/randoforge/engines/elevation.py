@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import math
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
 
-from ..http import CachedHttp
+from ..http import CachedHttp, HttpError
 
 LatLon = tuple[float, float]
 
@@ -45,6 +45,10 @@ class IgnElevation:
         return out
 
 
+# Messages GDAL d'une tuile absente (mer) : S3 répond 404, ou 403 sur une clé inexistante.
+MISSING_TILE = ("404", "403", "does not exist", "No such file")
+
+
 class CopernicusElevation:
     """Copernicus DEM GLO-30 (30 m, monde entier), tuiles COG lues à distance sur AWS.
 
@@ -78,7 +82,9 @@ class CopernicusElevation:
                 url = f"/vsicurl/{self.BASE}/{tile}/{tile}.tif"
                 try:
                     ds = rasterio.open(url)
-                except RasterioIOError:
+                except RasterioIOError as exc:
+                    if not any(k in str(exc) for k in MISSING_TILE):
+                        raise  # réseau ou serveur : ne pas confondre avec « pas de tuile »
                     continue  # pas de tuile (mer) : on laisse None
                 with ds:
                     z = sample_bilinear(ds, [points[i] for i in idx])
@@ -113,12 +119,15 @@ def sample_bilinear(ds, points: list[LatLon]) -> np.ndarray:
     fc, fr = c - c0, r - r0
     ic, ir = np.floor(fc).astype(int), np.floor(fr).astype(int)
     dc, dr = fc - ic, fr - ir
-    return (
+    bilinear = (
         grid[ir, ic] * (1 - dc) * (1 - dr)
         + grid[ir, ic + 1] * dc * (1 - dr)
         + grid[ir + 1, ic] * (1 - dc) * dr
         + grid[ir + 1, ic + 1] * dc * dr
     )
+    # Au bord du raster (ou d'une tuile), un voisin manque : on prend le pixel le plus proche plutôt que rien.
+    nearest = grid[np.rint(fr).astype(int), np.rint(fc).astype(int)]
+    return np.where(np.isnan(bilinear), nearest, bilinear)
 
 
 class LocalDemElevation:
@@ -157,6 +166,7 @@ class LocalDemElevation:
 class ElevationResult:
     values: list[float | None]
     sources: list[str | None]
+    errors: list[str] = field(default_factory=list)
 
     def summary(self) -> str:
         counts: dict[str, int] = defaultdict(int)
@@ -176,12 +186,19 @@ class ElevationChain:
         values: list[float | None] = [None] * len(points)
         sources: list[str | None] = [None] * len(points)
         remaining = list(range(len(points)))
+        errors: list[str] = []
         for provider in self.providers:
             if not remaining:
                 break
-            got = provider.elevations([points[i] for i in remaining])
+            try:
+                got = provider.elevations([points[i] for i in remaining])
+            except (HttpError, ValueError, OSError) as exc:  # panne d'une source : on passe à la suivante
+                errors.append(f"{provider.name} : {exc}")
+                continue
             for i, v in zip(remaining, got, strict=True):
                 if v is not None:
                     values[i], sources[i] = v, provider.name
             remaining = [i for i in remaining if values[i] is None]
-        return ElevationResult(values, sources)
+        if remaining and errors and len(remaining) == len(points):
+            raise ValueError("Altimétrie indisponible : " + " ; ".join(errors))
+        return ElevationResult(values, sources, errors)
