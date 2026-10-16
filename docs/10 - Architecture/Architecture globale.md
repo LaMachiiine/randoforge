@@ -78,6 +78,19 @@ sequenceDiagram
 4. **Réponses compactes** pour Claude (stats + résumé), données lourdes sur disque.
 5. **Testable hors Claude** : chaque outil est une fonction Python testée unitairement.
 
+## Performances des calculs locaux (mesuré le 2026-10-16)
+Itinéraire synthétique de 66 km densifié à 10 m (7 808 points), mesure : `uv run python scripts/bench_calculs.py` :
+
+| Calcul | Avant | Après | Changement |
+|---|---|---|---|
+| `overlap_fraction` (recouvrement avec une rando faite, par candidat de boucle) | 569 ms | 55 ms | `dwithin` sur géométrie préparée (résultat identique) |
+| `deviation` (écart à une trace de référence) | ~690 ms | ~70 ms | index STRtree des segments, `query_nearest` (distances identiques) |
+| `probe_points` (sondes de pente des bivouacs) | 79 ms | 6 ms | un seul calcul géodésique vectorisé |
+| `densify` | boucle Python | 2 ms | vectorisé |
+
+Le reste (stats 21 ms, validation 60 ms dont allers-retours 45 ms, carte 23 ms, GPX 77 ms via gpxpy, lecture du stockage
+20 ms) est négligeable devant les appels réseau (BRouter, IGN, Overpass : secondes), déjà parallélisés et mis en cache.
+
 ## Arborescence de code envisagée
 ```
 randoforge/

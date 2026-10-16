@@ -13,7 +13,7 @@ import numpy as np
 from shapely.geometry import Point
 
 from .areas import area_at
-from .geo import destination_points, distance_m
+from .geo import GEOD, cumulative_distance, distance_m, interp_lon
 from .models import AreaCrossing, BivouacSpot, Poi, TechnicalPassage, TrackPoint, WaySegment
 from .osmgeom import RouteFrame
 
@@ -62,17 +62,19 @@ def build_query(points: list[TrackPoint]) -> str:
 
 def probe_points(points: list[TrackPoint]) -> tuple[list[tuple[float, float, float]], list[tuple[float, float]]]:
     """Points candidats tous les 250 m (m, lat, lon) et, pour chacun, centre + 4 points à ±15 m (N, E, S, O)."""
-    frame = RouteFrame(points)
-    total = frame.cum[-1]
-    candidates = []
-    probes: list[tuple[float, float]] = []
     lats = np.array([p.lat for p in points])
     lons = np.array([p.lon for p in points])
-    for m in np.arange(SAMPLE_EVERY_M, total - SAMPLE_EVERY_M / 2, SAMPLE_EVERY_M):
-        lat, lon = float(np.interp(m, frame.cum, lats)), float(np.interp(m, frame.cum, lons))
-        candidates.append((float(m), lat, lon))
-        probes.append((lat, lon))
-        probes.extend(destination_points(lat, lon, [0, 90, 180, 270], PROBE_M))
+    cum = cumulative_distance(lats, lons)
+    ms = np.arange(SAMPLE_EVERY_M, cum[-1] - SAMPLE_EVERY_M / 2, SAMPLE_EVERY_M)
+    c_lat, c_lon = np.interp(ms, cum, lats), interp_lon(ms, cum, lons)
+    # Les 4 voisins de tous les candidats en un seul calcul géodésique (N, E, S, O).
+    n_lon, n_lat, _ = GEOD.fwd(np.repeat(c_lon, 4), np.repeat(c_lat, 4), np.tile([0, 90, 180, 270], len(ms)),
+                               np.full(4 * len(ms), PROBE_M))  # fmt: skip
+    candidates = [(float(m), float(la), float(lo)) for m, la, lo in zip(ms, c_lat, c_lon, strict=True)]
+    probes: list[tuple[float, float]] = []
+    for i, (_, la, lo) in enumerate(candidates):
+        probes.append((la, lo))
+        probes.extend(zip(n_lat[4 * i : 4 * i + 4].tolist(), n_lon[4 * i : 4 * i + 4].tolist(), strict=True))
     return candidates, probes
 
 

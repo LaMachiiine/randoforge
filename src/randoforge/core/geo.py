@@ -16,6 +16,31 @@ def segment_lengths(lats: np.ndarray, lons: np.ndarray) -> np.ndarray:
     return np.asarray(dist, dtype=float)
 
 
+def unwrap_lons(lons) -> np.ndarray:
+    """Longitudes rendues continues (pas de saut de 360° en traversant ±180°) : interpolables linéairement."""
+    return np.degrees(np.unwrap(np.radians(np.asarray(lons, dtype=float))))
+
+
+def wrap_lons(lons):
+    """Ramène des longitudes dans [-180, 180[."""
+    return (np.asarray(lons, dtype=float) + 180.0) % 360.0 - 180.0
+
+
+def interp_lon(x, xp, lons):
+    """`np.interp` pour des longitudes, correct de part et d'autre de l'antiméridien."""
+    return wrap_lons(np.interp(x, xp, unwrap_lons(lons)))
+
+
+def lon_bounds(lons, margin_deg: float = 0.0) -> tuple[float, float]:
+    """(ouest, est) des longitudes ; ouest > est si l'emprise traverse l'antiméridien (convention Overpass)."""
+    u = unwrap_lons(lons)
+    w, e = float(u.min()) - margin_deg, float(u.max()) + margin_deg
+    if e - w >= 360:
+        return -180.0, 180.0
+    ww, ee = float(wrap_lons(w)), float(wrap_lons(e))
+    return ww, 180.0 if ee == -180.0 else ee
+
+
 def cumulative_distance(lats: np.ndarray, lons: np.ndarray) -> np.ndarray:
     """Distance cumulée (m) depuis le premier point ; même longueur que l'entrée."""
     return np.concatenate([[0.0], np.cumsum(segment_lengths(lats, lons))])
@@ -40,7 +65,7 @@ def resample(
     return (
         grid,
         np.interp(grid, d, lats[keep]),
-        np.interp(grid, d, lons[keep]),
+        interp_lon(grid, d, lons[keep]),
         np.interp(grid, d, eles[keep]),
     )
 
@@ -57,14 +82,16 @@ def densify(lats: np.ndarray, lons: np.ndarray, max_step_m: float) -> tuple[np.n
     Les points d'origine sont conservés (contrairement à `resample`), ce qui préserve
     les virages exacts du tracé.
     """
-    seg = segment_lengths(lats, lons)
-    out_lat, out_lon = [lats[0]], [lons[0]]
-    for i, length in enumerate(seg):
-        n = max(1, int(np.ceil(length / max_step_m)))
-        t = np.arange(1, n + 1) / n
-        out_lat.extend(lats[i] + (lats[i + 1] - lats[i]) * t)
-        out_lon.extend(lons[i] + (lons[i + 1] - lons[i]) * t)
-    return np.array(out_lat), np.array(out_lon)
+    lats, lons = np.asarray(lats, dtype=float), unwrap_lons(lons)
+    if len(lats) < 2:
+        return lats, wrap_lons(lons)
+    # Vectorisé : n points par segment, positions fractionnaires (j+1)/n le long de chaque segment.
+    n = np.maximum(1, np.ceil(segment_lengths(lats, wrap_lons(lons)) / max_step_m).astype(int))
+    seg = np.repeat(np.arange(len(n)), n)
+    t = (np.arange(n.sum()) - np.repeat(np.cumsum(n) - n, n) + 1) / n[seg]
+    out_lat = np.concatenate([lats[:1], lats[seg] + (lats[seg + 1] - lats[seg]) * t])
+    out_lon = np.concatenate([lons[:1], lons[seg] + (lons[seg + 1] - lons[seg]) * t])
+    return out_lat, wrap_lons(out_lon)
 
 
 class LocalProjection:

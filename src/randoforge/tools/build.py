@@ -14,7 +14,7 @@ from pydantic import Field
 
 from ..app import App
 from ..core import loops
-from ..core.geo import cumulative_distance
+from ..core.geo import cumulative_distance, interp_lon
 from ..core.models import Route, RouteRequest, RouteSummary, TrackPoint
 from ..core.quality import marked_share
 from ..core.similarity import overlap_fraction
@@ -251,7 +251,7 @@ def register(mcp: MCPServer, app: App) -> None:
         lats = np.array([p.lat for p in route.points])
         lons = np.array([p.lon for p in route.points])
         cum = cumulative_distance(lats, lons)
-        here = (float(np.interp(at_km * 1000, cum, lats)), float(np.interp(at_km * 1000, cum, lons)))
+        here = (float(np.interp(at_km * 1000, cum, lats)), float(interp_lon(at_km * 1000, cum, lons)))
         if target:
             goal, label = (target.lat, target.lon), "le lieu choisi"
         else:

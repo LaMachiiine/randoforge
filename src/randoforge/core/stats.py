@@ -10,6 +10,16 @@ from .models import ElevationParams, RouteStats, TrackPoint, WalkerProfile
 from .timing import estimate_minutes, format_duration
 
 LOOP_TOLERANCE_M = 50.0
+# Fourchette de D+ (mesurée sur 80 randos officielles des parcs nationaux, voir « Calcul du dénivelé ») :
+# bas = 93 % du D+ retenu ; haut = D+ peu lissé (10 m / seuil 1 m), qui garde les petites ondulations.
+# La valeur publiée par le parc y tombe dans 68 % des cas (Écrins 65 %, Cévennes 70 %).
+RANGE_LOW_FACTOR = 0.93
+RANGE_HIGH_PARAMS = ElevationParams(smooth_window_m=10.0, threshold_m=1.0)
+
+
+def _gain(lats: np.ndarray, lons: np.ndarray, eles: np.ndarray, params: ElevationParams) -> float:
+    _, _, _, e = resample(lats, lons, eles, params.step_m)
+    return elevation_gain(median_smooth(e, int(round(params.smooth_window_m / params.step_m))), params.threshold_m)[0]
 
 
 def compute_stats(
@@ -35,7 +45,7 @@ def compute_stats(
     distance_km = float(cumulative_distance(lats, lons)[-1]) / 1000
     is_loop = distance_m((points[0].lat, points[0].lon), (points[-1].lat, points[-1].lon)) <= LOOP_TOLERANCE_M
 
-    d_plus = d_minus = alt_min = alt_max = None
+    d_plus = d_minus = alt_min = alt_max = d_plus_range = None
     duration_min = None
     missing = sum(p.ele is None for p in points)
     if missing:
@@ -50,6 +60,8 @@ def compute_stats(
         e = median_smooth(e, window_pts)
         up, down = elevation_gain(e, params.threshold_m)
         d_plus, d_minus = round(up), round(down)
+        high = _gain(lats, lons, eles, RANGE_HIGH_PARAMS)
+        d_plus_range = (round(up * RANGE_LOW_FACTOR), max(d_plus, round(high)))
         alt_min, alt_max = round(float(e.min())), round(float(e.max()))
         if is_loop and max(up, down) > 0 and abs(up - down) / max(up, down) > 0.01:
             warnings.append(f"Boucle avec D+ ({d_plus} m) ≠ D- ({d_minus} m) de plus de 1 % : altitudes incohérentes ?")
@@ -60,6 +72,7 @@ def compute_stats(
     stats = RouteStats(
         distance_km=round(distance_km, 2),
         d_plus_m=d_plus,
+        d_plus_fourchette_m=d_plus_range,
         d_minus_m=d_minus,
         alt_min_m=alt_min,
         alt_max_m=alt_max,

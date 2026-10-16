@@ -100,6 +100,23 @@ défaut de réglage. Conséquence produit : la règle N5 conseille de **prévoir
 - Conclusion : aucune correction n'est justifiable sans se caler sur une seule référence. On garde 30 m / 5 m (meilleur
   global) et l'écart est signalé par N5 avec le conseil de prévoir la valeur haute.
 
+### Fourchette de D+ plausible (`d_plus_fourchette_m`, mesurée le 2026-10-16)
+Puisqu'aucun réglage unique ne colle aux deux parcs, on annonce en plus du D+ retenu une **fourchette** :
+bas = 93 % du D+ retenu, haut = D+ peu lissé (10 m / seuil 1 m, garde les petites ondulations).
+Mesure sur les 80 randos officielles (part des D+ publiés tombant dans la fourchette) :
+
+| Fourchette | Écrins | Cévennes | Global | Largeur médiane |
+|---|---|---|---|---|
+| D+ retenu seul (±3 %) | 40 % | 28 % | 34 % | 6 % |
+| [D+ retenu, 10 m / 3 m] | 10 % | 32 % | 21 % | 5 % |
+| [93 % du D+, 10 m / 3 m] | 57 % | 55 % | 56 % | 12 % |
+| **[93 % du D+, 10 m / 1 m] (retenu)** | **65 %** | **70 %** | **68 %** | 18 % |
+| [90 % du D+, 10 m / 1 m] | 75 % | 70 % | 72 % | 21 % |
+
+Retenu : couverture d'environ 2 cas sur 3 sans élargir inutilement (au-delà, on gagne peu pour une fourchette
+plus large). Aire-de-Côte : 166 m, plausible **154–255 m**, publié 223 m (dans la fourchette). La règle N5 cite
+la fourchette et dit si la valeur de l'autre source y tombe ; fiche, carte et roadbook l'affichent.
+
 ## Pièges connus
 - **Ponts et tunnels** : le MNT donne l'altitude du terrain (fond de vallée / sommet de montagne). → Interpoler linéairement l'altitude entre les extrémités pour les ways OSM `bridge=yes` / `tunnel=yes`.
 - **Falaises / sentiers en corniche** : un MNT 30 m peut « tomber » de la falaise. → Préférer RGE ALTI 1–5 m en France.

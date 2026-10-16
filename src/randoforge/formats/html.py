@@ -7,7 +7,7 @@ import json
 
 import numpy as np
 
-from ..core.geo import cumulative_distance
+from ..core.geo import cumulative_distance, interp_lon
 from ..core.models import Route
 from .gpx import POI_LABELS
 from .sections import key_facts
@@ -87,7 +87,7 @@ def write_map(route: Route) -> str:
     nights = [
         {
             "lat": float(np.interp(st.km_fin * 1000, cum, lats)),
-            "lon": float(np.interp(st.km_fin * 1000, cum, lons)),
+            "lon": float(interp_lon(st.km_fin * 1000, cum, lons)),
             "label": f"Nuit {st.jour} : {st.arrivee}",
         }
         for st in (route.stages or [])[:-1]

@@ -70,7 +70,7 @@ Les réponses sont mises en cache (`cache.sqlite`) pour ménager ces services gr
 
 Le D+ brut d'un modèle de terrain est gonflé par le bruit (+15 à +50 % mesurés). RandoForge densifie le tracé tous les 10 m, recalcule les altitudes sur le MNT, applique un filtre médian de 30 m, puis ne compte une montée qu'au-delà de 5 m (hystérésis par extremums). La durée suit la méthode DIN 33466. Détails : [Calcul du dénivelé](docs/10%20-%20Architecture/Calcul%20du%20d%C3%A9nivel%C3%A9.md).
 
-**Précision mesurée** sur 80 itinéraires officiels des parcs nationaux des Écrins et des Cévennes : écart médian de **5 %** sur le D+ avec le topo-guide, distance identique ([rapport](docs/10%20-%20Architecture/Calibration%20du%20d%C3%A9nivel%C3%A9.md)). Limite connue : les modèles de terrain tronquent les pics acérés (−43 m en médiane dans les Écrins) ; la règle N2 le signale.
+**Précision mesurée** sur 80 itinéraires officiels des parcs nationaux des Écrins et des Cévennes : écart médian de **5 %** sur le D+ avec le topo-guide, distance identique ([rapport](docs/10%20-%20Architecture/Calibration%20du%20d%C3%A9nivel%C3%A9.md)). Limite connue : les modèles de terrain tronquent les pics acérés (−43 m en médiane dans les Écrins) ; la règle N2 le signale. Chaque D+ est accompagné d'une **fourchette plausible** où tombe le topo-guide 2 fois sur 3.
 
 ## Tests
 
@@ -90,7 +90,7 @@ Tests de bout en bout sur les vrais services : le serveur est lancé en stdio co
 uv run python scripts/demo_itinerance.py
 ```
 
-Démonstration complète commentée. `scripts/calibrate_reference.py --report` refait la calibration sur les références officielles ; `scripts/calibrate.py` compare le D+ à vos propres traces.
+Démonstration complète commentée. `scripts/calibrate_reference.py --report` refait la calibration sur les références officielles ; `scripts/calibrate.py` compare le D+ à vos propres traces. `scripts/bench_calculs.py` mesure les calculs locaux.
 
 ## Évals avec de vrais agents
 

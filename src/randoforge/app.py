@@ -55,6 +55,8 @@ class App:
         if not self.services.refuges:
             return []
         s, w, n, e = poi_lib.bbox_around(route.points, margin_m)
+        if w > e:  # emprise à cheval sur l'antiméridien : hors couverture de refuges.info (Europe)
+            return []
         return self.external(lambda: self.services.refuges.points(s, w, n, e))
 
     # --- Altimétrie et statistiques -------------------------------------------------------

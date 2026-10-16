@@ -291,7 +291,17 @@ def check_numbers(route: Route) -> list[Check]:
                     id="N5",
                     level="warning",
                     message=f"D+ calculé {s.d_plus_m:.0f} m vs {engine_dplus:.0f} m selon {source} (modèles de terrain "
-                    "et méthodes différents)",
+                    "et méthodes différents)"
+                    + (
+                        f" ; fourchette plausible {s.d_plus_fourchette_m[0]}–{s.d_plus_fourchette_m[1]} m"
+                        + (
+                            " (contient l'autre valeur)"
+                            if s.d_plus_fourchette_m[0] <= engine_dplus <= s.d_plus_fourchette_m[1]
+                            else ""
+                        )
+                        if s.d_plus_fourchette_m
+                        else ""
+                    ),  # fmt: skip
                     # La calibration montre qu'aucune des deux valeurs n'est systématiquement la bonne.
                     suggestion=f"Prévoir plutôt la valeur haute ({max(s.d_plus_m, engine_dplus):.0f} m) pour l'effort "
                     "et l'horaire.",

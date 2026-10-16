@@ -15,7 +15,7 @@ from shapely.geometry import LineString, MultiLineString, Point, Polygon
 from shapely.geometry.base import BaseGeometry
 from shapely.ops import nearest_points
 
-from .geo import LocalProjection, cumulative_distance
+from .geo import LocalProjection, cumulative_distance, lon_bounds
 from .models import Poi, TrackPoint
 
 ON_ROUTE_M = 50.0
@@ -151,7 +151,8 @@ def bbox_around(points: list[TrackPoint], margin_m: float) -> tuple[float, float
     lons = [p.lon for p in points]
     dlat = margin_m / 111_000
     dlon = margin_m / (111_000 * max(0.1, math.cos(math.radians(sum(lats) / len(lats)))))
-    return min(lats) - dlat, min(lons) - dlon, max(lats) + dlat, max(lons) + dlon
+    w, e = lon_bounds(lons, dlon)  # w > e si l'emprise traverse l'antiméridien (géré par Overpass)
+    return min(lats) - dlat, w, max(lats) + dlat, e
 
 
 def classify(tags: dict, categories: list[str]) -> tuple[str, str] | None:

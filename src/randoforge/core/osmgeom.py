@@ -8,7 +8,7 @@ from shapely.geometry import LineString, Point, Polygon
 from shapely.geometry.base import BaseGeometry
 from shapely.ops import nearest_points
 
-from .geo import LocalProjection
+from .geo import LocalProjection, lon_bounds
 from .models import TrackPoint
 from .terrain import _runs, route_line
 
@@ -94,4 +94,5 @@ class RouteFrame:
         lats, lons = self.proj.to_latlon(*np.asarray(self.line.coords).T)
         dlat = margin_m / 111_000
         dlon = margin_m / (111_000 * max(0.1, np.cos(np.radians(np.mean(lats)))))
-        return f"{lats.min() - dlat:.5f},{lons.min() - dlon:.5f},{lats.max() + dlat:.5f},{lons.max() + dlon:.5f}"
+        w, e = lon_bounds(lons, dlon)
+        return f"{lats.min() - dlat:.5f},{w:.5f},{lats.max() + dlat:.5f},{e:.5f}"

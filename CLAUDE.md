@@ -19,7 +19,7 @@ Conception détaillée : vault Obsidian dans `docs/` (point d'entrée `docs/00 -
 - `src/randoforge/validation.py` : règles, identifiants = ceux de `docs/10 - Architecture/Validation & cohérence.md`.
 - `src/randoforge/formats/` : GPX, fiche Markdown, carte HTML, roadbook ; `sections.py` = contenu commun fiche/roadbook.
 - `.claude-plugin/`, `skills/planifier-rando/`, `.mcp.json` : plugin Claude Code.
-- `scripts/` : démonstration de bout en bout, calibration du D+ (`calibrate_reference.py` sur les parcs nationaux, `calibrate.py` sur des traces perso).
+- `scripts/` : démonstration de bout en bout, calibration du D+ (`calibrate_reference.py` sur les parcs nationaux, `calibrate.py` sur des traces perso), mesure des calculs locaux (`bench_calculs.py`).
 - `evals/` : évals avec de vrais agents Claude Code (`run.py`, `grade.py`, scénarios, randos officielles).
 - `tests/conftest.py` : doublures des services ; `tests/fixtures/` : vraies réponses enregistrées ; `tests/e2e/` : tests réseau.
 

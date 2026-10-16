@@ -54,6 +54,8 @@ def write_fiche(route: Route, gpx_filename: str = "route.gpx") -> str:
 
     if s:
         dplus = f"{s.d_plus_m} m D+" if s.d_plus_m is not None else "D+ inconnu"
+        if s.d_plus_fourchette_m:
+            dplus += f" (plausible {s.d_plus_fourchette_m[0]}–{s.d_plus_fourchette_m[1]} m)"
         duree = s.duration_label or "durée inconnue"
         days = f" · **{len(route.stages)} jours**" if route.stages else ""
         lines += ["> [!summary] En bref", f"> **{s.distance_km} km** · **{dplus}** · **{duree}**{days}", ""]

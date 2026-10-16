@@ -150,3 +150,61 @@ def test_retry_rounds_stop_when_the_time_budget_is_spent(monkeypatch):
     with pytest.raises(HttpError, match="pas de réponse en 180 s"):
         http.request_json("GET", "https://x.example", attempts=6, budget_s=180)
     assert clock[0] == 200  # deux tours, pas six
+
+
+# --- Antiméridien ------------------------------------------------------------------------------
+
+
+def test_track_across_the_antimeridian():
+    import numpy as np
+
+    from randoforge.core.geo import densify, lon_bounds, resample
+    from randoforge.core.models import TrackPoint
+    from randoforge.core.pois import bbox_around
+
+    lats, lons = np.array([-16.8, -16.8]), np.array([179.999, -179.999])  # ~210 m à travers ±180°
+    dl, dn = densify(lats, lons, 10)
+    assert 20 <= len(dn) <= 30 and np.all(np.abs(dn) > 179.99)  # pas de détour par le méridien de Greenwich
+    _, _, rl, _ = resample(lats, lons, np.array([0.0, 0.0]), 10)
+    assert np.all(np.abs(rl) > 179.99)
+    w, e = lon_bounds(lons)
+    assert w > e and w > 179.9 and e < -179.9  # convention Overpass : ouest > est
+    s, w, n, e = bbox_around([TrackPoint(lat=-16.8, lon=179.999), TrackPoint(lat=-16.8, lon=-179.999)], 100)
+    assert w > e
+
+
+def test_densify_keeps_original_points_and_max_step():
+    import numpy as np
+
+    from randoforge.core.geo import densify, segment_lengths
+
+    lats, lons = np.array([45.0, 45.001, 45.0011]), np.array([6.0, 6.002, 6.0021])
+    dl, dn = densify(lats, lons, 10)
+    assert dl[0] == 45.0 and dl[-1] == 45.0011 and segment_lengths(dl, dn).max() <= 10.01
+    assert any(abs(a - 45.001) < 1e-12 and abs(b - 6.002) < 1e-12 for a, b in zip(dl, dn, strict=True))
+
+
+# --- Fourchette de D+ ---------------------------------------------------------------------------
+
+
+def test_d_plus_range_brackets_the_retained_value():
+    import math
+
+    from randoforge.core.stats import compute_stats
+
+    # Montée régulière + petites ondulations de 3 m, sous le seuil d'hystérésis de 5 m.
+    pts = line(900, ele=lambda i: 1000 + 0.5 * i + 3 * math.sin(i / 3))
+    s, _ = compute_stats(pts)
+    low, high = s.d_plus_fourchette_m
+    assert abs(low - s.d_plus_m * 0.93) <= 1 and high > s.d_plus_m  # les ondulations relèvent le haut
+    assert "plausible" in write_fiche(route_of(pts)) and "D+ plausible" in write_roadbook(route_of(pts))
+
+
+def test_n5_gives_the_range_and_whether_it_contains_the_other_value():
+    import math
+
+    from randoforge.validation import validate
+
+    pts = line(900, ele=lambda i: 1000 + 0.5 * i + 3 * math.sin(i / 3))  # D+ 449 m, plausible 417–542 m
+    n5 = next(c for c in validate(route_of(pts, engine_stats={"d_plus_m": 540})).checks if c.id == "N5")
+    assert "fourchette plausible 417–542 m (contient l'autre valeur)" in n5.message

@@ -28,6 +28,11 @@ def key_facts(route: Route) -> list[tuple[str, str]]:
         facts = [
             ("Distance", f"{s.distance_km} km"),
             ("D+ / D-", f"{_v(s.d_plus_m)} / {_v(s.d_minus_m, ' m')}"),
+            *(
+                [("D+ plausible", f"{s.d_plus_fourchette_m[0]}–{s.d_plus_fourchette_m[1]} m")]
+                if s.d_plus_fourchette_m
+                else []
+            ),  # fmt: skip
             ("Durée", f"{s.duration_label} (pauses non comprises)" if s.duration_label else "inconnue"),
             ("Altitudes", f"{s.alt_min_m}–{s.alt_max_m} m" if s.alt_min_m is not None else "inconnues"),
         ]
