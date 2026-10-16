@@ -14,6 +14,7 @@ OVERPASS_URLS = [
     "https://overpass-api.de/api/interpreter",
 ]
 HEDGE_AFTER_S = 3.0
+OVERPASS_ATTEMPTS = 6
 
 
 def overpass_problem(value) -> str | None:
@@ -74,5 +75,8 @@ class Overpass:
             service="Overpass (OpenStreetMap)",
             hedge_after_s=HEDGE_AFTER_S,
             accept=overpass_problem,
+            # Les miroirs publics alternent erreurs 500/504 et succès d'une minute à l'autre (mesuré) :
+            # davantage de tours d'essais rend la panne simultanée de tous les miroirs très improbable.
+            attempts=OVERPASS_ATTEMPTS,
         )
         return res.get("elements", [])

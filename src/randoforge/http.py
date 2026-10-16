@@ -33,6 +33,7 @@ HOST_LIMITS: dict[str, tuple[int, float]] = {
 # Blocage temporaire signalé avec un code « définitif » par certains serveurs publics (BRouter : 403).
 RETRYABLE_BY_HOST = {"brouter.de": {403}}
 MAX_RETRY_AFTER_S = 30.0
+MAX_BACKOFF_S = 8.0
 
 DAY = 86_400.0
 # BRouter public coupe tout calcul de plus de 2 s : surcharge passagère OU itinéraire trop complexe / points loin des
@@ -185,11 +186,13 @@ class CachedHttp:
         service: str = "service externe",
         hedge_after_s: float | None = None,
         accept: Callable[[Any], str | None] | None = None,
+        attempts: int | None = None,
     ) -> Any:
         """Appelle des serveurs équivalents ; `ttl_s=None` = cache sans expiration.
 
         - `hedge_after_s` : met les serveurs en concurrence (voir `_hedged`) au lieu de les essayer un par un ;
-        - `accept(valeur)` : renvoie un message si une réponse 200 est en fait une erreur (ex. Overpass).
+        - `accept(valeur)` : renvoie un message si une réponse 200 est en fait une erreur (ex. Overpass) ;
+        - `attempts` : nombre de tours d'essais (défaut : `retries`), espacés de 1, 2, 4, 8, 8… s.
         La clé de cache ignore le serveur effectivement utilisé (les miroirs sont équivalents).
         """
         urls = [urls] if isinstance(urls, str) else urls
@@ -202,7 +205,8 @@ class CachedHttp:
             return self._attempt(method, url, params, data, json_body, accept, service, len(urls) > 1)
 
         last_error = ""
-        for attempt in range(self.retries):
+        attempts = attempts or self.retries
+        for attempt in range(attempts):
             if hedge_after_s is not None and len(urls) > 1:
                 outcomes = [self._hedged(urls, call, hedge_after_s)]
             else:
@@ -218,6 +222,6 @@ class CachedHttp:
                 if kind == "fatal" or (kind == "slow" and attempt >= 1):
                     raise HttpError(value)  # « slow » deux fois de suite : la demande elle-même est en cause
                 last_error = value
-            if attempt < self.retries - 1:
-                self.sleep(2**attempt)
-        raise HttpError(f"{service} indisponible après {self.retries} essais ({last_error}). Réessayer plus tard.")
+            if attempt < attempts - 1:
+                self.sleep(min(2**attempt, MAX_BACKOFF_S))
+        raise HttpError(f"{service} indisponible après {attempts} essais ({last_error}). Réessayer plus tard.")

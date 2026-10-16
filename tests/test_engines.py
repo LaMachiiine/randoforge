@@ -199,3 +199,22 @@ def test_retry_after_is_honoured_and_brouter_403_retried():
     answers2 = iter([httpx.Response(403, text="Forbidden"), httpx.Response(200, json={"ok": 2})])
     http2 = CachedHttp(None, transport=httpx.MockTransport(lambda r: next(answers2)), sleep=lambda s: None)
     assert http2.request_json("GET", "https://brouter.de/brouter") == {"ok": 2}
+
+
+def test_overpass_keeps_trying_flapping_mirrors():
+    from randoforge.engines.osm import OVERPASS_ATTEMPTS, Overpass
+
+    rounds = []
+
+    def handler(request):
+        rounds.append(request.url.host)
+        # Tous les miroirs en erreur pendant les 4 premiers tours, puis un miroir revient.
+        if len(rounds) <= 8:
+            return httpx.Response(504)
+        return httpx.Response(200, json={"elements": [{"id": 7}]})
+
+    slept = []
+    http = CachedHttp(None, transport=httpx.MockTransport(handler), sleep=slept.append)
+    over = Overpass(http, ["https://a.example/i", "https://b.example/i"])
+    assert over.query("q") == [{"id": 7}]
+    assert OVERPASS_ATTEMPTS >= 5 and max(slept) <= 8

@@ -36,8 +36,16 @@ async def server(home: Path):
         args=["run", "--directory", str(ROOT), "randoforge"],
         env={**os.environ, "RANDOFORGE_HOME": str(home)},
     )
-    async with Client(params, read_timeout_seconds=600) as client:
-        yield client
+    try:
+        async with Client(params, read_timeout_seconds=600) as client:
+            yield client
+    except BaseExceptionGroup as group:
+        # Le client MCP enveloppe tout dans des groupes d'exceptions : on fait remonter la vraie cause
+        # (saut ou échec du test) pour que pytest affiche son message.
+        inner: BaseException = group
+        while isinstance(inner, BaseExceptionGroup) and len(inner.exceptions) == 1:
+            inner = inner.exceptions[0]
+        raise inner from None
 
 
 async def call(client, tool: str, args: dict) -> dict:
@@ -105,7 +113,9 @@ async def test_multi_day_trek_hauts_plateaux(home):
         zones = await call(c, "route_areas", {"route_id": rid})
         assert any("réserve" in z["kind"] and z["chiens"] == "interdits" for z in zones["zones"])
 
-        spots = await call(c, "find_bivouac_spots", {"route_id": rid})
+        spots = await call(c, "find_bivouac_spots", {"route_id": rid, "limit": 100})
+        if any("refuges.info" in r for r in spots["rappels"]):
+            pytest.skip(f"refuges.info indisponible : {spots['rappels']}")
         assert any(s["source"] == "refuges.info" for s in spots["emplacements"])
 
         plan = await call(c, "plan_stages", {"route_id": rid})

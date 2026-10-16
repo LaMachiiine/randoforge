@@ -3,7 +3,7 @@ tags: [claude, evals]
 ---
 # Résultats des évals — 2026-10-15_2017
 
-**26 / 28 scénarios réussis** · score moyen 99%
+**27 / 28 scénarios réussis** · score moyen 100%
 
 | Scénario | Réussi | Score | Échecs | Mesures |
 |---|---|---|---|---|
@@ -14,7 +14,7 @@ tags: [claude, evals]
 | 05-poussette | ✅ | 100% | — | chiffres_tracables=1.0 |
 | 06-famille-2h | ✅ | 100% | — | chiffres_tracables=1.0 |
 | 07-horaires-samedi | ✅ | 100% | — | chiffres_tracables=0.92 |
-| 08-meteo-demain | ❌ | 88% | chiffres traçables (≥ 90 %) (1 000m) | chiffres_tracables=0.83 |
+| 08-meteo-demain | ✅ | 100% | — | chiffres_tracables=1.0 |
 | 09-analyse-trace | ✅ | 100% | — | chiffres_tracables=1.0 |
 | 10-compare-reference | ✅ | 100% | — | chiffres_tracables=1.0 |
 | 11-gr-correncon | ✅ | 100% | — | chiffres_tracables=1.0 |
@@ -58,7 +58,6 @@ Agents : Claude Code `claude -p` (sonnet), outils RandoForge uniquement. Coût t
 | 16-export-vault | 0.09 $ | 114,593 (103,584) | 1,463 | 8 |
 | 17-roadbook | 0.13 $ | 171,967 (159,201) | 2,449 | 12 |
 | 18-passages-techniques | 0.08 $ | 84,716 (73,402) | 1,250 | 6 |
-| 08-meteo-demain | 0.10 $ | 83,087 (65,801) | 954 | 5 |
 | 14-zermatt | 0.13 $ | 124,183 (104,236) | 1,910 | 8 |
 | 19-impossible-dplus | 0.14 $ | 106,586 (86,461) | 2,277 | 6 |
 | 20-incoherent | 0.08 $ | 86,102 (75,378) | 1,470 | 5 |
@@ -70,17 +69,18 @@ Agents : Claude Code `claude -p` (sonnet), outils RandoForge uniquement. Coût t
 | ref-cevennes-45054 | 0.09 $ | 104,939 (94,439) | 1,806 | 7 |
 | ref-cevennes-98959 | 0.10 $ | 123,567 (112,876) | 1,635 | 8 |
 | ref-cevennes-74874 | 0.09 $ | 103,150 (93,271) | 1,438 | 7 |
+| 08-meteo-demain | 0.10 $ | 81,840 (64,786) | 917 | 5 |
 
 Taille cumulée des réponses d'outils (caractères, environ 4 par jeton) :
 
 - `find_pois` : 75,124
 - `analyze_route` : 46,625
 - `annotate_route` : 31,876
-- `generate_loop_candidates` : 21,298
+- `generate_loop_candidates` : 21,303
 - `geocode` : 12,825
 - `validate_route` : 11,083
 - `find_bivouac_spots` : 10,627
-- `set_constraints` : 10,400
+- `set_constraints` : 10,405
 - `export_route` : 9,086
 - `find_official_treks` : 8,538
 - `find_hiking_routes` : 6,004
@@ -470,20 +470,23 @@ Outils : geocode, geocode, find_pois, route_between, route_between, set_constrai
 
 <details><summary>08-meteo-demain</summary>
 
-## Météo demain samedi 17 octobre — Autrans
+Voici la météo pour demain samedi 17 octobre à Autrans (départ 9h) :
 
-Prévisions sur la plage de marche **9h–14h** (boucle ~8,5 km, 315 m D+) :
+---
 
-| Point | Altitude | Temp. | Pluie | Rafales |
-|---|---|---|---|---|
-| Départ (village) | 1 039 m | 10–11 °C | 0 mm | 20 km/h |
-| Point culminant | 1 208 m | 9–11 °C | 0 mm | 20 km/h |
+**Météo du 17 octobre — Boucle depuis Autrans (1 039–1 207 m)**
+Plage de marche estimée : **9h–14h**
 
-**Aucune alerte** — pas de pluie, pas d'orage, pas de neige au sol.
+| Point | Alt. | Temp. | Pluie | Rafales | Orage |
+|---|---|---|---|---|---|
+| Départ (village) | 1 039 m | 10–11 °C | 0 mm | 20 km/h | Non |
+| Point culminant | 1 207 m | 9–11 °C | 0 mm | 20 km/h | Non |
 
-Conditions très favorables : temps sec, vent faible, températures fraîches mais agréables pour marcher en automne. Prévoyez une couche supplémentaire au départ (10 °C à 1 000 m).
+**Aucune alerte météo.** Temps sec, pas de neige au sol, vent faible — conditions favorables pour randonner.
 
-> Source : Open-Meteo. Note : la boucle générée fait 8,5 km (vs 10 km demandés) — si vous souhaitez un tracé précis avec export GPX, je peux affiner l'itinéraire.
+---
+
+**Note sur l'itinéraire :** la boucle générée fait 8,5 km / 315 m D+ (IGN), soit un peu moins que vos 10 km cibles. Si vous souhaitez une fiche complète ou un GPX, je peux analyser et exporter cet itinéraire.
 
 Outils : geocode, generate_loop_candidates, set_constraints, weather_forecast
 </details>

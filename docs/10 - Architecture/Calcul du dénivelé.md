@@ -71,6 +71,20 @@ Résultats détaillés et reproductibles : [[Calibration du dénivelé]] (`scrip
 - Tests de non-régression : `tests/e2e/test_reference.py` (écart médian ≤ 8 % par parc, distance ≤ 1 %,
   sommets arrondis ≤ 5 m).
 
+### Peut-on corriger la sous-estimation dans les Cévennes ? (mesuré le 2026-10-16)
+Biais : −4,4 % (Cévennes, relief vallonné) contre +3,6 % (Écrins). Baisser le seuil réduit le biais des Cévennes
+mais dégrade les Écrins et l'ensemble — **aucun réglage n'améliore les deux parcs** :
+
+| Lissage / seuil | Global | Écrins | Cévennes |
+|---|---|---|---|
+| **30 m / 5 m (retenu)** | **5,0 %** | **4,2 %** (+3,6) | 6,0 % (−4,4) |
+| 30 m / 3 m | 6,1 % | 5,1 % (+4,4) | 6,5 % (−1,6) |
+| 30 m / 2 m | 6,1 % | 6,3 % (+5,1) | 6,1 % (−0,4) |
+| 10 m / 3 m | 8,8 % | 10,0 % (+7,7) | 8,1 % (+2,0) |
+
+Les cas extrêmes (ex. Aire-de-Côte : 223 m publiés, 166 m calculés) sont des désaccords entre références, pas un
+défaut de réglage. Conséquence produit : la règle N5 conseille de **prévoir la valeur haute**.
+
 ## Pièges connus
 - **Ponts et tunnels** : le MNT donne l'altitude du terrain (fond de vallée / sommet de montagne). → Interpoler linéairement l'altitude entre les extrémités pour les ways OSM `bridge=yes` / `tunnel=yes`.
 - **Falaises / sentiers en corniche** : un MNT 30 m peut « tomber » de la falaise. → Préférer RGE ALTI 1–5 m en France.
