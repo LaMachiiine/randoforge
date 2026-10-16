@@ -37,8 +37,9 @@ def lon_bounds(lons, margin_deg: float = 0.0) -> tuple[float, float]:
     w, e = float(u.min()) - margin_deg, float(u.max()) + margin_deg
     if e - w >= 360:
         return -180.0, 180.0
-    ww, ee = float(wrap_lons(w)), float(wrap_lons(e))
-    return ww, 180.0 if ee == -180.0 else ee
+    ww = float(wrap_lons(w))
+    ee = ww + (e - w)  # même largeur ; repasse en [-180, 180] seulement si l'emprise traverse l'antiméridien
+    return ww, ee if ee <= 180.0 else float(wrap_lons(ee))
 
 
 def cumulative_distance(lats: np.ndarray, lons: np.ndarray) -> np.ndarray:

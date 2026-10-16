@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from functools import reduce
+
 import numpy as np
 import shapely
 from shapely.geometry import LineString, Point, Polygon
@@ -47,10 +49,11 @@ def element_geometry(el: dict, proj: LocalProjection) -> BaseGeometry | None:
     if is_area(el.get("tags", {})):
         if el["type"] == "relation":
             # Anneaux extérieurs moins les enclaves (rôle « inner ») : un village exclu du parc reste exclu.
-            outer = shapely.union_all(list(shapely.polygonize(lines).geoms))
-            holes = list(shapely.polygonize(inner).geoms) if inner else []
-            area = outer.difference(shapely.union_all(holes)) if holes else outer
-            return None if area.is_empty else area
+            # Règle pair-impair sur tous les anneaux (extérieurs et enclaves) : un village exclu du parc reste
+            # exclu, et une île dans cette enclave redevient dans le parc.
+            rings = [Polygon(p.exterior) for p in shapely.polygonize(lines + inner).geoms]
+            area = reduce(lambda a, b: a.symmetric_difference(b), rings) if rings else None
+            return None if area is None or area.is_empty else area
         else:
             polys = [Polygon(ln.coords) for ln in lines if ln.is_closed and len(ln.coords) >= 4]
         return shapely.union_all(polys) if polys else None

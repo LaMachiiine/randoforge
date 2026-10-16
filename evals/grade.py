@@ -20,9 +20,26 @@ from randoforge.core.similarity import deviation, overlap_fraction
 from randoforge.core.stats import compute_stats
 
 ROUTE_TOOLS = {"route_between", "generate_loop_candidates", "import_gpx", "bailout_route", "import_official_trek"}
+# Espaces de séparation des milliers : ASCII, insécable (U+00A0) et fine insécable (U+202F).
+SPACES = " \u00a0\u202f"
+# Champs de résultat qui ne sont pas des mesures (identifiants, coordonnées, liens) : exclus de la traçabilité.
+NOT_MEASURES = {
+    "route_id",
+    "osm_id",
+    "id",
+    "trek_id",
+    "wikidata",
+    "lien",
+    "wikipedia_url",
+    "lat",
+    "lon",
+    "path",
+    "files",
+}
 # Chiffre + unité ; « km/h » (vitesse du vent) n'est pas une distance. Un « ~ » ou « ≈ » devant marque une estimation.
 NUMBER_RE = re.compile(
-    r"([~≈]\s*)?(?<![\w.,])(\d{1,3}(?:[  ]\d{3})+|\d+(?:[.,]\d+)?)\s*(km(?!/h)|m\b|h\d{2}|h\b)", re.IGNORECASE
+    r"([~≈]\s*)?(?<![\w.,])(\d{1,3}(?:[ \u00a0\u202f]\d{3})+|\d+(?:[.,]\d+)?)\s*(km(?!/h)|m\b|h\d{2}|h\b)",
+    re.IGNORECASE,
 )
 FORBID_DEFAULT = [r"\b(?:est|sont)\s+autoris[ée]", r"\bautoris[ée]s?\s+(?:au|le|en)\s+bivouac"]
 
@@ -60,10 +77,10 @@ def load_run(run_dir: Path) -> tuple[list[dict], str]:
     return calls, answer
 
 
-def created_routes(calls: list[dict]) -> list[str]:
+def created_routes(calls: list[dict], exclude: frozenset[str] = frozenset()) -> list[str]:
     ids = []
     for c in calls:
-        if c["outil"] not in ROUTE_TOOLS or c.get("erreur"):
+        if c["outil"] not in ROUTE_TOOLS - exclude or c.get("erreur"):
             continue
         res = c.get("resultat") or {}
         if "route_id" in res:
@@ -74,23 +91,36 @@ def created_routes(calls: list[dict]) -> list[str]:
 
 
 def _numbers_in_results(calls: list[dict]) -> tuple[list[float], str]:
-    blob = json.dumps([c.get("resultat") for c in calls], ensure_ascii=False)
+    def measures(value):
+        if isinstance(value, dict):
+            return {k: measures(v) for k, v in value.items() if k not in NOT_MEASURES}
+        if isinstance(value, list):
+            return [measures(v) for v in value]
+        return value
+
+    blob = json.dumps([measures(c.get("resultat")) for c in calls], ensure_ascii=False)
     # Valeurs absolues : « 8,2 km plus courte » reprend un écart signé « -8.24 » de l'outil.
     values = [abs(float(x)) for x in re.findall(r"-?\d+(?:\.\d+)?", blob)]
     return values, blob
 
 
+def _num(raw: str) -> float:
+    return float("".join(ch for ch in raw if ch not in SPACES).replace(",", "."))
+
+
 def traceable_numbers(answer: str, calls: list[dict], prompt: str) -> tuple[float, list[str]]:
     """Part des chiffres annoncés (km, m, durées) retrouvés dans les résultats d'outils."""
     values, blob = _numbers_in_results(calls)
+    # Nombres entiers du prompt (« 2 000 m » → 2000) : comparés en valeur, pas en sous-chaîne.
+    given = {_num(m) for m in re.findall(r"\d{1,3}(?:[ \u00a0\u202f]\d{3})+|\d+(?:[.,]\d+)?", prompt)}
     untraced, total = [], 0
     for approx, raw, unit in NUMBER_RE.findall(answer):
         if approx:
             continue  # estimation annoncée comme telle (≈), autorisée par le skill
         token = f"{raw}{unit}"
-        if raw.replace(" ", "").replace(" ", "") in prompt.replace(" ", ""):
+        num = _num(raw)
+        if num in given:
             continue  # chiffre donné par l'utilisateur
-        num = float(raw.replace(" ", "").replace(" ", "").replace(",", "."))
         unit = unit.lower()
         if unit.startswith("h") and len(unit) > 1:  # durée « 4h37 »
             total += 1
@@ -173,8 +203,9 @@ def grade_behaviour(scenario: dict, run_dir: Path) -> Grade:
 def grade_reference(scenario: dict, run_dir: Path, official: list[tuple[float, float, float | None]]) -> Grade:
     """Rando réelle : le tracé final de l'agent est comparé au tracé officiel du parc."""
     calls, answer = load_run(run_dir)
-    g = grade_behaviour({**scenario, "tools": ["route_between|generate_loop_candidates|import_official_trek"]}, run_dir)
-    ids = created_routes(calls)
+    g = grade_behaviour({**scenario, "tools": ["route_between|generate_loop_candidates"]}, run_dir)
+    # Le tracé présenté : le dernier construit, hors itinéraire de repli (demandé en fin de démarche par le skill).
+    ids = created_routes(calls, exclude=frozenset({"bailout_route"}))
     routes_dir = run_dir / "home" / "routes"
     agent_route = None
     for rid in reversed(ids):  # le dernier tracé construit est celui présenté
@@ -190,6 +221,9 @@ def grade_reference(scenario: dict, run_dir: Path, official: list[tuple[float, f
     mean_dev, _, _ = deviation(agent_route.points, ref_pts)
     ref_stats, _ = compute_stats([TrackPoint(lat=a, lon=b) for a, b, _ in official])
     dist_err = (agent_route.stats.distance_km - scenario["official"]["length_km"]) / scenario["official"]["length_km"]
+    if agent_route.stats.d_plus_m is None:
+        g.checks.append(Check("D+ calculé", False, "altitudes manquantes"))
+        return g
     dplus_err = (agent_route.stats.d_plus_m - scenario["official"]["ascent_m"]) / scenario["official"]["ascent_m"]
     g.metrics.update({"recouvrement": round(cover, 2), "ecart_moyen_m": round(mean_dev), "distance_agent_km": agent_route.stats.distance_km,
                       "distance_officielle_km": scenario["official"]["length_km"], "ecart_distance": round(dist_err, 3),

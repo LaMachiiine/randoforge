@@ -208,3 +208,58 @@ def test_n5_gives_the_range_and_whether_it_contains_the_other_value():
     pts = line(900, ele=lambda i: 1000 + 0.5 * i + 3 * math.sin(i / 3))  # D+ 449 m, plausible 417–542 m
     n5 = next(c for c in validate(route_of(pts, engine_stats={"d_plus_m": 540})).checks if c.id == "N5")
     assert "fourchette plausible 417–542 m (contient l'autre valeur)" in n5.message
+
+
+# --- Relecture finale ---------------------------------------------------------------------------
+
+
+def test_island_inside_an_enclave_is_back_in_the_area():
+    from shapely.geometry import Point
+
+    def ring(d):
+        pts = [(45.015 - d, 6 - d), (45.015 + d, 6 - d), (45.015 + d, 6 + d), (45.015 - d, 6 + d), (45.015 - d, 6 - d)]
+        return [{"lat": a, "lon": b} for a, b in pts]
+
+    rel = {"type": "relation", "id": 1, "tags": {"boundary": "national_park"},
+           "members": [{"role": "outer", "geometry": ring(0.05)}, {"role": "inner", "geometry": ring(0.02)},
+                       {"role": "outer", "geometry": ring(0.005)}]}  # fmt: skip
+    frame = RouteFrame(line())
+    geom = element_geometry(rel, frame.proj)
+    inside = lambda lat, lon: geom.contains(Point(*frame.proj.to_xy(lat, lon)))  # noqa: E731
+    assert inside(45.015, 6.0) and not inside(45.025, 6.0) and inside(45.05, 6.0)
+
+
+def test_zone_fragments_are_merged_transitively():
+    pts = line(1000)
+    tags = {"leisure": "nature_reserve", "name": "R"}
+    a, b = _square(45.002, 45.009, tags=tags, id_=1), _square(45.027, 45.036, tags=tags, id_=2)
+    c = _square(45.008, 45.028, tags=tags, id_=3)  # relie a et b, arrivé en dernier
+    assert len(areas.crossings(pts, [a, b, c])) == 1
+
+
+def test_d_plus_range_only_for_calibrated_settings():
+    from randoforge.core.stats import compute_stats
+
+    pts = line(900, ele=lambda i: 1000 + 0.5 * i)
+    assert compute_stats(pts)[0].d_plus_fourchette_m is not None
+    custom = ElevationParams(step_m=100, smooth_window_m=500, threshold_m=50)
+    assert compute_stats(pts, custom)[0].d_plus_fourchette_m is None
+
+
+def test_lon_bounds_single_point_on_the_antimeridian():
+    from randoforge.core.geo import lon_bounds
+
+    assert lon_bounds([180.0]) == (-180.0, -180.0)
+    assert lon_bounds([-180.0, 170.0]) == (170.0, 180.0)
+
+
+def test_parallel_drafts_follow_the_configured_router():
+    from types import SimpleNamespace
+
+    from randoforge.tools.build import PARALLEL_ROUTES, parallel_routes
+
+    def app_with(url):
+        return SimpleNamespace(services=SimpleNamespace(router=SimpleNamespace(base_url=url)))
+
+    assert parallel_routes(app_with("https://brouter.de/brouter")) == 2
+    assert parallel_routes(app_with("http://localhost:17777/brouter")) == PARALLEL_ROUTES

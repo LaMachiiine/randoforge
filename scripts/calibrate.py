@@ -46,6 +46,9 @@ async def main(folder: Path, refs: dict[str, float]) -> None:
     print(f"{'Trace':30} {'km':>6} {'D+ GPX':>7} {'D+ MNT':>7} {'D+ réf':>7} {'écart':>7}")
     errors = []
     for name, km, dfile, ddem, ref in rows:
+        if ddem is None:
+            print(f"{name[:30]:30} {km:6.1f} altitudes MNT indisponibles : ignorée")
+            continue
         base = ref or dfile
         gap = f"{100 * (ddem - base) / base:+.1f} %" if base else ""
         if base:

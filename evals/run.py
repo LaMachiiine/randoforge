@@ -18,7 +18,7 @@ import time
 from datetime import date, datetime
 from pathlib import Path
 
-from grade import Check, Grade, grade_behaviour, grade_reference, report
+from grade import Check, Grade, grade_behaviour, grade_reference, load_run, report
 
 from randoforge.engines.geotrek import GeotrekReference
 from randoforge.http import CachedHttp, HttpError
@@ -89,6 +89,19 @@ def to_calls(transcript: Path) -> tuple[list[dict], str, float, int, dict]:
     return calls, answer.strip(), cost, turns, tokens
 
 
+async def kill_tree(proc: asyncio.subprocess.Process) -> None:
+    """Arrête l'agent et ses sous-processus (sous Windows, `claude.cmd` lance node, qui survivrait à cmd.exe)."""
+    if sys.platform == "win32":
+        killer = await asyncio.create_subprocess_exec(
+            "taskkill", "/T", "/F", "/PID", str(proc.pid),
+            stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL,
+        )  # fmt: skip
+        await killer.wait()
+    else:
+        proc.kill()
+    await proc.wait()
+
+
 async def run_agent(
     scenario: dict, run_dir: Path, cache: Path | None, model: str | None, sem: asyncio.Semaphore
 ) -> dict:
@@ -108,6 +121,9 @@ async def run_agent(
                 "--append-system-prompt", system_prompt()]  # fmt: skip
         if model:
             base += ["--model", model]
+        if scenario.get("official"):
+            # Rando de référence : l'agent doit reconstruire l'itinéraire, pas importer le tracé officiel noté.
+            base += ["--disallowedTools", "mcp__randoforge__import_official_trek,mcp__randoforge__find_official_treks"]
         turns = scenario.get("turns") or [scenario["prompt"]]
         fill = {"fixtures": str(EVALS / "fixtures").replace("\\", "/"), "run_dir": str(run_dir).replace("\\", "/")}
         transcript = run_dir / "transcript.jsonl"
@@ -126,8 +142,7 @@ async def run_agent(
                 try:
                     await asyncio.wait_for(proc.wait(), timeout=AGENT_TIMEOUT_S)
                 except TimeoutError:
-                    proc.kill()
-                    await proc.wait()
+                    await kill_tree(proc)
                     err.write(f"\nAgent arrêté après {AGENT_TIMEOUT_S} s\n".encode())
                 out.flush()
                 with transcript.open(encoding="utf-8", errors="replace") as f:
@@ -256,7 +271,7 @@ async def main() -> None:
     body += f"\nAgents : Claude Code `claude -p` ({args.model or 'modèle par défaut'}), outils RandoForge uniquement. Coût total : {cost:.2f} $.\n"
     body += usage_section(metas)
     body += "\n## Réponses des agents\n\n" + "\n".join(
-        f"<details><summary>{g.scenario}</summary>\n\n{(out / g.scenario / 'answer.md').read_text(encoding='utf-8')}\n\n"
+        f"<details><summary>{g.scenario}</summary>\n\n{load_run(out / g.scenario)[1] or '(pas de réponse)'}\n\n"
         f"Outils : {', '.join(g.metrics.get('outils', []))}\n</details>\n"
         for g in grades
     )

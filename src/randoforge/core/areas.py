@@ -120,7 +120,15 @@ def crossings(points: list[TrackPoint], elements: list[dict]) -> list[AreaCrossi
                     osm_id=f"{el['type']}/{el['id']}",
                 )
             )
-    return sorted(out, key=lambda a: a.km_debut)
+    # Passe finale : un fragment peut relier deux portions déjà enregistrées séparément (fusion transitive).
+    merged: list[AreaCrossing] = []
+    for a in sorted(out, key=lambda a: (a.nom or "", a.kind, a.km_debut)):
+        prev = merged[-1] if merged else None
+        if prev and (prev.nom, prev.kind) == (a.nom, a.kind) and a.km_debut - prev.km_fin < MERGE_GAP_KM:
+            prev.km_fin = max(prev.km_fin, a.km_fin)
+        else:
+            merged.append(a)
+    return sorted(merged, key=lambda a: a.km_debut)
 
 
 def area_at(areas: list[AreaCrossing], km: float) -> list[AreaCrossing]:

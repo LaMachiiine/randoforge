@@ -9,7 +9,7 @@ leurs appels d'outils sont ensuite notés automatiquement.
 | Fichier | Contenu | Notation |
 |---|---|---|
 | `scenarios.json` | 20 demandes types (boucle, cascade, chien, 3 jours en cabane, poussette, horaires, météo, trace GPX, GR, repli, déjà fait, Zermatt, bus, vault, roadbook, passages techniques, demandes impossibles…) | outils attendus, contraintes enregistrées, mentions obligatoires, formulations interdites (« autorisé »), validation lancée, **chaque chiffre annoncé retrouvé dans un résultat d'outil** |
-| `reference.json` | randos **réelles** des parcs nationaux des Écrins et des Cévennes (généré par `build_reference.py`) : l'agent reçoit le nom, le type, le départ et le descriptif, sans tracé ni chiffres | en plus : **recouvrement avec le tracé officiel** (≥ 60 % à moins de 50 m), distance (± 20 %) et D+ (± 25 %) |
+| `reference.json` | randos **réelles** des parcs nationaux des Écrins et des Cévennes (généré par `build_reference.py`) : l'agent reçoit le nom, le type, le départ et le descriptif, sans tracé ni chiffres ; `find_official_treks` et `import_official_trek` lui sont interdits (sinon il importerait le tracé noté) | en plus : **recouvrement avec le tracé officiel** (≥ 60 % à moins de 50 m), distance (± 20 %) et D+ (± 25 %) |
 
 ## Lancer
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Annotated, Literal
+from urllib.parse import urlsplit
 
 import numpy as np
 from gpxpy.gpx import GPXException
@@ -25,8 +26,15 @@ from ..storage import new_route_id
 from ..validation import tarmac_length
 from .schemas import LatLon, LoopCandidate, LoopCandidates, Park, Profile, SacScale
 
-# Autant de brouillons en parallèle que BRouter accepte de requêtes simultanées (au-delà, ils attendraient).
-PARALLEL_ROUTES = HOST_LIMITS["brouter.de"][0]
+# Brouillons en parallèle : autant que le serveur BRouter accepte de requêtes simultanées (au-delà, ils attendraient).
+PARALLEL_ROUTES = 4  # serveur sans limite connue (ex. BRouter local)
+
+
+def parallel_routes(app: App) -> int:
+    host = urlsplit(getattr(app.services.router, "base_url", "")).hostname or ""
+    return HOST_LIMITS.get(host, (PARALLEL_ROUTES, 0.0))[0]
+
+
 COMPASS = ["N", "NE", "E", "SE", "S", "SO", "O", "NO"]
 
 
@@ -121,7 +129,7 @@ def register(mcp: MCPServer, app: App) -> None:
             return bearing, best, tried, failed
 
         # Toutes les directions en parallèle (le moteur de routage répond en 1–3 s par tracé).
-        with ThreadPoolExecutor(max_workers=PARALLEL_ROUTES) as pool:
+        with ThreadPoolExecutor(max_workers=parallel_routes(app)) as pool:
             results = list(pool.map(draft_direction, loops.bearings(directions)))
         tried = sum(r[2] for r in results)
         failed = sum(r[3] for r in results)

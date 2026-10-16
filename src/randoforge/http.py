@@ -153,9 +153,10 @@ class CachedHttp:
             return "slow", f"{service} : {TOO_SLOW_HINT}"
         if r.status_code not in RETRYABLE | RETRYABLE_BY_HOST.get(host, set()):
             if len(mirrors) > 1 and r.status_code != 400:
-                # Un miroir bloqué, déplacé ou mal configuré (403, 404…) : les autres peuvent répondre.
+                # Un miroir bloqué, déplacé ou mal configuré (403, 404…) : écarté, les autres peuvent répondre.
                 # Seul un 400 (requête invalide) vaut pour tous les miroirs.
-                return "retry", f"{host} : {r.status_code}"
+                self._down_until[host] = time.time() + DOWN_S
+                return "retry", f"{host} : erreur {r.status_code} — {r.text.strip().replace(chr(10), ' ')[:120]}"
             return "fatal", f"{service} : erreur {r.status_code} — {r.text.strip().replace(chr(10), ' ')[:300]}"
         if retry_after := r.headers.get("retry-after", "").strip():
             # Le serveur demande d'attendre : on obéit (borné), plutôt que de le marteler.

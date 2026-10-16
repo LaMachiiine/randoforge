@@ -107,7 +107,7 @@ class FakeWeather:
 
     def hourly(self, lat, lon, elevation, day):
         hours = [f"{day.isoformat()}T{h:02d}:00" for h in range(24)]
-        return {"hourly": {"time": hours, "temperature_2m": [12 - elevation / 300] * 24, "precipitation": [0.5] * 24,
+        return {"hourly": {"time": hours, "temperature_2m": [12 - (elevation or 0) / 300] * 24, "precipitation": [0.5] * 24,
                            "weather_code": [95 if self.storm and h == 15 else 1 for h in range(24)],
                            "wind_gusts_10m": [30] * 24, "snow_depth": [0] * 24, "cape": [100] * 24}}  # fmt: skip
 

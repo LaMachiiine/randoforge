@@ -84,7 +84,7 @@ async def main(out: Path) -> None:
         print(f"   statut {res['status']}")
         for ch in res["checks"]:
             if ch["level"] != "info":
-                print(f"     {ch['id']} {ch['level']} {ch['km']} {ch['message'][:110]}")
+                print(f"     {ch['id']} {ch['level']} {ch.get('km', '')} {ch['message'][:110]}")
         res = await call("bailout_route", {"route_id": rid, "at_km": 10, "to": "depart"})
         if res:
             print(f"   repli : {res['stats']['distance_km']} km, D+ {res['stats']['d_plus_m']} m")

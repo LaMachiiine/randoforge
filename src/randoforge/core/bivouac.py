@@ -158,7 +158,7 @@ def find_spots(
         if c.get("lat") is None:
             continue
         m, d = place(c["lat"], c["lon"])
-        if d > MAX_DETOUR_M:  # la requête OSM peut déborder (tolérance de simplification du tracé)
+        if el.get("type") == "node" and d > MAX_DETOUR_M:  # la requête OSM peut déborder (simplification du tracé)
             continue
         kind = (
             tags.get("tourism")

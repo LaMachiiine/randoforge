@@ -56,6 +56,9 @@ def main(per_park: int, write_report: bool) -> None:
                           points=[TrackPoint(lat=la, lon=lo) for la, lo, _ in t.coords])  # fmt: skip
             app.apply_dem(route)
             ours, _ = compute_stats(route.points)
+            if ours.d_plus_m is None:
+                print(f"{park} {t.id} : altitudes MNT indisponibles, ignoré")
+                continue
             theirs_z = [TrackPoint(lat=la, lon=lo, ele=z) for la, lo, z in t.coords]
             algo_only = compute_stats(theirs_z)[0] if all(z is not None for *_, z in t.coords) else None
             rows.append((park, t, ours, algo_only))

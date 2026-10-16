@@ -80,12 +80,15 @@ def register(mcp: MCPServer, app: App) -> None:
         """
         route = app.load(route_id)
         failures: list[str] = []
-        if route.bivouacs is None or refresh:
+        all_spots = route.bivouacs
+        if all_spots is None or refresh:
             failures = compute_bivouacs(app, route)
-            if not failures:  # résultat incomplet (source en panne) : non conservé, recalculé au prochain appel
-                app.save(route)
+            all_spots = route.bivouacs or []
+            if failures:  # emplacements incomplets : recalculés au prochain appel ; POI, passages, zones gardés
+                route.bivouacs = None
+            app.save(route)
         rappels = REMINDERS + [f"Source indisponible : {f}" for f in failures]
-        spots = [b for b in route.bivouacs if b.abrite] if abrite_seulement else route.bivouacs
+        spots = [b for b in all_spots if b.abrite] if abrite_seulement else all_spots
         if abrite_seulement and not spots:
             rappels.append("Aucun abri cartographié le long du tracé : prévoir une tente.")
         best = sorted(sorted(spots, key=lambda b: -b.score)[:limit], key=lambda b: b.km)

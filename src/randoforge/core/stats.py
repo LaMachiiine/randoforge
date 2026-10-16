@@ -60,8 +60,9 @@ def compute_stats(
         e = median_smooth(e, window_pts)
         up, down = elevation_gain(e, params.threshold_m)
         d_plus, d_minus = round(up), round(down)
-        high = _gain(lats, lons, eles, RANGE_HIGH_PARAMS)
-        d_plus_range = (round(up * RANGE_LOW_FACTOR), max(d_plus, round(high)))
+        if params == ElevationParams():  # fourchette calibrée pour les réglages par défaut uniquement
+            high = _gain(lats, lons, eles, RANGE_HIGH_PARAMS)
+            d_plus_range = (round(up * RANGE_LOW_FACTOR), max(d_plus, round(high)))
         alt_min, alt_max = round(float(e.min())), round(float(e.max()))
         if is_loop and max(up, down) > 0 and abs(up - down) / max(up, down) > 0.01:
             warnings.append(f"Boucle avec D+ ({d_plus} m) ≠ D- ({d_minus} m) de plus de 1 % : altitudes incohérentes ?")
