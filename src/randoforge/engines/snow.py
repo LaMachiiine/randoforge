@@ -18,6 +18,7 @@ from datetime import date, timedelta
 import numpy as np
 
 from ..http import DAY, CachedHttp
+from .elevation import load_rasterio
 
 GIBS_URL = "https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/{layer}/default/{day}/500m/7/{row}/{col}.png"
 GIBS_LAYERS = [
@@ -65,6 +66,7 @@ def _decode(png: bytes) -> np.ndarray:
     """PNG à palette GIBS → valeurs (NDSI 0..100, CLOUD, UNKNOWN), d'après la couleur de chaque index."""
     import warnings
 
+    load_rasterio()
     from rasterio.errors import NotGeoreferencedWarning
     from rasterio.io import MemoryFile
 
@@ -167,6 +169,7 @@ class Sentinel2Snow:
 
     def classes(self, items: list[dict], points: list[tuple[float, float]]) -> tuple[str | None, list[int | None]]:
         """Classe SCL de chaque point pour la date la plus récente couvrant des points : (date, classes)."""
+        load_rasterio()
         import rasterio
         from pyproj import Transformer
         from rasterio.env import Env

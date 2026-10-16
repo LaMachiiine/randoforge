@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import threading
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -13,6 +14,22 @@ import numpy as np
 from ..http import CachedHttp, HttpError
 
 LatLon = tuple[float, float]
+
+_RASTERIO_LOCK = threading.Lock()
+
+
+def load_rasterio() -> None:
+    """Importe rasterio (lent, donc à la demande) une seule fois, sous verrou : importé en même temps depuis deux
+    fils (analyses en parallèle), il échoue à moitié initialisé (« cannot import name tastes_like_gdal »)."""
+    with _RASTERIO_LOCK:
+        import pyproj  # noqa: F401
+        import rasterio  # noqa: F401
+        import rasterio.env
+        import rasterio.errors
+        import rasterio.io
+        import rasterio.merge
+        import rasterio.warp
+        import rasterio.windows  # noqa: F401
 
 
 class IgnElevation:
@@ -96,6 +113,7 @@ class CopernicusElevation:
     def grid(self, bbox: tuple[float, float, float, float]) -> DemGrid:
         """Altitudes d'un rectangle (sud, ouest, nord, est) en grille (tuiles voisines assemblées) : pour les calculs
         de pente. NaN en mer ou hors données."""
+        load_rasterio()
         import rasterio
         from rasterio.env import Env
         from rasterio.errors import RasterioIOError
@@ -131,6 +149,7 @@ class CopernicusElevation:
                        source=self.name)  # fmt: skip
 
     def elevations(self, points: list[LatLon]) -> list[float | None]:
+        load_rasterio()
         import rasterio
         from rasterio.env import Env
         from rasterio.errors import RasterioIOError
@@ -167,6 +186,7 @@ def sample_bilinear(ds, points: list[LatLon]) -> np.ndarray:
 
     Les points (WGS84) sont reprojetés dans le système du raster si besoin.
     """
+    load_rasterio()
     from rasterio.windows import Window
 
     lats = np.array([p[0] for p in points])
@@ -211,6 +231,7 @@ class LocalDemElevation:
         self.name = name or f"MNT local ({Path(directory).name})"
 
     def elevations(self, points: list[LatLon]) -> list[float | None]:
+        load_rasterio()
         import rasterio
         from rasterio.warp import transform_bounds
 
